@@ -14,15 +14,15 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
     if xlim is None:
         xlim = [0, len(x_truth)]
 
-    ax_x.plot(x_hat, color='blue')
-    ax_x.plot(x_truth, '--', color='orange')
-    ax_x.plot(x, '*', color='green', zorder=-100)
+    ax_x.plot(x_hat, color='red')
+    ax_x.plot(x_truth, '--', color='black')
+    ax_x.plot(x, '.', color='blue', zorder=-100)
     ax_x.set_ylabel('Position')
     ax_x.set_xlabel('Time')
 
     
-    ax_dxdt.plot(dxdt_hat, color='blue')
-    ax_dxdt.plot(dxdt_truth, '--', color='orange')
+    ax_dxdt.plot(dxdt_hat, color='red')
+    ax_dxdt.plot(dxdt_truth, '--', color='black')
     ax_dxdt.set_ylabel('Velocity')
     ax_x.set_xlabel('Time')
 

@@ -11,15 +11,15 @@ def __add_noise__(x, noise_type, noise_parameters, random_seed):
     noise = _np.random.__getattribute__(noise_type)(noise_parameters[0], noise_parameters[1], timeseries_length)
     return x + noise
 
-def sine(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
+def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
 
     # Parameters
     ############
     f1 = 1
     f2 = 1.7
-    y_offset = 10
+    y_offset = 1
 
-    t = _np.arange(0, timeseries_length*dt, dt)
+    t = _np.arange(0, timeseries_length, simdt)
     x = (0.5*_np.sin(t*2*_np.pi*f1) + 0.5*_np.sin(t*2*_np.pi*f2)) + y_offset
     dxdt = 0.5*_np.cos(t*2*_np.pi*f1)*2*_np.pi*f1 + 0.5*_np.cos(t*2*_np.pi*f2)*2*_np.pi*f2
     #actual_vals = _finite_difference(_np.matrix(x), params=None, dt=dt)
@@ -35,10 +35,12 @@ def sine(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], 
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[1,:])
     extras = None
-    return noisy_pos, pos, vel, extras 
 
-def triangle(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
-    t = _np.arange(0, timeseries_length*dt, dt)
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], None 
+
+def triangle(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    t = _np.arange(0, timeseries_length, simdt)
     continuous_x = _np.sin(t*t)
 
     # find peaks and valleys
@@ -63,14 +65,11 @@ def triangle(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.
     reversal_ts = t[reversal_idxs]
 
     x = _np.interp(t, reversal_ts, reversal_vals)
-    x = _np.matrix(x)
-
-    smooth_x, dxdt = _finite_difference(x, dt=dt)
-    dxdt = _np.matrix(dxdt)
+    smooth_x, dxdt = _finite_difference(x, dt=simdt)
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt[1,:])))
+    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
     noisy_measurements = _np.matrix(noisy_x)
     extra_measurements = _np.matrix([])
 
@@ -78,19 +77,21 @@ def triangle(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[1,:])
     extras = None
-    return noisy_pos, pos, vel, extras 
 
-def pop_dyn(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], None 
+
+def pop_dyn(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
     # http://www.biologydiscussion.com/population/population-growth/population-growth-curves-ecology/51854
 
-    t = _np.arange(0, timeseries_length*dt, dt)
+    t = _np.arange(0, timeseries_length, simdt)
     K = 2 # carrying capacity
     r = 4 # biotic potential
 
     x = [0.1] # population
     dxdt = [r*x[-1]*(1-x[-1]/K)]
     for _t_ in t[1:]:
-        x.append(x[-1] + dt*dxdt[-1])
+        x.append(x[-1] + simdt*dxdt[-1])
         dxdt.append(r*x[-1]*(1-x[-1]/K)) 
 
     x = _np.matrix(x)
@@ -106,13 +107,17 @@ def pop_dyn(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[1,:])
     extras = None
-    return noisy_pos, pos, vel, extras 
 
-def linear_autonomous(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
-    A = _np.matrix([[1, dt], [0.005, 0.97]])
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], None 
+
+def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    t = _np.arange(0, timeseries_length, dt)
+
+    A = _np.matrix([[1, simdt], [0.005, 0.97]])
     x0 = _np.matrix([[0], [5]])
     xs = x0
-    for i in range(timeseries_length):
+    for i in t:
         x = A*xs[:,-1]
         xs = _np.hstack((xs, x))
 
@@ -121,23 +126,19 @@ def linear_autonomous(timeseries_length=500, noise_type='normal', noise_paramete
     x /= _np.max(x)
     x *= 2
 
-    smooth_x, ffd = _finite_difference(x, dt)
-    dxdt = ffd[1,:]
+    smooth_x, dxdt = _finite_difference( _np.ravel(x), simdt)
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
-    noisy_measurements = _np.matrix(noisy_x)
-    extra_measurements = None
-
-    noisy_pos = _np.ravel(noisy_measurements[1:])
-    pos = _np.ravel(actual_vals[0,1:])
-    vel = _np.ravel(actual_vals[1,1:])
     extras = None
-    return noisy_pos, pos, vel, extras 
 
-def pi_control(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
-    actual_vals, extra_measurements = __pi_cruise_control__.run(timeseries_length, dt)
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return _np.ravel(noisy_x)[1:][idx], smooth_x[1:][idx], dxdt[1:][idx], None 
+
+def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    t = _np.arange(0, timeseries_length, simdt)
+
+    actual_vals, extra_measurements = __pi_cruise_control__.run(timeseries_length, simdt)
     x = actual_vals[0,:]
     dxdt = actual_vals[1,:]
 
@@ -150,13 +151,16 @@ def pi_control(timeseries_length=500, noise_type='normal', noise_parameters=[0, 
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[1,:])
     extras = None
-    return noisy_pos, pos, vel, extra_measurements 
 
-def lorenz_x(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01):
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], extra_measurements[:,idx] 
+
+def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    t = _np.arange(0, timeseries_length, simdt)
 
     sigma = 10
     beta = 8/3
-    rho = 28
+    rho = 45
 
     x = 5
     y = 1
@@ -164,7 +168,7 @@ def lorenz_x(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.
     xyz = _np.matrix([[x], [y], [z]])
     xyz_dot = None
 
-    for _t_ in _np.arange(0, timeseries_length*dt, dt):
+    for _t_ in t:
         x, y, z = _np.ravel(xyz[:,-1])
 
         xdot = sigma*(y-x)
@@ -177,7 +181,7 @@ def lorenz_x(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.
         else:
             xyz_dot = _np.hstack((xyz_dot, new_xyz_dot))
 
-        new_xyz = xyz[:,-1] + dt*new_xyz_dot
+        new_xyz = xyz[:,-1] + simdt*new_xyz_dot
         xyz = _np.hstack((xyz, new_xyz))
 
     x = xyz[0,0:-1] / 20.
@@ -193,4 +197,6 @@ def lorenz_x(timeseries_length=500, noise_type='normal', noise_parameters=[0, 0.
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[1,:])
     extras = None
-    return noisy_pos, pos, vel, extra_measurements
+
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], None

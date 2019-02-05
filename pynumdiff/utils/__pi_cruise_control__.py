@@ -13,12 +13,12 @@ parameters = {'omega_m': 420, # rad / sec
               'rho': 1.3, # kg/m^3
               'v_r': 30, # m/s 
               'k_p': 10,
-              'k_i': 4,
+              'k_i': 5,
              }
 
-def triangle(timeseries_length=500, dt=0.01):
-    t = np.arange(0, timeseries_length*dt, dt)
-    continuous_x = np.sin(t*np.sqrt(t))
+def triangle(iterations, dt):
+    t = np.arange(0, iterations*dt, dt)
+    continuous_x = np.sin(3*t*np.sqrt(t))
 
     #return np.matrix(continuous_x)
 
@@ -99,22 +99,24 @@ def step_forward(state_vals, disturbances, desired_velocity, dt):
     return new_state
 
 # disturbance
-def hills(n, dt, factor):
+def hills(iterations, dt, factor):
     #t = np.linspace(0,n,n)
     #y = 1*np.sin(0*t*200/np.max(t)) + 5*np.sin(t*100/np.max(t)) + 100*np.sin(t*20/np.max(t)) + 10*np.sin(t*7/np.max(t)) 
     #return y*np.pi/180.*1e-2
-    return triangle(n, dt)*0.1/factor
+    return triangle(iterations, dt)*0.3/factor
 
 # desired velocity
 def desired_velocity(n, factor):
     return np.matrix([2/factor]*n)
 
 
-def run(iterations=400, dt=0.01):
+def run(timeseries_length=4, dt=0.01):
+    t = np.arange(0, timeseries_length, dt)
+    iterations = len(t)
 
     # hills
     disturbances = np.matrix(np.zeros([3, iterations+1]))
-    disturbances[2,:] = hills(iterations+1, dt=0.01, factor=1.8*iterations*dt/2)
+    disturbances[2,:] = hills(iterations+1, dt, factor=1.8*timeseries_length/2)
 
     # initial condition
     state_vals = np.matrix([[0], [0], [0]])

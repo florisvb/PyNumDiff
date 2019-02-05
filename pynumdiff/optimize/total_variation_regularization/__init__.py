@@ -1,0 +1,3 @@
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import velocity as velocity
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import acceleration as acceleration
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import jerk as jerk

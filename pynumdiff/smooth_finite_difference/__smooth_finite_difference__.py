@@ -42,14 +42,18 @@ def __convolutional_smoother__(x, kernel, iterations):
     
     '''
     
-    x_hat = x
+    # pad
+    x_hat = np.hstack((x[::-1], x, x[::-1]))
     for i in range(iterations):
-        if not i%2:
-            x_hat = np.convolve(x_hat, kernel, 'same')
-        else:
-            x_hat = np.convolve(x_hat[::-1], kernel, 'same')[::-1]
+        x_hat_f = np.convolve(x_hat, kernel, 'same')
+        x_hat_b = np.convolve(x_hat[::-1], kernel, 'same')[::-1]
 
-    return x_hat
+        w = np.arange(0,len(x_hat_f),1)
+        w = w/np.max(w)
+        
+        x_hat = x_hat_f*w + x_hat_b*(1-w)
+
+    return x_hat[len(x):len(x)*2]
 
 ####################################################################################################################################################
 # Smoothing finite differences
@@ -249,7 +253,10 @@ def butterdiff(x, dt, params, options={'iterate': False}):
 
     x_hat = x
     for i in range(iterations):
-        x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad")
+        if len(x) < 9:
+            x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad", padlen=len(x)-1)
+        else:
+            x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad")
 
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 

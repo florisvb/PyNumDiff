@@ -40,41 +40,59 @@ def docstring(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, t
 # Documentation
 ####################################################################################################################################################
 
-def __objective_function__(params, *args):
-    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding = args[0]
-
-    # keep param in bounds and correct type
+def __correct_params__(params, params_types, params_low, params_high):
     _params = []
     for p, param in enumerate(params):
         param = np.max([param, params_low[p]])
         param = np.min([param, params_high[p]])
         _params.append( params_types[p](param) ) 
-    params = _params
+    return _params
+
+def __objective_function__(params, *args):
+    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding = args[0]
+
+    # keep param in bounds and correct type
+    params = __correct_params__(params, params_types, params_low, params_high)
 
     # estimate x and dxdt
-    est_x, est_dxdt = function(x, dt, params, options)
+    x_hat, dxdt_hat = function(x, dt, params, options)
+
+    #print(x_hat.shape, dxdt_hat.shape, params)
 
     # evaluate estimate
-    if dxdt_truth is not None: # then minimize ||est_dxdt - dxdt_truth||2
-        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, est_x, est_dxdt, actual_x=None, dxdt_truth=dxdt_truth, padding=padding)
+    if dxdt_truth is not None: # then minimize ||dxdt_hat - dxdt_truth||2
+        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=dxdt_truth, padding=padding)
+        #print('rms_rec_x: ', rms_rec_x, 'tv x hat: ', utility.total_variation(x_hat))
         return rms_dxdt
-    else: # then minimize [ || integral(est_dxdt) - noisy_x||2 + gamma*TV(est_dxdt) ]
-        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, est_x, est_dxdt, actual_x=None, dxdt_truth=None, padding=padding)
-        return rms_rec_x + tvgamma*utility.total_variation(est_dxdt)
+    else: # then minimize [ || integral(dxdt_hat) - x||2 + gamma*TV(dxdt_hat) ]
+        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=padding)
 
-def __optimize__(params, args, method='Nelder-Mead'):
+        #acc
+        #try regularizing total sum of abs(acc) or jerk?
+
+        return rms_rec_x + tvgamma*utility.total_variation(dxdt_hat)
+
+def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding = args
+
     # minimize with multiple initial conditions
     if type(params[0]) is list:
         opt_params = []
         opt_vals = []
         for paramset in params:
-            result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=method, options={'maxiter': 10})
-            opt_params.append(list(result.x.astype(int)))
+            result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method, options=optimization_options)
+            p = __correct_params__(result.x, params_types, params_low, params_high)
+            #print(p, result.fun)
+            opt_params.append(p)
             opt_vals.append(result.fun)
+        opt_vals = np.array(opt_vals)
+        opt_vals[np.where(np.isnan(opt_vals))] = np.inf # avoid nans
         idx = np.argmin(opt_vals)
-        return opt_params[idx], opt_vals[idx]
+        opt_params = opt_params[idx]
+        return list(opt_params), opt_vals[idx]
 
     # minimize from single initial condition
     else:
-        result = scipy.optimize.minimize(__objective_function__, params, args=args, method=method, options={'maxiter': 10})
-        return list(result.x.astype(int)), result.fun
+        result = scipy.optimize.minimize(__objective_function__, params, args=args, method=optimization_method, options=optimization_options)
+        opt_params = __correct_params__(result.x, params_types, params_low, params_high)
+        return list(opt_params), result.fun

@@ -5,7 +5,6 @@ from pynumdiff.utils import utility as utility
 from pynumdiff.utils import evaluate as evaluate
 import pynumdiff.smooth_finite_difference
 
-from pynumdiff.optimize.__optimize__ import __objective_function__
 from pynumdiff.optimize.__optimize__ import __optimize__
 
 ####################################################################################################################################################
@@ -33,15 +32,13 @@ def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxd
     else:
         params_types = [int, int]
         params_low = [1, 1]
-        params_high = [1e6, 1e2]
+        params_high = [len(x)-1, 1e2]
 
     # optimize
     args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
     opt_params, opt_val = __optimize__(params, args) 
 
     return opt_params, opt_val
-
-
 
 ####################################################################################################################################################
 # Optimize functions
@@ -87,4 +84,74 @@ def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=No
     opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding) 
     return opt_params, opt_val
 
+def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+    # initial condition
+    if params is None:
+        ns = [3, 5, 8]
+        wns = [0.001, 0.01, 0.1, 0.5]
+        if options['iterate'] is False:
+            params = []
+            for n in ns:
+                for wn in wns:
+                    params.append([n, wn])
+        else:
+            iterations = [1, 5, 10]
+            params = []
+            for n in ns:
+                for wn in wns:
+                    for i in iterations:
+                        params.append([n, wn, i])
 
+    # param types and bounds
+    if options['iterate'] is False:
+        params_types = [int, float]
+        params_low = [3, 1e-2]
+        params_high = [10, 1-1e-2]
+    else:
+        params_types = [int, float, int]
+        params_low = [3, 1e-2, 1]
+        params_high = [10, 1-1e-2, 1e3]
+
+    # optimize
+    function = pynumdiff.smooth_finite_difference.butterdiff
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
+
+    return opt_params, opt_val
+
+def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+    # initial condition
+    if params is None:
+        ks = [3, 5]
+        ss = [0.5, 0.9, 0.95, 1, 10, 100]
+        if options['iterate'] is False:
+            params = []
+            for s in ss:
+                for k in ks:
+                    params.append([k, s])
+        else:
+            iterations = [1, 5, 10]
+            params = []
+            for s in ss:
+                for k in ks:
+                    for i in iterations:
+                        params.append([k, s, i])
+
+    # param types and bounds
+    if options['iterate'] is False:
+        params_types = [int, float]
+        params_low = [3, 1e-2]
+        params_high = [5, 1e6]
+    else:
+        params_types = [int, float, int]
+        params_low = [3, 1e-2, 1]
+        params_high = [5, 1e6, 10]
+
+    # optimize
+    function = pynumdiff.smooth_finite_difference.splinediff
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
+
+    return opt_params, opt_val

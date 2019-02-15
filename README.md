@@ -5,7 +5,8 @@ Methods for numerical differentiation of noisy data
 To install this package, run `python ./setup.py install` from inside this directory.
 
 ## Requirements
-Minimal requirements: numpy, scipy, matplotlib
+Minimal requirements: `numpy, scipy, matplotlib`
+
 Certain methods require additional packages:
 * Total Variation Regularization methods: [cvxpy](http://www.cvxpy.org/install/index.html), and a convex solver like [MOSEK](https://www.mosek.com/products/academic-licenses/) (free academic license available)
 * Linear Model DMD: https://github.com/florisvb/PyDMD
@@ -15,7 +16,7 @@ Certain methods require additional packages:
 `x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options)` 
 
 ## Examples
-See [notebooks/1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
-See [notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb)
-See [notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
+1. [notebooks/1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
+2. [notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb)
+3. [notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
 

@@ -82,3 +82,26 @@ def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgam
     
     return opt_params, opt_val
 
+def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+    # initial condition
+    if params is None:
+        gammas = [1e-2, 1e-1, 1, 10, 100, 1000]
+        window_sizes = [1, 10, 30, 50, 90, 130]
+        params = []
+        for gamma in gammas:
+            for window_size in window_sizes:
+                params.append([gamma, window_size])
+
+    # param types and bounds
+    params_types = [int, int]
+    params_low = [1e-4, 1]
+    params_high = [1e7, 1e3]
+
+
+    # optimize
+    function = pynumdiff.total_variation_regularization.smooth_acceleration
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options)
+
+    return opt_params, opt_val

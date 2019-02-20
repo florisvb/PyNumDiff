@@ -14,6 +14,9 @@ except:
                    You can still use the iterative method.')
 
 from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__ as __chartrand_tvregdiff__
+import pynumdiff.smooth_finite_difference
+from pynumdiff.utils import utility as utility
+__gaussian_kernel__ = utility.__gaussian_kernel__
 
 # Iterative total variation regularization
 def iterative_velocity(x, dt, params, options={'cg_maxiter': 1000, 'scale': 'small'}):
@@ -217,4 +220,15 @@ def jerk(x, dt, params, options={'solver': 'MOSEK'}):
 
     return __total_variation_regularized_derivative__(x, dt, 3, gamma, solver=options['solver'])
 
+def smooth_acceleration(x, dt, params, options={'solver': 'MOSEK'}):
+    gamma, window_size = params
 
+    x_hat, dxdt_hat = acceleration(x, dt, [gamma], options=options)
+    kernel = __gaussian_kernel__(window_size)
+    dxdt_hat = pynumdiff.smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
+
+    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
+    x0 = utility.estimate_initial_condition(x, x_hat)
+    x_hat = x_hat + x0
+
+    return x_hat, dxdt_hat

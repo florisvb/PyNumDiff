@@ -1,6 +1,8 @@
 import numpy as np
 import copy
 
+from pynumdiff.linear_model import savgoldiff 
+
 ####################################################################################################################################################
 # Helper functions
 ####################################################################################################################################################
@@ -350,3 +352,102 @@ def constant_jerk(x, dt, params, options={'forwardbackward': True}):
 
     else:
         return __constant_jerk__(x, dt, params, options={'backward': False})
+
+####################################################################################################################################################
+# Constant Acceleration with Savitzky-Golay pre-estimate (not worth the parameter tuning trouble)
+####################################################################################################################################################
+
+def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options={'backward': False}):
+    '''
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative. 
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [r, : (float) covariance of the x noise (e.g. the square of the standard deviation of the noise)
+                       q] : (float) covariance of the constant velocity model (guess, or optimize, this value)
+    options : (dict) {'backward'} : (bool) run smoother backwards in time
+
+    Returns
+    -------
+    x_hat : smoothed x
+    dxdt_hat     : derivative of x
+
+    '''
+
+    r1, r2, q = params
+
+    A = np.matrix([[1, dt, 0], 
+                   [0, 1, dt],
+                   [0, 0,  1]])
+    B = np.matrix([[0], [0], [0]])
+    C = np.matrix([[1, 0, 0],
+                   [0, 1, 0]])
+    R = np.matrix([[r1, 0],
+                   [0, r2]])
+    Q = np.matrix([[1e-16, 0, 0], 
+                   [0, 1e-16, 0],
+                   [0,     0, q]])
+    x0 = np.matrix([[x[0]], [sg_dxdt_hat[0]], [0]])
+    P0 = np.matrix(10*np.eye(3))
+    y = np.matrix(np.vstack((x, sg_dxdt_hat)))
+    u = None
+    
+    if options['backward']:
+        A = A.I
+        y = y[:,::-1]
+    
+    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
+    xhat_smooth, P_smooth = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
+
+    x_hat = np.ravel(xhat_smooth[0,:])
+    dxdt_hat = np.ravel(xhat_smooth[1,:])
+    
+    if not options['backward']:
+        return x_hat, dxdt_hat
+    else:
+        return x_hat[::-1], dxdt_hat[::-1]
+
+def savgol_const_accel(x, dt, params, options={'forwardbackward': True}):
+    '''
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative. 
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [r, : (float) covariance of the x noise (e.g. the square of the standard deviation of the noise)
+                       q] : (float) covariance of the constant velocity model (guess, or optimize, this value)
+    options : (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards (achieves better estimate at end points)
+
+    Returns
+    -------
+    x_hat : smoothed x
+    dxdt_hat     : derivative of x
+
+    '''
+    N, window_size, r1, r2, q = params
+
+    _, sg_dxdt_hat = savgoldiff(x, dt, [N, window_size])
+
+    if options['forwardbackward']:
+        x_hat_f, smooth_dxdt_hat_f = __savgol_const_accel__(x, sg_dxdt_hat, dt, [r1, r2, q], options={'backward': False})
+        x_hat_b, smooth_dxdt_hat_b = __savgol_const_accel__(x, sg_dxdt_hat, dt, [r1, r2, q], options={'backward': True})
+
+        w = np.arange(0,len(x_hat_f),1)
+        w = w/np.max(w)
+        
+        x_hat = x_hat_f*w + x_hat_b*(1-w)
+        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
+        
+        return x_hat, smooth_dxdt_hat
+
+    else:
+        return __constant_acceleration__(x, dt, params, options={'backward': False})

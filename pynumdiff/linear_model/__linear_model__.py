@@ -7,6 +7,7 @@ import scipy
 
 # included modules
 from pynumdiff.finite_difference import first_order as finite_difference 
+import pynumdiff.smooth_finite_difference
 from pynumdiff.utils import utility as utility
 from pynumdiff import smooth_finite_difference
 __friedrichs_kernel__ = utility.__friedrichs_kernel__
@@ -116,6 +117,50 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name)
 
     x_hat = np.sum(weights*x_hat, axis=0)
     dxdt_hat = np.sum(weights*dxdt_hat, axis=0)
+
+    return x_hat, dxdt_hat
+
+####################################################################################################################################################
+# Savitzky-Golay filter
+####################################################################################################################################################
+
+def savgoldiff(x, dt, params, options={'smooth': True}):
+    '''
+    Use the Savitzky-Golay to smooth the data and calculate the first derivative.
+    Uses scipy.signal.savgol_filter
+    The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster.
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [N,            : (int)    order of the polynomial
+                       window_size], : (int)    size of the sliding window, must be odd (if not, 1 is added)
+    options : (dict)  {'smooth',}    : (bool)   if True, apply gaussian smoothing to the result with the same window size
+
+    Outputs
+    -------
+    x_hat    : estimated (smoothed) x
+    dxdt_hat : estimated derivative of x
+
+    '''
+
+    N, window_size = params
+    if not window_size%2: # then make odd
+        window_size += 1
+
+    dxdt_hat = scipy.signal.savgol_filter(x, window_size, N, deriv=1) / dt
+
+    if options['smooth']:
+        kernel = __gaussian_kernel__(window_size)
+        dxdt_hat = pynumdiff.smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
+
+    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
+    x0 = utility.estimate_initial_condition(x, x_hat)
+    x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
 

@@ -29,7 +29,7 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
              optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
     # initial condition
     if params is None:
-        orders = [3, 5, 7]
+        orders = [2, 3, 5, 7]
         if options['sliding']:
             window_sizes = [10, 30, 50, 90, 130]
             params = []
@@ -53,6 +53,29 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
 
     # optimize
     function = pynumdiff.linear_model.polydiff
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
+
+    return opt_params, opt_val
+
+def savgoldiff(x, dt, params=None, options={}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+    # initial condition
+    if params is None:
+        orders = [2, 3, 5, 7]
+        window_sizes = [10, 30, 50, 90, 130]
+        params = []
+        for order in orders:
+            for window_size in window_sizes:
+                params.append([order, window_size])
+
+    # param types and bounds
+    params_types = [int, int]
+    params_low = [1, 10]
+    params_high = [8, 1e3]
+
+    # optimize
+    function = pynumdiff.linear_model.savgoldiff
     args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 

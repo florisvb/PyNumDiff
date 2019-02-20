@@ -3,11 +3,67 @@ import time
 import copy
 import math
 
+from pynumdiff.utils import utility as utility
+
 try:
     import cvxpy
 except:
-    warnings.warn('Could not import cvxpy. Install cvxpy (http://www.cvxpy.org/install/index.html) to use total variation regularized derivatives. \
-                   Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/')
+    warnings.warn('Could not import cvxpy. Install cvxpy (http://www.cvxpy.org/install/index.html) to use \
+                   convex total variation regularized derivatives. \
+                   Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/ \
+                   You can still use the iterative method.')
+
+from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__ as __chartrand_tvregdiff__
+
+# Iterative total variation regularization
+def iterative_velocity(x, dt, params, options={'cg_maxiter': 1000, 'scale': 'small'}):
+    '''
+    Use an iterative solver to find the total variation regularized 1st derivative.
+    See __chartrand_tvregdiff__.py for details, author info, and license
+    Methods described in: Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data," 
+                          ISRN Applied Mathematics, Vol. 2011, Article ID 164564, 2011.
+    Original code (MATLAB and python):  https://sites.google.com/site/dnartrahckcir/home/tvdiff-code
+
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list) [iterations, (int)  : Number of iterations to run the solver. 
+                                           More iterations results in blockier derivatives, 
+                                           which approach the convex result
+                      gamma],     (float): Regularization parameter. Larger values result
+                                           in more regularization / smoothing. 
+    options : (dict) {'cg_maxiter': None,  (int) : Max number of iterations to use in
+                                                   scipy.sparse.linalg.cg
+                                                   Default, None, results in maxiter = len(x)
+                                                   This works well in our test examples.
+                      'scale': 'small'}    (str) : This method has two different numerical options. 
+                                                   From __chartrand_tvregdiff__.py:
+                                                       'large' or 'small' (case insensitive).  Default is
+                                                       'small'.  'small' has somewhat better boundary
+                                                       behavior, but becomes unwieldly for data larger than
+                                                       1000 entries or so.  'large' has simpler numerics but
+                                                       is more efficient for large-scale problems.  'large' is
+                                                       more readily modified for higher-order derivatives,
+                                                       since the implicit differentiation matrix is square.
+    Outputs
+    -------
+    x_hat    : estimated (smoothed) x
+    dxdt_hat : estimated derivative of x
+
+    '''
+    iterations, gamma = params
+    dxdt_hat = __chartrand_tvregdiff__.TVRegDiff(x, iterations, gamma, dx=dt,
+                                      maxit=options['cg_maxiter'], scale=options['scale'], 
+                                      ep=1e-6, u0=None, plotflag=False, diagflag=1)
+    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
+    x0 = utility.estimate_initial_condition(x, x_hat)
+    x_hat = x_hat + x0
+
+    return x_hat, dxdt_hat
 
 # Generalized total variation regularized derivatives
 def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
@@ -47,6 +103,7 @@ def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
 
     # Total variation regularization on the highest order derivative
     r = cvxpy.sum( gamma*cvxpy.tv(derivatives[0]) )
+    #r = gamma*cvxpy.sum_squares( derivatives[0] )
     
     # Set up and solve the optimization problem
     obj = cvxpy.Minimize(sum_squared_error + r)

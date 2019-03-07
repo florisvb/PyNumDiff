@@ -11,7 +11,7 @@ def __kalman_forward_update__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
     '''
     H = C
     Phi = A
-    Γ = B
+    Gamma = B
     '''
     I = np.matrix(np.eye(A.shape[0]))
     gammaW = np.matrix(np.eye(A.shape[0]))

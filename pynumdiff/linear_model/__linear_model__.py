@@ -152,6 +152,9 @@ def savgoldiff(x, dt, params, options={'smooth': True}):
     if not window_size%2: # then make odd
         window_size += 1
 
+    if window_size > len(x)-1:
+        window_size = len(x)-1
+
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, N, deriv=1) / dt
 
     if options['smooth']:

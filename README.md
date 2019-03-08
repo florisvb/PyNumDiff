@@ -5,7 +5,7 @@ Methods for numerical differentiation of noisy data
 To install this package, run `python ./setup.py install` from inside this directory.
 
 ## Requirements
-Python version: 3.5+
+Python version: 2.7+
 
 Minimal requirements: `numpy, scipy, matplotlib`
 

@@ -5,10 +5,9 @@ import os
 # optional packages
 try:
     import tensorflow as tf
+    tf.logging.set_verbosity(tf.logging.WARN)
 except:
     warnings.warn('Could not import tensorflow. Install tensorflow to use nnet derivatives.')
-
-tf.logging.set_verbosity(tf.logging.WARN)
 
 ####################################################################################################################################################
 # Helper functions

@@ -1,30 +1,25 @@
 import os
 from setuptools import setup, find_packages
-PACKAGES = find_packages()
 
-# Get version and release info, which is all stored in pynumdiff/__version__.py
-ver_file = os.path.join('pynumdiff', '__version__.py')
-with open(ver_file) as f:
-    exec(f.read())
+here = os.path.dirname(os.path.realpath(__file__))
 
-opts = dict(name=NAME,
-            maintainer=MAINTAINER,
-            maintainer_email=MAINTAINER_EMAIL,
-            description=DESCRIPTION,
-            long_description=LONG_DESCRIPTION,
-            url=URL,
-            download_url=DOWNLOAD_URL,
-            license=LICENSE,
-            classifiers=CLASSIFIERS,
-            author=AUTHOR,
-            author_email=AUTHOR_EMAIL,
-            platforms=PLATFORMS,
-            version=VERSION,
-            packages=PACKAGES,
-            package_data=PACKAGE_DATA,
-            install_requires=REQUIRES,
-            requires=OPTIONAL_REQUIREMENTS)
+with open(os.path.join(here, "README.md")) as f:
+    long_description = f.read()
 
-
-if __name__ == '__main__':
-    setup(**opts)
+setup(
+    name='pynumdiff',
+    version='0.0.1',
+    author='Floris van Breugel',
+    author_email='floris@caltech.edu',
+    install_requires=[
+        "numpy",
+        "matplotlib",
+        "scipy",
+    ],
+    include_package_data=True,
+    license='BSD',
+    test_requires=["pytest", "scipy", "numpy"],
+    description='Taking derivatives of noisy data',
+    long_description=long_description,
+    long_description_content_type="text/markdown"
+)

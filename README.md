@@ -6,6 +6,7 @@ To install this package, run `python ./setup.py install` from inside this direct
 
 ## Requirements
 Python version: 3.5+
+
 Minimal requirements: `numpy, scipy, matplotlib`
 
 Certain methods require additional packages:

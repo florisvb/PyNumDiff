@@ -9,4 +9,4 @@ import pynumdiff.nnet as nnet
 
 import pynumdiff.utils as utils
 import pynumdiff.optimize as optimize
-import pynumdiff.paper as paper
+#import pynumdiff.paper as paper

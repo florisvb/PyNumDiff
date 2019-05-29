@@ -10,6 +10,8 @@ from pynumdiff.utils import utility as utility
 from pynumdiff import smooth_finite_difference
 __gaussian_kernel__ = utility.__gaussian_kernel__
 
+from pynumdiff.model_based import __ukf_sqrt__ as __ukf_sqrt__
+
 ####################################################################################################################################################
 # Helper functions
 ####################################################################################################################################################
@@ -142,3 +144,38 @@ def sindy(x, library, dt, params, options={'smooth': True, 'solver': 'MOSEK'}):
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
+
+####################################################################################################################################################
+# Unscented Kalman Filter
+####################################################################################################################################################
+
+def ukf(m, u, s0, f, h, Q, R, alpha=0.001, beta=2):
+    '''
+    Use an Unscecnted Kalman Filter to estimate the derivatives. 
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    library : (list of 1D arrays) list of features to use for building the model
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [gamma,        : (int)    sparsity knob (higher = more sparse model)
+                       window_size], : (int)    if option smooth, this determines the smoothing window
+    options : (dict)  {'smooth',     : (bool)   if True, apply gaussian smoothing to the result with the same window size
+                       'solver'}     : (str)    solver to use with cvxpy, MOSEK is default
+
+    Outputs
+    -------
+    x_hat    : estimated (smoothed) x
+    dxdt_hat : estimated derivative of x
+
+    '''
+
+    if u is None:
+        u = np.matrix([[None]*m.shape[1]])
+
+    x, P, s = __ukf_sqrt__.ukf_sqrt(m, u, s0, f, h, Q, R, alpha=0.01, beta=2)
+
+    return x

@@ -7,7 +7,7 @@ import pynumdiff.linear_model as linear_model
 import pynumdiff.kalman_smooth as kalman_smooth
 import pynumdiff.nnet as nnet
 
-import pynumdiff.model_based as model_based
+import pynumdiff.augmented_data as augmented_data
 
 import pynumdiff.utils as utils
 import pynumdiff.optimize as optimize

@@ -51,7 +51,7 @@ def triangle(iterations, dt):
     return x
 
 def effective_wheel_radius(v):
-    return 5
+    return 20
 
 def Torque(omega):
     omega_m = parameters['omega_m']
@@ -96,7 +96,7 @@ def step_forward(state_vals, disturbances, desired_velocity, dt):
     
     new_state = np.matrix([[p + dt*v], [v + vdot*dt], [theta]])
     
-    return new_state
+    return new_state, np.matrix(u)
 
 # disturbance
 def hills(iterations, dt, factor):
@@ -116,7 +116,11 @@ def run(timeseries_length=4, dt=0.01):
 
     # hills
     disturbances = np.matrix(np.zeros([3, iterations+1]))
-    disturbances[2,:] = hills(iterations+1, dt, factor=1.8*timeseries_length/2)
+    h = hills(iterations+1, dt, factor=1.8*timeseries_length/2)
+    disturbances[2,:] = h[:,0:disturbances.shape[1]]
+
+    # controls
+    controls = np.matrix([[0]])
 
     # initial condition
     state_vals = np.matrix([[0], [0], [0]])
@@ -125,7 +129,8 @@ def run(timeseries_length=4, dt=0.01):
     v_r = desired_velocity(iterations, factor=1.8*iterations*dt/2)
 
     for i in range(1, iterations+1):
-        new_state = step_forward(state_vals, disturbances[:,0:i], v_r[:,0:i], dt)
+        new_state, u = step_forward(state_vals, disturbances[:,0:i], v_r[:,0:i], dt)
         state_vals = np.hstack((state_vals, new_state))
+        controls = np.hstack((controls, u))
 
-    return state_vals[0:2,1:], disturbances[2,1:]
+    return state_vals[0:2,1:], disturbances[2,1:], controls

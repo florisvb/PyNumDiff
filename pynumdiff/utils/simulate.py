@@ -1,4 +1,5 @@
 import numpy as _np
+from scipy.integrate import odeint
 
 # local imports
 from pynumdiff.utils import utility as _utility
@@ -6,7 +7,7 @@ from pynumdiff.utils import __pi_cruise_control__ as __pi_cruise_control__
 _finite_difference = _utility.finite_difference
 
 def __add_noise__(x, noise_type, noise_parameters, random_seed):
-    _np.random.seed(1)
+    _np.random.seed(random_seed)
     timeseries_length = _np.max(x.shape)
     noise = _np.random.__getattribute__(noise_type)(noise_parameters[0], noise_parameters[1], timeseries_length)
     return x + noise
@@ -112,18 +113,17 @@ def pop_dyn(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5],
     return noisy_pos[idx], pos[idx], vel[idx], None 
 
 def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
-    t = _np.arange(0, timeseries_length, dt)
+    t = _np.arange(0, timeseries_length, simdt)
 
-    A = _np.matrix([[1, simdt], [0.005, 0.97]])
-    x0 = _np.matrix([[0], [5]])
+    A = _np.matrix([[1, simdt, 0], [0, 1, simdt], [-100, -3, 0.01]])
+    print(A)
+    x0 = _np.matrix([[0], [2], [0]])
     xs = x0
     for i in t:
         x = A*xs[:,-1]
         xs = _np.hstack((xs, x))
 
     x = xs[0,:]
-    x += _np.min(x)
-    x /= _np.max(x)
     x *= 2
 
     smooth_x, dxdt = _finite_difference( _np.ravel(x), simdt)
@@ -138,7 +138,7 @@ def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters
 def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
     t = _np.arange(0, timeseries_length, simdt)
 
-    actual_vals, extra_measurements = __pi_cruise_control__.run(timeseries_length, simdt)
+    actual_vals, extra_measurements, controls = __pi_cruise_control__.run(timeseries_length, simdt)
     x = actual_vals[0,:]
     dxdt = actual_vals[1,:]
 
@@ -153,9 +153,18 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.
     extras = None
 
     idx = _np.arange(0, len(t), int(dt/simdt))
-    return noisy_pos[idx], pos[idx], vel[idx], extra_measurements[:,idx] 
+    return noisy_pos[idx], pos[idx], vel[idx], _np.array(extra_measurements)[0,idx], _np.array(controls)[0,idx] 
 
 def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    noisy_measurements, actual_vals = lorenz_xyz(timeseries_length, noise_type, noise_parameters, random_seed, dt, simdt)
+
+    noisy_pos = _np.ravel(noisy_measurements[0,:])
+    pos = _np.ravel(actual_vals[0,:])
+    vel = _np.ravel(actual_vals[3,:])
+
+    return noisy_pos[idx], pos[idx], vel[idx], None
+
+def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
     t = _np.arange(0, timeseries_length, simdt)
 
     sigma = 10
@@ -187,16 +196,59 @@ def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5]
     x = xyz[0,0:-1] / 20.
     dxdt = xyz_dot[0,:] / 20.
 
+    y = xyz[1,0:-1] / 20.
+    dydt = xyz_dot[1,:] / 20.
+
+    z = xyz[2,0:-1] / 20.
+    dzdt = xyz_dot[2,:] / 20.
+
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
+    noisy_y = __add_noise__(y, noise_type, noise_parameters, random_seed+1)
+    noisy_z = __add_noise__(z, noise_type, noise_parameters, random_seed+2)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
-    noisy_measurements = _np.matrix(noisy_x)
-    extra_measurements = _np.matrix([])
-
-    noisy_pos = _np.ravel(noisy_measurements)
-    pos = _np.ravel(actual_vals[0,:])
-    vel = _np.ravel(actual_vals[1,:])
-    extras = None
+    actual_vals = _np.array(_np.vstack((x, y, z, dxdt, dydt, dzdt)))
+    noisy_measurements = _np.array(_np.vstack((noisy_x, noisy_y, noisy_z)))
+    extra_measurements = _np.array([])
 
     idx = _np.arange(0, len(t), int(dt/simdt))
-    return noisy_pos[idx], pos[idx], vel[idx], None
+    return noisy_measurements[:, idx], actual_vals[:, idx], None
+
+def rk4_lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+    t = _np.arange(0, timeseries_length, simdt)
+
+    sigma = 10
+    beta = 8/3
+    rho = 45
+
+    def dxyz_dt(xyz, t):
+        x,y,z = xyz
+        xdot = sigma*(y-x)
+        ydot = x*(rho-z)-y
+        zdot = x*y - beta*z
+        return [xdot, ydot, zdot]
+        
+        
+    ts = _np.linspace(0, timeseries_length, timeseries_length/dt)
+    xyz_0 = [5,1,3]
+    #xyz_0 = [3, 7, 1]
+
+    vals, extra = odeint(dxyz_dt, xyz_0, ts, full_output=True)
+    vals = vals.T
+    x = vals[0,:]/20.
+    y = vals[1,:]/20.
+    z = vals[2,:]/20.
+
+    noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
+    noisy_y = __add_noise__(y, noise_type, noise_parameters, random_seed+1)
+    noisy_z = __add_noise__(z, noise_type, noise_parameters, random_seed+2)
+
+    _, dxdt = _finite_difference(x, dt)
+    _, dydt = _finite_difference(y, dt)
+    _, dzdt = _finite_difference(z, dt)
+
+    actual_vals = _np.array(_np.vstack((x, y, z, dxdt, dydt, dzdt)))
+    noisy_measurements = _np.array(_np.vstack((noisy_x, noisy_y, noisy_z)))
+    extra_measurements = _np.array([])
+
+    #idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_measurements, actual_vals, None

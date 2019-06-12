@@ -1,0 +1,3 @@
+from pynumdiff.augmented_data.__augmented_data__ import linearmodel as linearmodel
+from pynumdiff.augmented_data.__augmented_data__ import nonlinearmodel as nonlinearmodel
+from pynumdiff.augmented_data.__augmented_data__ import __integrate__ as __integrate__

@@ -353,6 +353,95 @@ def constant_jerk(x, dt, params, options={'forwardbackward': True}):
     else:
         return __constant_jerk__(x, dt, params, options={'backward': False})
 
+
+####################################################################################################################################################
+
+
+def __known_dynamics__(x, dt, params, options={'backward': False}):
+    '''
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative. 
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [r, : (float) covariance of the x noise (e.g. the square of the standard deviation of the noise)
+                       q] : (float) covariance of the constant velocity model (guess, or optimize, this value)
+    options : (dict) {'backward'} : (bool) run smoother backwards in time
+
+    Returns
+    -------
+    x_hat : smoothed x
+    dxdt_hat     : derivative of x
+
+    '''
+
+    x0, P0, A, B, C, R, Q = params
+
+    
+    y = np.matrix(x)
+    u = None
+    
+    if options['backward']:
+        A = A.I
+        y = y[:,::-1]
+    
+    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
+    xhat_smooth, P_smooth = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
+    
+    x_hat = np.ravel(xhat_smooth[0,:])
+    dxdt_hat = np.ravel(xhat_smooth[1,:])
+    
+    if not options['backward']:
+        return x_hat, dxdt_hat
+    else:
+        return x_hat[::-1], dxdt_hat[::-1]
+
+def known_dynamics(x, dt, params, options={'forwardbackward': True}):
+    '''
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative. 
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list)  [r, : (float) covariance of the x noise (e.g. the square of the standard deviation of the noise)
+                       q] : (float) covariance of the constant velocity model (guess, or optimize, this value)
+    options : (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards (achieves better estimate at end points)
+
+    Returns
+    -------
+    x_hat : smoothed x
+    dxdt_hat     : derivative of x
+
+    '''
+
+    if options['forwardbackward']:
+        x_hat_f, smooth_dxdt_hat_f = __known_dynamics__(x, dt, params, options={'backward': False})
+        x_hat_b, smooth_dxdt_hat_b = __known_dynamics__(x, dt, params, options={'backward': True})
+
+        w = np.zeros([len(x_hat_f)])
+        s = int(0.2*len(x_hat_f))
+        f = int(0.8*len(x_hat_f))
+        w[s:f] = np.arange(0,f-s,1)
+        w[f:] = w[f-1]
+
+        w = w/np.max(w)
+        
+        x_hat = x_hat_f*w + x_hat_b*(1-w)
+        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
+        
+        return x_hat, smooth_dxdt_hat
+
+    else:
+        return __known_dynamics__(x, dt, params, options={'backward': False})
+
 ####################################################################################################################################################
 # Constant Acceleration with Savitzky-Golay pre-estimate (not worth the parameter tuning trouble)
 ####################################################################################################################################################

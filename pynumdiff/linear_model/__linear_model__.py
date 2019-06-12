@@ -470,9 +470,45 @@ def dmddiff(x, dt, params, options={'sliding': True, 'step_size': 10, 'kernel_na
 # Integral formulation
 ####################################################################################################################################################
 
-def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gamma=1e-1, solver='MOSEK'): 
+class DeWhiten(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+    def dewhiten(self, m):
+        return (m+self.mean)*self.std
+    
+class Whiten(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+    def whiten(self, m):
+        return (m-self.mean)/self.std
+
+def whiten_library(library):
+    white_library = []
+    dewhiten = []
+    whiten = []
+    for m in library:
+        m += 2*(np.random.random(len(m))-0.5)*1e-16 # in case we have a pure constant
+        
+        std_m = np.std(m)
+        mean_m = np.mean(m)
+        
+        w = Whiten(mean_m, std_m)
+        dw = DeWhiten(mean_m, std_m)
+        
+        white_library.append(w.whiten(m))
+        whiten.append(w)
+        dewhiten.append(dw)
+        
+    return white_library, whiten, dewhiten
+
+def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6, solver='MOSEK', A_known=None, epsilon=1e-6, rows_of_interest='all'): 
     assert type(X) == np.matrix 
     assert type(Xdot) == np.matrix
+
+    if rows_of_interest == 'all':
+        rows_of_interest = np.arange(0, X.shape[0])
 
     # Set up the variables
     A = cvxpy.Variable((X.shape[0], X.shape[0]))
@@ -489,15 +525,27 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gamma=
         Csum = Csum + Cn
 
     # Define the objective function
-    error = cvxpy.sum_squares(Xdot - (A*X + Csum)) 
-    C_regularization = gamma*cvxpy.sum(cvxpy.abs(C))
-    obj = cvxpy.Minimize(error + C_regularization) 
+    error = cvxpy.sum_squares(Xdot[rows_of_interest, :] - (A*X + Csum)[rows_of_interest, :]) 
+    C_regularization = gammaC*cvxpy.sum(cvxpy.abs(C))
+    A_regularization = gammaA*cvxpy.sum(cvxpy.abs(A))
+    obj = cvxpy.Minimize(error + C_regularization + A_regularization) 
+
+    # constraints
+    constraints = []
+    if A_known is not None:
+        for i in range(A_known.shape[0]):
+            for j in range(A_known.shape[1]):
+                if not np.isnan(A_known[i,j]):
+                    constraint_lo = A[i,j] >= A_known[i,j]-epsilon
+                    constraint_hi = A[i,j] <= A_known[i,j]+epsilon 
+                    constraints.extend([constraint_lo, constraint_hi])
 
     # Solve the problem
-    prob = cvxpy.Problem(obj)
+    prob = cvxpy.Problem(obj, constraints)
     prob.solve(solver=solver) # MOSEK does not take max_iters
-
-    return np.matrix(A.value), np.matrix(C.value)
+    
+    A = np.matrix(A.value)
+    return A, np.matrix(C.value)
 
 def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
     assert type(dxdt_hat) == np.matrix

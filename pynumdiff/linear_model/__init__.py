@@ -4,3 +4,5 @@ from pynumdiff.linear_model.__linear_model__ import polydiff as polydiff
 from pynumdiff.linear_model.__linear_model__ import chebydiff as chebydiff
 from pynumdiff.linear_model.__linear_model__ import dmddiff as dmddiff
 from pynumdiff.linear_model.__linear_model__ import lineardiff as lineardiff
+from pynumdiff.linear_model.__linear_model__ import __integrate_dxdt_hat_matrix__ as __integrate_dxdt_hat_matrix__
+from pynumdiff.linear_model.__linear_model__ import __solve_for_A_and_C_given_X_and_Xdot__ as __solve_for_A_and_C_given_X_and_Xdot__

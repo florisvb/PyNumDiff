@@ -126,6 +126,11 @@ def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
     # Extract the velocity and smoothed position
     dxdt_hat = derivative_values[-2]
     x_hat = derivative_values[-1]
+
+    dxdt_hat = (dxdt_hat[0:-1] + dxdt_hat[1:])/2
+    ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2] 
+    dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f
+    dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
         
     return x_hat, dxdt_hat
 

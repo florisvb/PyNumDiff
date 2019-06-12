@@ -58,7 +58,7 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
 
     return opt_params, opt_val
 
-def savgoldiff(x, dt, params=None, options={}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def savgoldiff(x, dt, params=None, options={'smooth': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
     # initial condition
     if params is None:

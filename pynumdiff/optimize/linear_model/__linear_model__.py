@@ -8,7 +8,7 @@ import pynumdiff.linear_model
 from pynumdiff.optimize.__optimize__ import __optimize__
 
 def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_zero_dxdt': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
         params = [[1e-3], [5e-2], [1e-2], [5e-2], [1e-1]]
@@ -20,13 +20,13 @@ def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_ze
 
     # optimize
     function = pynumdiff.linear_model.spectraldiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-             optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+             optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
         orders = [2, 3, 5, 7]
@@ -53,13 +53,13 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
 
     # optimize
     function = pynumdiff.linear_model.polydiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def savgoldiff(x, dt, params=None, options={'smooth': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
         orders = [2, 3, 5, 7]
@@ -76,13 +76,13 @@ def savgoldiff(x, dt, params=None, options={'smooth': True}, dxdt_truth=None, tv
 
     # optimize
     function = pynumdiff.linear_model.savgoldiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-              optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+              optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
         orders = [3, 5, 7, 9]
@@ -109,13 +109,13 @@ def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'ker
 
     # optimize
     function = pynumdiff.linear_model.chebydiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def dmddiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-            optimization_method='Nelder-Mead', optimization_options={'maxiter': 5}):
+            optimization_method='Nelder-Mead', optimization_options={'maxiter': 5}, metric='rmse'):
     # initial condition
     if params is None:
         delay_embeddings = [20, 100, 200]
@@ -145,13 +145,13 @@ def dmddiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kern
 
     # optimize
     function = pynumdiff.linear_model.dmddiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def lineardiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-            optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+            optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
         Ns = [3]
@@ -181,7 +181,7 @@ def lineardiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'k
 
     # optimize
     function = pynumdiff.linear_model.lineardiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val

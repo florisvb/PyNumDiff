@@ -11,7 +11,7 @@ from pynumdiff.optimize.__optimize__ import __optimize__
 # Helper functions
 ####################################################################################################################################################
 
-def __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options):
+def __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric):
     # initial condition
     if params is None:
         params = [[1e-2], [1e-1], [1], [10], [100], [1000]]
@@ -22,7 +22,7 @@ def __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padd
     params_high = [1e7,]
 
     # optimize
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
@@ -33,7 +33,7 @@ def __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padd
 
 def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale': 'small'}, 
                        dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                       optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+                       optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
     function = pynumdiff.total_variation_regularization.iterative_velocity
@@ -48,7 +48,7 @@ def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale':
     params_high = [100, 1e7,]
 
     # optimize
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options)
 
     return opt_params, opt_val
@@ -56,34 +56,43 @@ def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale':
 ###
 
 def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-             optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+             optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
     function = pynumdiff.total_variation_regularization.velocity
-    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
 
     return opt_params, opt_val
 
 def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
     function = pynumdiff.total_variation_regularization.acceleration
-    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
     
     return opt_params, opt_val
 
 def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-         optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+         optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
     function = pynumdiff.total_variation_regularization.jerk
-    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
+    
+    return opt_params, opt_val
+
+def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+         optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
+
+    # optimize
+    function = pynumdiff.total_variation_regularization.jerk_sliding
+    opt_params, opt_val = __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
     
     return opt_params, opt_val
 
 def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+                 optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:
         gammas = [1e-2, 1e-1, 1, 10, 100, 1000]
@@ -101,7 +110,7 @@ def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_tr
 
     # optimize
     function = pynumdiff.total_variation_regularization.smooth_acceleration
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options)
 
     return opt_params, opt_val

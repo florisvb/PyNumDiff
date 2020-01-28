@@ -93,6 +93,12 @@ def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
     dxdt_hat : estimated derivative of x
 
     '''
+
+    # Normalize
+    mean = np.mean(x)
+    std = np.std(x)
+    x = (x-mean)/std
+
     # Define the variables for the highest order derivative and the integration constants
     var = cvxpy.Variable( len(x)+N )
 
@@ -131,8 +137,12 @@ def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
     ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2] 
     dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f
     dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
+
+    # fix first point
+    d = dxdt_hat[2] - dxdt_hat[1]
+    dxdt_hat[0] = dxdt_hat[1] - d
         
-    return x_hat, dxdt_hat
+    return x_hat*std+mean, dxdt_hat*std
 
 
 
@@ -238,3 +248,95 @@ def smooth_acceleration(x, dt, params, options={'solver': 'MOSEK'}):
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
+
+def jerk_sliding(x, dt, params, options={'solver': 'MOSEK'}):
+    '''
+    Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
+    Default solver is MOSEK: https://www.mosek.com/
+    
+    Inputs
+    ------
+    x       : (np.array of floats, 1xN) time series to differentiate
+    dt      : (float) time step
+
+    Parameters
+    ----------
+    params  : (list) [gamma], where gamma (float) is the regularization parameter
+                     or if 'iterate' in options: [gamma, num_iterations]
+    options : (dict) {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT', 
+                                        in testing, 'MOSEK' was the most robust.
+
+    Outputs
+    -------
+    x_hat    : estimated (smoothed) x
+    dxdt_hat : estimated derivative of x
+
+    '''
+
+    if type(params) is list:
+        gamma = params[0]
+    else:
+        gamma = params
+
+    window_size = 1000
+    stride = 200
+
+    if len(x) < window_size: 
+        return jerk(x, dt, params, options=options)
+
+    # slide the jerk
+    final_xsmooth = []
+    final_xdot_hat = []
+    first_idx = 0
+    final_idx = first_idx + window_size
+    last_loop = False
+
+    final_weighting = []
+
+    try:
+        while not last_loop:
+            xsmooth, xdot_hat = __total_variation_regularized_derivative__(x[first_idx:final_idx], dt, 3, gamma, solver=options['solver'])
+            
+            xsmooth = np.hstack(([0]*first_idx, xsmooth, [0]*(len(x)-final_idx)  ))
+            final_xsmooth.append(xsmooth)
+            
+            xdot_hat = np.hstack(([0]*first_idx, xdot_hat, [0]*(len(x)-final_idx)  ))
+            final_xdot_hat.append(xdot_hat)
+
+            # blending
+            w = np.hstack(( [0]*first_idx, 
+                            np.arange(1, 201)/(200), 
+                            [1]*(final_idx-first_idx-400),
+                            (np.arange(1, 201)/(200))[::-1],
+                            [0]*(len(x)-final_idx)   ))
+            final_weighting.append(w)
+
+            if final_idx >= len(x):
+                last_loop = True
+            else:
+                first_idx += stride
+                final_idx += stride
+                if final_idx > len(x):
+                    final_idx = len(x)
+                    if final_idx - first_idx < 200:
+                        first_idx -= (200 - (final_idx - first_idx))
+
+        # normalize columns
+        weights = np.vstack(final_weighting)
+        for c in range(weights.shape[1]):
+            weights[:, c] /= np.sum(weights[:, c])
+
+        # weighted sums
+        xsmooth = np.vstack(final_xsmooth)
+        xsmooth = np.sum(xsmooth*weights, axis=0)
+
+        xdot_hat = np.vstack(final_xdot_hat)
+        xdot_hat = np.sum(xdot_hat*weights, axis=0)
+
+        return xsmooth, xdot_hat
+
+    except:
+        print('Solver failed, returning finite difference instead')
+        return pynumdiff.utils.utility.finite_difference(x, dt)
+
+    

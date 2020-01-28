@@ -5,6 +5,9 @@ from pynumdiff.utils import utility as utility
 from pynumdiff.utils import evaluate as evaluate
 import pynumdiff.smooth_finite_difference
 
+from multiprocessing import Pool
+import multiprocessing
+
 ####################################################################################################################################################
 # Documentation
 ####################################################################################################################################################
@@ -49,7 +52,7 @@ def __correct_params__(params, params_types, params_low, params_high):
     return _params
 
 def __objective_function__(params, *args):
-    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding = args[0]
+    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric = args[0]
 
     # keep param in bounds and correct type
     params = __correct_params__(params, params_types, params_low, params_high)
@@ -61,10 +64,15 @@ def __objective_function__(params, *args):
 
     # evaluate estimate
     if dxdt_truth is not None: # then minimize ||dxdt_hat - dxdt_truth||2
-        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=dxdt_truth, padding=padding)
-        #print('rms_rec_x: ', rms_rec_x, 'tv x hat: ', utility.total_variation(x_hat))
-        return rms_dxdt
+        if metric == 'rmse': 
+            rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=dxdt_truth, padding=padding)
+            #print('rms_rec_x: ', rms_rec_x, 'tv x hat: ', utility.total_variation(x_hat))
+            return rms_dxdt
+        elif metric == 'error_correlation':
+            error_correlation = evaluate.error_correlation(dxdt_hat, dxdt_truth)
+            return error_correlation
     else: # then minimize [ || integral(dxdt_hat) - x||2 + gamma*TV(dxdt_hat) ]
+        #print('Optimizing with [ || integral(dxdt_hat) - x||2 + gamma*TV(dxdt_hat) ]')
         rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=padding)
 
         #acc
@@ -72,27 +80,47 @@ def __objective_function__(params, *args):
 
         return rms_rec_x + tvgamma*utility.total_variation(dxdt_hat)
 
+def __go__(input_args):
+    paramset, args, optimization_method, optimization_options, params_types, params_low, params_high = input_args
+    result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method, options=optimization_options)
+    p = __correct_params__(result.x, params_types, params_low, params_high)
+    return p, result.fun
+
 def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
-    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding = args
+    function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric = args
+
+
+    
+    use_cpus = int(0.6*multiprocessing.cpu_count())
+
 
     # minimize with multiple initial conditions
+    if type(params[0]) is not list:
+        params = [[p] for p in params]
+
     if type(params[0]) is list:
         opt_params = []
         opt_vals = []
+
+        all_input_values = []
         for paramset in params:
-            result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method, options=optimization_options)
-            p = __correct_params__(result.x, params_types, params_low, params_high)
-            #print(p, result.fun)
-            opt_params.append(p)
-            opt_vals.append(result.fun)
+            input_args = [paramset, args, optimization_method, optimization_options, params_types, params_low, params_high]
+            all_input_values.append(input_args)
+
+        pool = Pool()
+        result = pool.map(__go__, all_input_values)
+
+        pool.close()
+        pool.join()
+
+        opt_params = []
+        opt_vals = []
+        for r in result:
+            opt_params.append(r[0])
+            opt_vals.append(r[1])
+
         opt_vals = np.array(opt_vals)
         opt_vals[np.where(np.isnan(opt_vals))] = np.inf # avoid nans
         idx = np.argmin(opt_vals)
         opt_params = opt_params[idx]
         return list(opt_params), opt_vals[idx]
-
-    # minimize from single initial condition
-    else:
-        result = scipy.optimize.minimize(__objective_function__, params, args=args, method=optimization_method, options=optimization_options)
-        opt_params = __correct_params__(result.x, params_types, params_low, params_high)
-        return list(opt_params), result.fun

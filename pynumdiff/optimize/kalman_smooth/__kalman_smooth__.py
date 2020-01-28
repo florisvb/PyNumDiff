@@ -18,13 +18,13 @@ def __estimate_noise__(x, dt, window_size=50):
     noise_std_hat = np.std(noise_hat)
     return noise_std_hat**2
 
-def __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options):
+def __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric):
     # initial condition
     
-    r = __estimate_noise__(x, dt) # estimate noise using a 5th order sliding polynomial smoother
+    #r = __estimate_noise__(x, dt) # estimate noise using a 5th order sliding polynomial smoother
     if params is None:
-        rs = [r]
-        qs = [1e-2, 1e-1, 1, 10, 100, 1000]
+        rs = [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]
+        qs = [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]
         params = []
         for r in rs:
             for q in qs:
@@ -32,11 +32,11 @@ def __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, p
 
     # param types and bounds
     params_types = [float, float]
-    params_low = [r-1e-3, 1e-8]
-    params_high = [r+1e-3, 1e8]
+    params_low = [1e-10, 1e-10]
+    params_high = [1e10, 1e10]
 
     # optimize
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
@@ -46,28 +46,28 @@ def __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, p
 ####################################################################################################################################################
 
 def constant_velocity(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                      optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+                      optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize
     function = pynumdiff.kalman_smooth.constant_velocity
-    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
 
     return opt_params, opt_val
 
 def constant_acceleration(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                         optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+                         optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize
     function = pynumdiff.kalman_smooth.constant_acceleration
-    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
 
     return opt_params, opt_val
 
 def constant_jerk(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}):
+                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize
     function = pynumdiff.kalman_smooth.constant_jerk
-    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options)
+    opt_params, opt_val = __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, optimization_method, optimization_options, metric)
 
     return opt_params, opt_val

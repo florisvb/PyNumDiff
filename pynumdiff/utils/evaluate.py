@@ -1,32 +1,38 @@
 import numpy as _np 
 import matplotlib.pyplot as _plt 
+import scipy.stats as _scipy_stats
 
 # local imports
 from pynumdiff.utils import utility as _utility
 _finite_difference = _utility.finite_difference
 
-def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None, show_error=True):
+def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None, show_error=True, markersize=5):
     if ax_x is None and ax_dxdt is None:
         fig = _plt.figure(figsize=(20,6))
         ax_x = fig.add_subplot(121)
         ax_dxdt = fig.add_subplot(122)
 
     if xlim is None:
-        xlim = [0, len(x_truth)]
+        try:
+            xlim = [0, len(x_truth)]
+        except:
+            xlim = [0, len(dxdt_truth)]
 
-    ax_x.plot(x_hat, color='red')
-    ax_x.plot(x_truth, '--', color='black')
-    ax_x.plot(x, '.', color='blue', zorder=-100)
-    ax_x.set_ylabel('Position')
-    ax_x.set_xlabel('Time')
-    ax_x.set_xlim(xlim[0], xlim[-1])
+    if ax_x is not None:
+        if x_hat is not None:
+            ax_x.plot(x_hat, color='red')
+        ax_x.plot(x_truth, '--', color='black')
+        ax_x.plot(x, '.', color='blue', zorder=-100, markersize=markersize)
+        ax_x.set_ylabel('Position')
+        ax_x.set_xlabel('Time')
+        ax_x.set_xlim(xlim[0], xlim[-1])
 
-    
-    ax_dxdt.plot(dxdt_hat, color='red')
-    ax_dxdt.plot(dxdt_truth, '--', color='black')
-    ax_dxdt.set_ylabel('Velocity')
-    ax_dxdt.set_xlabel('Time')
-    ax_dxdt.set_xlim(xlim[0], xlim[-1])
+    if ax_dxdt is not None:
+        ax_dxdt.plot(dxdt_hat, color='red')
+        ax_dxdt.plot(dxdt_truth, '--', color='black')
+        ax_dxdt.set_ylabel('Velocity')
+        ax_dxdt.set_xlabel('Time')
+        ax_dxdt.set_xlim(xlim[0], xlim[-1])
 
     if show_error:
         rms_rec_x, rms_x, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
@@ -63,3 +69,8 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None)
     rms_rec_x = __rms_error__(rec_x, x)
 
     return rms_rec_x, rms_x, rms_dxdt
+
+def error_correlation(dxdt_hat, dxdt_truth):
+    errors = (dxdt_hat - dxdt_truth)
+    r = _scipy_stats.linregress(dxdt_truth, errors)
+    return r.rvalue**2

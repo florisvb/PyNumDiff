@@ -12,17 +12,18 @@ def __add_noise__(x, noise_type, noise_parameters, random_seed):
     noise = _np.random.__getattribute__(noise_type)(noise_parameters[0], noise_parameters[1], timeseries_length)
     return x + noise
 
-def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, frequencies=[1, 1.7]):
 
     # Parameters
     ############
-    f1 = 1
-    f2 = 1.7
     y_offset = 1
 
     t = _np.arange(0, timeseries_length, simdt)
-    x = (0.5*_np.sin(t*2*_np.pi*f1) + 0.5*_np.sin(t*2*_np.pi*f2)) + y_offset
-    dxdt = 0.5*_np.cos(t*2*_np.pi*f1)*2*_np.pi*f1 + 0.5*_np.cos(t*2*_np.pi*f2)*2*_np.pi*f2
+    x = y_offset
+    dxdt = 0
+    for f in frequencies:
+        x += 1/len(frequencies)*_np.sin(t*2*_np.pi*f) 
+        dxdt += 1/len(frequencies)*_np.cos(t*2*_np.pi*f)*2*_np.pi*f 
     #actual_vals = _finite_difference(_np.matrix(x), params=None, dt=dt)
     actual_vals = _np.matrix(_np.vstack((x, dxdt)))
 
@@ -153,27 +154,27 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.
     extras = None
 
     idx = _np.arange(0, len(t), int(dt/simdt))
-    return noisy_pos[idx], pos[idx], vel[idx], _np.array(extra_measurements)[0,idx], _np.array(controls)[0,idx] 
+    return noisy_pos[idx], pos[idx], vel[idx], [_np.array(extra_measurements)[0,idx], _np.array(controls)[0,idx]] 
 
 def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
-    noisy_measurements, actual_vals = lorenz_xyz(timeseries_length, noise_type, noise_parameters, random_seed, dt, simdt)
+    noisy_measurements, actual_vals, _ = lorenz_xyz(timeseries_length, noise_type, noise_parameters, random_seed, dt, simdt)
 
     noisy_pos = _np.ravel(noisy_measurements[0,:])
     pos = _np.ravel(actual_vals[0,:])
     vel = _np.ravel(actual_vals[3,:])
 
-    return noisy_pos[idx], pos[idx], vel[idx], None
+    return noisy_pos, pos, vel, None
 
-def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, x0=[5,1,3], normalize=True):
     t = _np.arange(0, timeseries_length, simdt)
 
     sigma = 10
     beta = 8/3
     rho = 45
 
-    x = 5
-    y = 1
-    z = 3
+    x = x0[0]
+    y = x0[1]
+    z = x0[2]
     xyz = _np.matrix([[x], [y], [z]])
     xyz_dot = None
 
@@ -193,14 +194,19 @@ def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.
         new_xyz = xyz[:,-1] + simdt*new_xyz_dot
         xyz = _np.hstack((xyz, new_xyz))
 
-    x = xyz[0,0:-1] / 20.
-    dxdt = xyz_dot[0,:] / 20.
+    if normalize:
+        f = 20
+    else:
+        f = 1
 
-    y = xyz[1,0:-1] / 20.
-    dydt = xyz_dot[1,:] / 20.
+    x = xyz[0,0:-1] / f
+    dxdt = xyz_dot[0,:] / f
 
-    z = xyz[2,0:-1] / 20.
-    dzdt = xyz_dot[2,:] / 20.
+    y = xyz[1,0:-1] / f
+    dydt = xyz_dot[1,:] / f
+
+    z = xyz[2,0:-1] / f
+    dzdt = xyz_dot[2,:] / f
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
     noisy_y = __add_noise__(y, noise_type, noise_parameters, random_seed+1)
@@ -213,7 +219,7 @@ def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.
     idx = _np.arange(0, len(t), int(dt/simdt))
     return noisy_measurements[:, idx], actual_vals[:, idx], None
 
-def rk4_lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001):
+def rk4_lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, normalize=True):
     t = _np.arange(0, timeseries_length, simdt)
 
     sigma = 10
@@ -234,9 +240,15 @@ def rk4_lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=[0
 
     vals, extra = odeint(dxyz_dt, xyz_0, ts, full_output=True)
     vals = vals.T
-    x = vals[0,:]/20.
-    y = vals[1,:]/20.
-    z = vals[2,:]/20.
+
+    if normalize:
+        x = vals[0,:]/20.
+        y = vals[1,:]/20.
+        z = vals[2,:]/20.
+    else:
+        x = vals[0,:]
+        y = vals[1,:]
+        z = vals[2,:]
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
     noisy_y = __add_noise__(y, noise_type, noise_parameters, random_seed+1)

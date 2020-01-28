@@ -11,7 +11,7 @@ from pynumdiff.optimize.__optimize__ import __optimize__
 # Helper functions
 ####################################################################################################################################################
 
-def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     # initial condition
     if params is None:
         if options['iterate'] is False:
@@ -35,7 +35,7 @@ def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxd
         params_high = [len(x)-1, 1e2]
 
     # optimize
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args) 
 
     return opt_params, opt_val
@@ -44,52 +44,52 @@ def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxd
 # Optimize functions
 ####################################################################################################################################################
 
-def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.mediandiff 
     
     See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
     '''
     function = pynumdiff.smooth_finite_difference.mediandiff
-    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding) 
+    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.meandiff 
     
     See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
     '''
     function = pynumdiff.smooth_finite_difference.meandiff
-    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding) 
+    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.gaussiandiff 
     
     See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
     '''
     function = pynumdiff.smooth_finite_difference.gaussiandiff
-    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding) 
+    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.friedrichsdiff 
     
     See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
     '''
     function = pynumdiff.smooth_finite_difference.friedrichsdiff
-    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding) 
+    opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
 def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:
-        ns = [3, 5, 8]
-        wns = [0.001, 0.01, 0.1, 0.5]
+        ns = [3, 4, 5, 6, 7]
+        wns = [0.0001, 0.001, 0.01, 0.1, 0.5]
         if options['iterate'] is False:
             params = []
             for n in ns:
@@ -110,18 +110,18 @@ def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
         params_high = [10, 1-1e-2]
     else:
         params_types = [int, float, int]
-        params_low = [3, 1e-2, 1]
-        params_high = [10, 1-1e-2, 1e3]
+        params_low = [3, 1e-4, 1]
+        params_high = [10, 1, 1e3]
 
     # optimize
     function = pynumdiff.smooth_finite_difference.butterdiff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val
 
 def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
-               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
+               optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:
         ks = [3, 5]
@@ -151,7 +151,7 @@ def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
 
     # optimize
     function = pynumdiff.smooth_finite_difference.splinediff
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args, optimization_method=optimization_method, optimization_options=optimization_options) 
 
     return opt_params, opt_val

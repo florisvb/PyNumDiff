@@ -96,7 +96,7 @@ def total_variation(x):
         return np.nan
     x1 = np.ravel(x)[0:-1]
     x2 = np.ravel(x)[1:]
-    return scipy.spatial.distance.minkowski(x1, x2, p=float('inf')) # supremum
+    return np.sum(np.abs(x2-x1))/len(x1) # mostly equivalent to cvxpy.tv(x2-x1).value
 
 def peakdet(v, delta, x = None):
     """

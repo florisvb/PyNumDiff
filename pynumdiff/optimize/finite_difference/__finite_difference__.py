@@ -7,7 +7,7 @@ import pynumdiff.finite_difference
 
 from pynumdiff.optimize.__optimize__ import __optimize__
 
-def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None, tvgamma=1e-2, padding=10):
+def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
     # initial condition
     if params is None:
         if options['iterate'] is False:
@@ -24,7 +24,7 @@ def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None, 
     function = pynumdiff.finite_difference.first_order
 
     # optimize
-    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding]
+    args = [function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
     opt_params, opt_val = __optimize__(params, args) 
 
     return opt_params, opt_val

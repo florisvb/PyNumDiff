@@ -12,7 +12,7 @@ def __add_noise__(x, noise_type, noise_parameters, random_seed):
     noise = _np.random.__getattribute__(noise_type)(noise_parameters[0], noise_parameters[1], timeseries_length)
     return x + noise
 
-def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, frequencies=[1, 1.7]):
+def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, frequencies=[1, 1.7], magnitude=1):
 
     # Parameters
     ############
@@ -22,8 +22,38 @@ def sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], ra
     x = y_offset
     dxdt = 0
     for f in frequencies:
-        x += 1/len(frequencies)*_np.sin(t*2*_np.pi*f) 
-        dxdt += 1/len(frequencies)*_np.cos(t*2*_np.pi*f)*2*_np.pi*f 
+        x += magnitude/len(frequencies)*_np.sin(t*2*_np.pi*f) 
+        dxdt += magnitude/len(frequencies)*_np.cos(t*2*_np.pi*f)*2*_np.pi*f 
+    #actual_vals = _finite_difference(_np.matrix(x), params=None, dt=dt)
+    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
+
+
+    noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
+
+    noisy_measurements = _np.matrix(noisy_x)
+    extra_measurements = _np.matrix([])
+
+    noisy_pos = _np.ravel(noisy_measurements)
+    pos = _np.ravel(actual_vals[0,:])
+    vel = _np.ravel(actual_vals[1,:])
+    extras = None
+
+    idx = _np.arange(0, len(t), int(dt/simdt))
+    return noisy_pos[idx], pos[idx], vel[idx], None 
+
+
+def large_sine(timeseries_length=4, noise_type='normal', noise_parameters=[0, 0.5], random_seed=1, dt=0.01, simdt=0.0001, frequencies=[7, 10], magnitude=100):
+
+    # Parameters
+    ############
+    y_offset = 1
+
+    t = _np.arange(0, timeseries_length, simdt)
+    x = y_offset
+    dxdt = 0
+    for f in frequencies:
+        x += magnitude/len(frequencies)*_np.sin(t*2*_np.pi*f) 
+        dxdt += magnitude/len(frequencies)*_np.cos(t*2*_np.pi*f)*2*_np.pi*f 
     #actual_vals = _finite_difference(_np.matrix(x), params=None, dt=dt)
     actual_vals = _np.matrix(_np.vstack((x, dxdt)))
 

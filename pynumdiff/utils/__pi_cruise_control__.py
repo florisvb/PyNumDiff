@@ -12,13 +12,13 @@ parameters = {'omega_m': 420, # rad / sec
               'm': 3000, # kg
               'rho': 1.3, # kg/m^3
               'v_r': 30, # m/s 
-              'k_p': 10,
-              'k_i': 5,
+              'k_p': 2,
+              'k_i': 2,
              }
 
 def triangle(iterations, dt):
     t = np.arange(0, iterations*dt, dt)
-    continuous_x = np.sin(3*t*np.sqrt(t))
+    continuous_x = np.sin(0.02*t*np.sqrt(t))
 
     #return np.matrix(continuous_x)
 
@@ -116,7 +116,7 @@ def run(timeseries_length=4, dt=0.01):
 
     # hills
     disturbances = np.matrix(np.zeros([3, iterations+1]))
-    h = hills(iterations+1, dt, factor=1.8*timeseries_length/2)
+    h = hills(iterations+1, dt, factor=0.5*timeseries_length/2)
     disturbances[2,:] = h[:,0:disturbances.shape[1]]
 
     # controls
@@ -126,7 +126,7 @@ def run(timeseries_length=4, dt=0.01):
     state_vals = np.matrix([[0], [0], [0]])
 
     # desired vel
-    v_r = desired_velocity(iterations, factor=1.8*iterations*dt/2)
+    v_r = desired_velocity(iterations, factor=0.5*iterations*dt/2)
 
     for i in range(1, iterations+1):
         new_state, u = step_forward(state_vals, disturbances[:,0:i], v_r[:,0:i], dt)

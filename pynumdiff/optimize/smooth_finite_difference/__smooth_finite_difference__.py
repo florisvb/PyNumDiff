@@ -11,7 +11,7 @@ from pynumdiff.optimize.__optimize__ import __optimize__
 # Helper functions
 ####################################################################################################################################################
 
-def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
+def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     # initial condition
     if params is None:
         if options['iterate'] is False:
@@ -44,7 +44,7 @@ def __kerneldiff__(function, x, dt, params=None, options={'iterate': False}, dxd
 # Optimize functions
 ####################################################################################################################################################
 
-def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
+def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.mediandiff 
     
@@ -54,7 +54,7 @@ def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
     opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
+def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.meandiff 
     
@@ -64,7 +64,7 @@ def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tv
     opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
+def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.gaussiandiff 
     
@@ -74,7 +74,7 @@ def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None
     opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, metric='rmse'):
+def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     '''
     Optimize the parameters for smooth_finite_difference.friedrichsdiff 
     
@@ -84,12 +84,12 @@ def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=No
     opt_params, opt_val = __kerneldiff__(function, x, dt, params, options, dxdt_truth, tvgamma, padding, metric) 
     return opt_params, opt_val
 
-def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:
-        ns = [3, 4, 5, 6, 7]
-        wns = [0.0001, 0.001, 0.01, 0.1, 0.5]
+        ns = [1, 2, 3, 4, 5, 6, 7]
+        wns = [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5]
         if options['iterate'] is False:
             params = []
             for n in ns:
@@ -106,7 +106,7 @@ def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
     # param types and bounds
     if options['iterate'] is False:
         params_types = [int, float]
-        params_low = [3, 1e-2]
+        params_low = [1, 1e-4]
         params_high = [10, 1-1e-2]
     else:
         params_types = [int, float, int]
@@ -120,7 +120,7 @@ def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
 
     return opt_params, opt_val
 
-def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:

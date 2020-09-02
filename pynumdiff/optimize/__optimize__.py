@@ -46,9 +46,11 @@ def docstring(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, t
 def __correct_params__(params, params_types, params_low, params_high):
     _params = []
     for p, param in enumerate(params):
+        param = params_types[p](param)
         param = np.max([param, params_low[p]])
         param = np.min([param, params_high[p]])
-        _params.append( params_types[p](param) ) 
+        param = params_types[p](param)
+        _params.append( param ) 
     return _params
 
 def __objective_function__(params, *args):
@@ -69,7 +71,7 @@ def __objective_function__(params, *args):
             #print('rms_rec_x: ', rms_rec_x, 'tv x hat: ', utility.total_variation(x_hat))
             return rms_dxdt
         elif metric == 'error_correlation':
-            error_correlation = evaluate.error_correlation(dxdt_hat, dxdt_truth)
+            error_correlation = evaluate.error_correlation(dxdt_hat, dxdt_truth, padding=padding)
             return error_correlation
     else: # then minimize [ || integral(dxdt_hat) - x||2 + gamma*TV(dxdt_hat) ]
         #print('Optimizing with [ || integral(dxdt_hat) - x||2 + gamma*TV(dxdt_hat) ]')
@@ -78,17 +80,24 @@ def __objective_function__(params, *args):
         #acc
         #try regularizing total sum of abs(acc) or jerk?
 
-        return rms_rec_x + tvgamma*utility.total_variation(dxdt_hat)
+        return rms_rec_x + tvgamma*utility.total_variation(dxdt_hat[padding:-padding])
 
 def __go__(input_args):
-    paramset, args, optimization_method, optimization_options, params_types, params_low, params_high = input_args
-    result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method, options=optimization_options)
-    p = __correct_params__(result.x, params_types, params_low, params_high)
+    try:
+        paramset, args, optimization_method, optimization_options, params_types, params_low, params_high = input_args
+        result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method, options=optimization_options)
+        p = __correct_params__(result.x, params_types, params_low, params_high)
+    except:
+        return __correct_params__(paramset, params_types, params_low, params_high), 1000000000
     return p, result.fun
 
 def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
     function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric = args
-
+    if padding == 'auto':
+        padding = int(0.025*len(x))
+        if padding < 1:
+            padding = 1
+        args[-2] = padding
 
     
     use_cpus = int(0.6*multiprocessing.cpu_count())
@@ -120,7 +129,7 @@ def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_o
             opt_vals.append(r[1])
 
         opt_vals = np.array(opt_vals)
-        opt_vals[np.where(np.isnan(opt_vals))] = np.inf # avoid nans
+        opt_vals[np.where(np.isnan(opt_vals))] = 100000000 #np.inf # avoid nans
         idx = np.argmin(opt_vals)
         opt_params = opt_params[idx]
         return list(opt_params), opt_vals[idx]

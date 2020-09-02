@@ -137,9 +137,9 @@ def savgoldiff(x, dt, params, options={'smooth': True}):
 
     Parameters
     ----------
-    params  : (list)  [N,            : (int)    order of the polynomial
-                       window_size], : (int)    size of the sliding window, must be odd (if not, 1 is added)
-    options : (dict)  {'smooth',}    : (bool)   if True, apply gaussian smoothing to the result with the same window size
+    params  : (list)  [N,              : (int)    order of the polynomial
+                       window_size,    : (int)    size of the sliding window, must be odd (if not, 1 is added)
+                       smoothing_win]  : (int)    size of the window used for gaussian smoothing, a good default is = window_size, but smaller for high freq data
 
     Outputs
     -------
@@ -148,18 +148,24 @@ def savgoldiff(x, dt, params, options={'smooth': True}):
 
     '''
 
-    N, window_size = params
+    N, window_size, smoothing_win = params
 
     if window_size > len(x)-1:
         window_size = len(x)-1
+
+    if smoothing_win > len(x)-1:
+        smoothing_win = len(x)-1
+
+    if window_size <= N:
+        window_size = N+1   
         
     if not window_size%2: # then make odd
         window_size += 1
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, N, deriv=1) / dt
 
-    if options['smooth']:
-        kernel = __gaussian_kernel__(window_size)
+    if 1: #options['smooth']:
+        kernel = __gaussian_kernel__(smoothing_win)
         dxdt_hat = pynumdiff.smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

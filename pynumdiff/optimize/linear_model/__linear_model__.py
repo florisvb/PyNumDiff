@@ -7,7 +7,7 @@ import pynumdiff.linear_model
 
 from pynumdiff.optimize.__optimize__ import __optimize__
 
-def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_zero_dxdt': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_zero_dxdt': True}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
@@ -25,7 +25,7 @@ def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_ze
 
     return opt_params, opt_val
 
-def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
              optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
@@ -58,21 +58,23 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
 
     return opt_params, opt_val
 
-def savgoldiff(x, dt, params=None, options={'smooth': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def savgoldiff(x, dt, params=None, options={}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
-        orders = [2, 3, 5, 7]
-        window_sizes = [10, 30, 50, 90, 130]
+        orders = [2, 3, 5, 7, 9, 11, 13]
+        window_sizes = [3, 10, 30, 50, 90, 130, 200, 300]
+        smoothing_wins = [3, 10, 30, 50, 90, 130, 200, 300]
         params = []
         for order in orders:
             for window_size in window_sizes:
-                params.append([order, window_size])
+                for smoothing_win in smoothing_wins:
+                    params.append([order, window_size, smoothing_win])
 
     # param types and bounds
-    params_types = [int, int]
-    params_low = [1, 10]
-    params_high = [8, 1e3]
+    params_types = [int, int, int]
+    params_low = [1, 3, 3]
+    params_high = [12, 1e3, 1e3]
 
     # optimize
     function = pynumdiff.linear_model.savgoldiff
@@ -81,7 +83,7 @@ def savgoldiff(x, dt, params=None, options={'smooth': True}, dxdt_truth=None, tv
 
     return opt_params, opt_val
 
-def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
               optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:
@@ -114,7 +116,7 @@ def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'ker
 
     return opt_params, opt_val
 
-def dmddiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def dmddiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
             optimization_method='Nelder-Mead', optimization_options={'maxiter': 5}, metric='rmse'):
     # initial condition
     if params is None:
@@ -150,7 +152,7 @@ def dmddiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kern
 
     return opt_params, opt_val
 
-def lineardiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def lineardiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'kernel_name': 'gaussian'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
             optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     # initial condition
     if params is None:

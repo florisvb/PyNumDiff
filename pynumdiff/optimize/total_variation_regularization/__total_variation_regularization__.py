@@ -32,7 +32,7 @@ def __optimize_tvr__(function, x, dt, params, options, dxdt_truth, tvgamma, padd
 ####################################################################################################################################################
 
 def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale': 'small'}, 
-                       dxdt_truth=None, tvgamma=1e-2, padding=10, 
+                       dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                        optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
@@ -55,7 +55,7 @@ def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale':
 
 ###
 
-def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
              optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
@@ -64,7 +64,7 @@ def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, t
 
     return opt_params, opt_val
 
-def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
@@ -73,7 +73,7 @@ def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=Non
     
     return opt_params, opt_val
 
-def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
          optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
@@ -82,7 +82,7 @@ def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgam
     
     return opt_params, opt_val
 
-def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
          optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
 
     # optimize
@@ -91,7 +91,7 @@ def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=Non
     
     return opt_params, opt_val
 
-def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     # initial condition
     if params is None:

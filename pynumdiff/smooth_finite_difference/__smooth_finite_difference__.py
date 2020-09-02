@@ -235,7 +235,8 @@ def butterdiff(x, dt, params, options={'iterate': False}):
                                    where 1 is the Nyquist frequency.
                      or if 'iterate' in options: [n, wn, num_iterations]
     options : (dict) {}
-                     or {'iterate': True} to run multiple iterations of the smoother
+                     or {'iterate'  : True,      to run multiple iterations of the smoother
+                         'padmethod': "pad"}     "pad" or "gust", see scipy.signal.filtfilt
 
     Outputs
     -------
@@ -259,6 +260,9 @@ def butterdiff(x, dt, params, options={'iterate': False}):
             x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad")
 
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
+
+    offset = np.mean(x) - np.mean(x_hat)
+    x_hat = x_hat + offset
 
     return x_hat, dxdt_hat
 

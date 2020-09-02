@@ -157,8 +157,10 @@ def constant_velocity(x, dt, params, options={'forwardbackward': True}):
         
         x_hat = x_hat_f*w + x_hat_b*(1-w)
         smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
+
+        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0) # there is a 1/2 step offset otherwise
         
-        return x_hat, smooth_dxdt_hat
+        return x_hat, smooth_dxdt_hat_corrected
 
     else:
         return __constant_velocity__(x, dt, params, options={'backward': False})
@@ -252,7 +254,9 @@ def constant_acceleration(x, dt, params, options={'forwardbackward': True}):
         x_hat = x_hat_f*w + x_hat_b*(1-w)
         smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
         
-        return x_hat, smooth_dxdt_hat
+        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0) # there is a 1/2 step offset otherwise
+        
+        return x_hat, smooth_dxdt_hat_corrected
 
     else:
         return __constant_acceleration__(x, dt, params, options={'backward': False})
@@ -348,7 +352,9 @@ def constant_jerk(x, dt, params, options={'forwardbackward': True}):
         x_hat = x_hat_f*w + x_hat_b*(1-w)
         smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
         
-        return x_hat, smooth_dxdt_hat
+        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0) # there is a 1/2 step offset otherwise
+        
+        return x_hat, smooth_dxdt_hat_corrected
 
     else:
         return __constant_jerk__(x, dt, params, options={'backward': False})
@@ -437,7 +443,9 @@ def known_dynamics(x, dt, params, options={'forwardbackward': True}):
         x_hat = x_hat_f*w + x_hat_b*(1-w)
         smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
         
-        return x_hat, smooth_dxdt_hat
+        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0) # there is a 1/2 step offset otherwise
+        
+        return x_hat, smooth_dxdt_hat_corrected
 
     else:
         return __known_dynamics__(x, dt, params, options={'backward': False})
@@ -536,7 +544,9 @@ def savgol_const_accel(x, dt, params, options={'forwardbackward': True}):
         x_hat = x_hat_f*w + x_hat_b*(1-w)
         smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
         
-        return x_hat, smooth_dxdt_hat
+        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0) # there is a 1/2 step offset otherwise
+        
+        return x_hat, smooth_dxdt_hat_corrected
 
     else:
         return __constant_acceleration__(x, dt, params, options={'backward': False})

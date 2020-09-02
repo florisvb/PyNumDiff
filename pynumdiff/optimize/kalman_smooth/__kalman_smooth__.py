@@ -45,7 +45,7 @@ def __optimize_kalman__(function, x, dt, params, options, dxdt_truth, tvgamma, p
 # Optimize functions
 ####################################################################################################################################################
 
-def constant_velocity(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def constant_velocity(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                       optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize
@@ -54,7 +54,7 @@ def constant_velocity(x, dt, params=None, options={'forwardbackward': True}, dxd
 
     return opt_params, opt_val
 
-def constant_acceleration(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def constant_acceleration(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                          optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize
@@ -63,7 +63,7 @@ def constant_acceleration(x, dt, params=None, options={'forwardbackward': True},
 
     return opt_params, opt_val
 
-def constant_jerk(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding=10, 
+def constant_jerk(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding='auto', 
                   optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
 
     # optimize

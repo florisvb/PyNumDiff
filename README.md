@@ -26,7 +26,7 @@ To run the notebooks and generate figures in notebooks/paper_figures you will al
     x_hat, dxdt_hat = pynumdiff.linear_model.savgoldiff(x, dt, [3, 20, 25])
     x_hat, dxdt_hat = pynumdiff.kalman_smooth.constant_acceleration(x, dt, [1e-1, 1e-2])
     x_hat, dxdt_hat = pynumdiff.total_variation_regularization.jerk(x, dt, [10])
-    x_hat, dxdt_hat = pynumdiff.smooth_finite_difference.jbutterdiff(x, dt, [3, 0.07])
+    x_hat, dxdt_hat = pynumdiff.smooth_finite_difference.butterdiff(x, dt, [3, 0.07])
 
 #### Comprehensive examples:
 In jupyter notebook form: [notebooks/1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
@@ -45,12 +45,13 @@ This approach solves a loss function that balances the faithfulness and smoothne
 #### Important points:
 * Larger values of `tvgamma` produce smoother derivatives
 * The value of `tvgamma` is largely universal across methods, making it easy to compare method results
+* The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
 * The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep. 
+
 
     log_gamma = -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1
     tvgamma = np.exp(log_gamma)  
 
-* The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
 
 #### Examples:
 * Ground truth data known:  [notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb)

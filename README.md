@@ -33,13 +33,7 @@ In jupyter notebook form: [notebooks/1_basic_tutorial.ipynb](https://github.com/
 
 
 ## Advanced usage: automated parameter selection through multi-objective optimization
-This approach solves a loss function that balances the faithfulness and smoothness of the derivative estimate, and relies on a single hyperparameter, \\(\gamma\\), or `tvgamma` in the code. See the paper for more detail, but a brief overview follows. 
-
-The loss function is as follows,
-\\[L = \mbox{RMSE} \bigg( \mbox{trapz}(\bxdothat(\Phi)) + \mu, \by \bigg) + \gamma \bigg({TV}\big(\bxdothat(\Phi)\big)\bigg), \\]
-where \\(\mbox{trapz}(\cdot)\\) is the discrete-time trapezoidal numerical integral, \\(\mu$\\) resolves the unknown integration constant, and \\(\gamma\\) is a hyper-parameter. 
-
-To use the loss function to find your optimal parameters, use the following syntax:
+This approach solves a loss function that balances the faithfulness and smoothness of the derivative estimate, and relies on a single hyperparameter, gamma, or `tvgamma` in the code. See the paper for more detail, but a brief overview is given in the example notebooks linked below.
 
     params, val = pynumdiff.optimize.sub_module.method(x, dt, params=None, 
                                                        tvgamma=tvgamma, # hyperparameter

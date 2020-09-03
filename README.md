@@ -48,9 +48,7 @@ This approach solves a loss function that balances the faithfulness and smoothne
 * The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
 * The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep. 
 
-
-    log_gamma = -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1
-    tvgamma = np.exp(log_gamma)  
+`tvgamma = np.exp(   -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1   )`
 
 
 #### Examples:

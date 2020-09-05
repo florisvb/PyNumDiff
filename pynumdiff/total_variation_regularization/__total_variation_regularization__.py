@@ -2,17 +2,24 @@ import numpy as np
 import time
 import copy
 import math
-import warnings
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler()
+    ]
+)
 
 from pynumdiff.utils import utility as utility
 
 try:
     import cvxpy
 except:
-    warnings.warn('Could not import cvxpy. Install cvxpy (http://www.cvxpy.org/install/index.html) to use \
-                   convex total variation regularized derivatives. \
-                   Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/ \
-                   You can still use the iterative method.')
+    logging.info('Import Error.\nCould not import cvxpy.\nTo use convex total variation regularized derivatives,\n install cvxpy (http://www.cvxpy.org/install/index.html)\n\
+Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/\nDespite this error, you can still use the iterative method.\n')
 
 from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__ as __chartrand_tvregdiff__
 import pynumdiff.smooth_finite_difference

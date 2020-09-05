@@ -4,6 +4,11 @@ Methods for numerical differentiation of noisy data, including multi-objective o
 If you use this package for your differentiation needs, please cite: (coming soon)
 
 ## Installation
+
+#### Using pip:
+`pip install pynumdiff`
+
+#### From source:
 To install this package, run `python ./setup.py install` from inside this directory.
 
 ## Requirements

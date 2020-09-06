@@ -2,8 +2,17 @@ import numpy as np
 import time
 import copy
 import math
-import warnings
 import scipy
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler()
+    ]
+)
 
 # included modules
 from pynumdiff.finite_difference import first_order as finite_difference 
@@ -17,12 +26,11 @@ __gaussian_kernel__ = utility.__gaussian_kernel__
 try:
     import pydmd.dmdc
 except:
-    warnings.warn('Could not import pydmd. Install pydmd (florisvb fork: https://github.com/florisvb/PyDMD) to use dmd derivatives.')
+    logging.info('Import Error.\nCould not import pydmd. Install pydmd (florisvb fork: https://github.com/florisvb/PyDMD) to use dmd derivatives.\n')
 try:
     import cvxpy
 except:
-    warnings.warn('Could not import cvxpy. Install cvxpy (http://www.cvxpy.org/install/index.html) to use linearmodel and nonlinearmodel. \
-                   Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/')
+    logging.info('Import Error.\nCould not import cvxpy. Install cvxpy (http://www.cvxpy.org/install/index.html) to use linearmodel and nonlinearmodel.\nRecommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/\n')
 
 ####################################################################################################################################################
 # Helper functions

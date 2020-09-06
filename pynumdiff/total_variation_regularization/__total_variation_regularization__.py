@@ -18,8 +18,8 @@ from pynumdiff.utils import utility as utility
 try:
     import cvxpy
 except:
-    logging.info('Import Error.\nCould not import cvxpy.\nTo use convex total variation regularized derivatives,\n install cvxpy (http://www.cvxpy.org/install/index.html)\n\
-Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/\nDespite this error, you can still use the iterative method.\n')
+    logging.info('Import Error.\nCould not import cvxpy.\nTo use convex total variation regularized derivatives, install cvxpy (http://www.cvxpy.org/install/index.html)\n\
+Recommended solver: MOSEK, free academic license available: https://www.mosek.com/products/academic-licenses/\nDespite this error, you can still use the iterative TVR method.\n')
 
 from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__ as __chartrand_tvregdiff__
 import pynumdiff.smooth_finite_difference

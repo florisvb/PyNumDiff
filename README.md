@@ -1,7 +1,8 @@
 # PyNumDiff
 Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection. 
 
-If you use this package for your differentiation needs, please cite: (coming soon)
+If you use this package for your differentiation needs, please cite: https://arxiv.org/abs/2009.01911
+
 
 ## Installation
 

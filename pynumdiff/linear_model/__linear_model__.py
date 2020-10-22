@@ -547,7 +547,7 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC
         Csum = Csum + Cn
 
     # Define the objective function
-    error = cvxpy.sum_squares(Xdot[rows_of_interest, :] - (A*X + Csum)[rows_of_interest, :]) 
+    error = cvxpy.sum_squares(Xdot[rows_of_interest, :] - (A@X + Csum)[rows_of_interest, :]) 
     C_regularization = gammaC*cvxpy.sum(cvxpy.abs(C))
     A_regularization = gammaA*cvxpy.sum(cvxpy.abs(A))
     obj = cvxpy.Minimize(error + C_regularization + A_regularization) 

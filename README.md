@@ -1,8 +1,21 @@
 # PyNumDiff
 Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection. 
 
-If you use this package for your differentiation needs, please cite: https://arxiv.org/abs/2009.01911
+### Citing this package
 
+If you use this package for your differentiation needs, please cite this paper: https://doi.org/10.1109/ACCESS.2020.3034077
+
+F. van Breugel, J. Nathan Kutz and B. W. Brunton, "Numerical differentiation of noisy data: A unifying multi-objective optimization framework," in IEEE Access, doi: 10.1109/ACCESS.2020.3034077.
+
+@ARTICLE{9241009,
+  author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}},
+  journal={IEEE Access}, 
+  title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={1-1},
+  doi={10.1109/ACCESS.2020.3034077}}
 
 ## Installation
 

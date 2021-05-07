@@ -1,31 +1,35 @@
 # PyNumDiff
-Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection. 
+Methods for numerical differentiation of noisy time series data, including multi-objective optimization routines for automated parameter selection. 
 
-### Citing this package
+## Table of contents
+* [Introduction](#introduction)
+* [Structure](#structure)
+* [Getting Started](#getting-started)
+    * [Prerequisite](#prerequisite)
+    * [Installing](#installing)
+* [Usage](#usage)
+    * [Examples](#examples)
+    * [Running the tests](#running-the-tests)
+* [Citation](#citation)
+* [Contributing](#contributing)
+* [License](#license)
+* [Acknowledgments](#acknowledgments)
 
-If you use this package for your differentiation needs, please cite this paper: https://doi.org/10.1109/ACCESS.2020.3034077
+## Introduction
 
-F. van Breugel, J. Nathan Kutz and B. W. Brunton, "Numerical differentiation of noisy data: A unifying multi-objective optimization framework," in IEEE Access, doi: 10.1109/ACCESS.2020.3034077.
+## Structure
 
-@ARTICLE{9241009,
-  author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}},
-  journal={IEEE Access}, 
-  title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, 
-  year={2020},
-  volume={},
-  number={},
-  pages={1-1},
-  doi={10.1109/ACCESS.2020.3034077}}
+## Getting Started
 
-## Installation
+### Installing via pip
 
-#### Using pip:
 `pip install pynumdiff`
 
-#### From source:
+### Installing from source
+
 To install this package, run `python ./setup.py install` from inside this directory.
 
-## Requirements
+#### Requirements
 Python version: 2.7+
 
 Minimal requirements: `numpy, scipy, matplotlib`
@@ -38,20 +42,22 @@ Certain methods require additional packages:
 To run the notebooks and generate figures in notebooks/paper_figures you will also need:
 * [figurefirst](https://github.com/FlyRanch/figurefirst)
 
-## Basic Usage: you provide the parameters
+## Usage
+
+* Basic Usage: you provide the parameters
 `x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options)` 
 
-#### For example, a few favorites:
+* For example, a few favorites:
     x_hat, dxdt_hat = pynumdiff.linear_model.savgoldiff(x, dt, [3, 20, 25])
     x_hat, dxdt_hat = pynumdiff.kalman_smooth.constant_acceleration(x, dt, [1e-1, 1e-2])
     x_hat, dxdt_hat = pynumdiff.total_variation_regularization.jerk(x, dt, [10])
     x_hat, dxdt_hat = pynumdiff.smooth_finite_difference.butterdiff(x, dt, [3, 0.07])
 
-#### Comprehensive examples:
+* Comprehensive examples:
 In jupyter notebook form: [notebooks/1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
 
 
-## Advanced usage: automated parameter selection through multi-objective optimization
+* Advanced usage: automated parameter selection through multi-objective optimization
 This approach solves a loss function that balances the faithfulness and smoothness of the derivative estimate, and relies on a single hyperparameter, gamma, or `tvgamma` in the code. See the paper for more detail, but a brief overview is given in the example notebooks linked below.
 
     params, val = pynumdiff.optimize.sub_module.method(x, dt, params=None, 
@@ -61,7 +67,7 @@ This approach solves a loss function that balances the faithfulness and smoothne
     print('Optimal parameters: ', params)
     x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options={'smooth': True})
 
-#### Important points:
+* Important points:
 * Larger values of `tvgamma` produce smoother derivatives
 * The value of `tvgamma` is largely universal across methods, making it easy to compare method results
 * The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
@@ -70,7 +76,25 @@ This approach solves a loss function that balances the faithfulness and smoothne
 `tvgamma = np.exp(   -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1   )`
 
 
-#### Examples:
+
+### Examples
+
 * Ground truth data known:  [notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb)
 * Ground truth data NOT known (real world):  [notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
+
+### Running the tests
+
+## Citation
+
+If you use this package for your differentiation needs, please cite [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
+
+F. van Breugel, J. Nathan Kutz and B. W. Brunton, "Numerical differentiation of noisy data: A unifying multi-objective optimization framework," in IEEE Access, doi: 10.1109/ACCESS.2020.3034077.
+
+@ARTICLE{9241009, author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, journal={IEEE Access}, title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, year={2020}, volume={}, number={}, pages={1-1}, doi={10.1109/ACCESS.2020.3034077}}
+
+## Contributing
+
+## License
+
+## Acknowledgments
 

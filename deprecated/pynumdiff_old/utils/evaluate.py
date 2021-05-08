@@ -1,32 +1,12 @@
-"""
-Metrics and evaluations?
-"""
-import numpy as _np
-import matplotlib.pyplot as _plt
+import numpy as _np 
+import matplotlib.pyplot as _plt 
 import scipy.stats as _scipy_stats
 
 # local imports
 from pynumdiff.utils import utility as _utility
 _finite_difference = _utility.finite_difference
 
-
-# pylint: disable-msg=too-many-locals, too-many-arguments
-def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None,
-         show_error=True, markersize=5):
-    """
-    :param x:
-    :param dt:
-    :param x_hat:
-    :param dxdt_hat:
-    :param x_truth:
-    :param dxdt_truth:
-    :param xlim:
-    :param ax_x:
-    :param ax_dxdt:
-    :param show_error:
-    :param markersize:
-    :return:
-    """
+def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None, show_error=True, markersize=5):
     t = _np.arange(0, dt*len(x), dt)
     if ax_x is None and ax_dxdt is None:
         fig = _plt.figure(figsize=(20,6))
@@ -53,16 +33,10 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
         ax_dxdt.set_xlim(xlim[0], xlim[-1])
 
     if show_error:
-        _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
+        rms_rec_x, rms_x, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
         print('RMS error in velocity: ', rms_dxdt)
 
-
 def __rms_error__(a, e):
-    """
-    :param a:
-    :param e:
-    :return:
-    """
     if _np.max(_np.abs(a-e)) > 1e16:
         return 1e16
     s_error = _np.ravel((a - e))**2
@@ -70,21 +44,11 @@ def __rms_error__(a, e):
     rms_error = _np.sqrt(ms_error)
     return rms_error
 
-
 def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None):
-    """
-    :param x:
-    :param dt:
-    :param x_hat:
-    :param dxdt_hat:
-    :param x_truth:
-    :param dxdt_truth:
-    :param padding:
-    :return:
-    """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(x))
-        padding = max(padding, 1)
+        if padding < 1:
+            padding = 1
     if _np.isnan(x_hat).any():
         return _np.nan, _np.nan, _np.nan
 
@@ -108,32 +72,19 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None)
 
     return rms_rec_x, rms_x, rms_dxdt
 
-
 def error_correlation(dxdt_hat, dxdt_truth, padding=None):
-    """
-    :param dxdt_hat:
-    :param dxdt_truth:
-    :param padding:
-    :return:
-    """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
-        padding = max(padding, 1)
+        if padding < 1:
+            padding = 1
     errors = (dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])
-    r = _scipy_stats.linregress(dxdt_truth[padding:-padding] -
-                                _np.mean(dxdt_truth[padding:-padding]), errors)
+    r = _scipy_stats.linregress( dxdt_truth[padding:-padding]- _np.mean(dxdt_truth[padding:-padding]), errors)
     return r.rvalue**2
 
-
 def rmse(dxdt_hat, dxdt_truth, padding=None):
-    """
-    :param dxdt_hat:
-    :param dxdt_truth:
-    :param padding:
-    :return:
-    """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
-        padding = max(padding, 1)
-    RMSE = _np.sqrt(_np.mean((dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])**2))
-    return RMSE
+        if padding < 1:
+            padding = 1
+    rmse = _np.sqrt(_np.mean((dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])**2))
+    return rmse

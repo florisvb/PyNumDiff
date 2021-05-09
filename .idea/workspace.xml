@@ -2,57 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="fa7b0e40-6656-40d7-88df-6b034b372c4b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/pynumdiff/tests/test_finite_difference.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pynumdiff/__version__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/__version__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/augmented_data/__augmented_data__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/augmented_data/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/augmented_data/ukf/__ukf_sqrt__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/augmented_data/ukf/ukf_sqrt.m" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/augmented_data/ukf/ukf_sqrt.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/discover_dynamics/convex_methods.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/discover_dynamics/integral_sindy_sequential_least_squares.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/finite_difference/__finite_difference__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/finite_difference/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/finite_difference/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/kalman_smooth/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/kalman_smooth/__kalman_smooth__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/linear_model/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/linear_model/__linear_model__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/nnet/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/nnet/__nnet__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/__optimize__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/finite_difference/__finite_difference__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/finite_difference/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/kalman_smooth/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/kalman_smooth/__kalman_smooth__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/linear_model/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/linear_model/__linear_model__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/smooth_finite_difference/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/smooth_finite_difference/__smooth_finite_difference__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/total_variation_regularization/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/optimize/total_variation_regularization/__total_variation_regularization__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/compare_performance.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/compare_performance_nnet.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/old/compare_performance_2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/old/compare_performance_savgol.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/old/compare_performance_tvr_iterative.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/paper/plot.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/smooth_finite_difference/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/smooth_finite_difference/__smooth_finite_difference__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/total_variation_regularization/__chartrand_tvregdiff__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/total_variation_regularization/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/total_variation_regularization/__total_variation_regularization__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/utils/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/utils/__pi_cruise_control__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/utils/evaluate.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/utils/evaluate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/utils/simulate.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/utils/simulate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pynumdiff/utils/utility.py" beforeDir="false" afterPath="$PROJECT_DIR$/pynumdiff/utils/utility.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.cfg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/utils/utility.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/utils/utility.rst" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -71,49 +24,72 @@
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="md" value="2" />
-          <entry key="py" value="77" />
+          <entry key="py" value="80" />
           <entry key="rst" value="23" />
           <entry key="txt" value="2" />
+          <entry key="yml" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="Markdown" value="2" />
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Python" value="77" />
+          <entry key="Python" value="80" />
           <entry key="ReST" value="23" />
+          <entry key="YAML" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="md" value="154" />
-          <entry key="py" value="1739" />
-          <entry key="rst" value="798" />
+          <entry key="py" value="1896" />
+          <entry key="rst" value="799" />
           <entry key="txt" value="48" />
+          <entry key="yml" value="22" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="Markdown" value="154" />
           <entry key="PLAIN_TEXT" value="48" />
-          <entry key="Python" value="1739" />
-          <entry key="ReST" value="798" />
+          <entry key="Python" value="1896" />
+          <entry key="ReST" value="799" />
+          <entry key="YAML" value="22" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/docs/source/utils/utility.rst">
-          <provider selected="true" editor-type-id="restructured-text-editor" />
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/.travis.yml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="242">
+              <caret line="11" column="31" selection-start-line="11" selection-start-column="31" selection-end-line="11" selection-end-column="31" />
+            </state>
+          </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pynumdiff/utils/utility.py">
+        <entry file="file://$PROJECT_DIR$/setup.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="343">
+              <caret line="16" column="28" lean-forward="true" selection-start-line="16" selection-start-column="28" selection-end-line="16" selection-end-column="28" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/pynumdiff/__version__.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="475">
-              <caret line="243" column="25" selection-start-line="243" selection-start-column="4" selection-end-line="243" selection-end-column="25" />
+              <caret line="45" column="58" selection-start-line="45" selection-start-column="58" selection-end-line="45" selection-end-column="58" />
+              <folding>
+                <element signature="e#0#64#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -192,6 +168,9 @@
         <option value="$PROJECT_DIR$/docs/source/index.rst" />
         <option value="$PROJECT_DIR$/docs/source/code.rst" />
         <option value="$PROJECT_DIR$/docs/source/utils/utility.rst" />
+        <option value="$PROJECT_DIR$/.travis.yml" />
+        <option value="$PROJECT_DIR$/setup.py" />
+        <option value="$PROJECT_DIR$/pynumdiff/__version__.py" />
       </list>
     </option>
   </component>
@@ -221,24 +200,6 @@
             <path>
               <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
               <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
-              <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
-              <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-              <item name="utils" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
-              <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
               <item name="pynumdiff" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -246,12 +207,6 @@
               <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
               <item name="pynumdiff" type="462c0819:PsiDirectoryNode" />
               <item name="finite_difference" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
-              <item name="PyNumDiff" type="462c0819:PsiDirectoryNode" />
-              <item name="pynumdiff" type="462c0819:PsiDirectoryNode" />
-              <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PyNumDiff" type="b2602c69:ProjectViewProjectNode" />
@@ -318,30 +273,12 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/pynumdiff/nnet/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#48#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pynumdiff/nnet/__nnet__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="228">
           <caret line="14" column="27" selection-start-line="14" selection-start-column="27" selection-end-line="14" selection-end-column="27" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pynumdiff/__version__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#64#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -417,15 +354,6 @@
           <caret line="330" lean-forward="true" selection-start-line="330" selection-end-line="330" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/setup.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -683,6 +611,33 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/docs/source/utils/utility.rst">
       <provider selected="true" editor-type-id="restructured-text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="242">
+          <caret line="11" column="31" selection-start-line="11" selection-start-column="31" selection-end-line="11" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="343">
+          <caret line="16" column="28" lean-forward="true" selection-start-line="16" selection-start-column="28" selection-end-line="16" selection-end-column="28" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pynumdiff/__version__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="475">
+          <caret line="45" column="58" selection-start-line="45" selection-start-column="58" selection-end-line="45" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#64#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
     </entry>
   </component>
 </project>

@@ -1,0 +1,12 @@
+language: python
+
+python:
+  - 3.9
+
+install:
+  - pip install -r requirements.txt
+  - python setup.py install
+
+script:
+  - pytest pynumdiff
+  - python linting.py pynumdiff

@@ -10,7 +10,7 @@ from pynumdiff.utils import _pi_cruise_control
 _finite_difference = _utility.finite_difference
 
 
-# pylint: disable-msg=too-many-locals, too-many-arguments
+# pylint: disable-msg=too-many-locals, too-many-arguments, no-member
 def __add_noise__(x, noise_type, noise_parameters, random_seed):
     """
     :param x:

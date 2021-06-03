@@ -155,16 +155,33 @@ def __constant_velocity__(x, dt, params, options=None):
 
 def constant_velocity(x, dt, params, options=None):
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+    Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards
-                                                (achieves better estimate at end points)
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother forwards and backwards
+                    (usually achieves better estimate at end points)
+    :type params: dict {'forwardbackward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
     if options is None:
         options = {'forwardbackward': True}
@@ -195,13 +212,29 @@ def __constant_acceleration__(x, dt, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'backward'} : (bool) run smoother backwards in time
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother backwards in time
+    :type params: dict {'backward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -242,12 +275,31 @@ def constant_acceleration(x, dt, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :return: x_hat : smoothed x
-            dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother forwards and backwards
+                    (usually achieves better estimate at end points)
+    :type params: dict {'forwardbackward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -257,7 +309,7 @@ def constant_acceleration(x, dt, params, options=None):
         x_hat_f, smooth_dxdt_hat_f = __constant_acceleration__(x, dt, params, options={'backward': False})
         x_hat_b, smooth_dxdt_hat_b = __constant_acceleration__(x, dt, params, options={'backward': True})
 
-        w = np.arange(0,len(x_hat_f),1)
+        w = np.arange(0, len(x_hat_f), 1)
         w = w/np.max(w)
 
         x_hat = x_hat_f*w + x_hat_b*(1-w)
@@ -279,13 +331,29 @@ def __constant_jerk__(x, dt, params, options=None):
     """
     Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'backward'} : (bool) run smoother backwards in time
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother backwards in time
+    :type params: dict {'backward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -328,14 +396,31 @@ def constant_jerk(x, dt, params, options=None):
     """
     Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards
-                                                (achieves better estimate at end points)
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother forwards and backwards
+                    (usually achieves better estimate at end points)
+    :type params: dict {'forwardbackward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -362,12 +447,26 @@ def __known_dynamics__(x, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'backward'} : (bool) run smoother backwards in time
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother backwards in time
+    :type params: dict {'backward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
     if options is None:
         options = {'backward': False}
@@ -396,13 +495,28 @@ def known_dynamics(x, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards
-                                                (achieves better estimate at end points)
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother forwards and backwards
+                    (usually achieves better estimate at end points)
+    :type params: dict {'forwardbackward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
     if options is None:
         options = {'forwardbackward': True}
@@ -414,7 +528,7 @@ def known_dynamics(x, params, options=None):
         w = np.zeros([len(x_hat_f)])
         s = int(0.2*len(x_hat_f))
         f = int(0.8*len(x_hat_f))
-        w[s:f] = np.arange(0,f-s,1)
+        w[s:f] = np.arange(0, f-s, 1)
         w[f:] = w[f-1]
 
         w = w/np.max(w)
@@ -438,15 +552,32 @@ def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param sg_dxdt_hat: ???
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'backward'} : (bool) run smoother backwards in time
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
 
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param sg_dxdt_hat: ? ? ?
+    :type sg_dxdt_hat: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother backwards in time
+    :type params: dict {'backward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -489,14 +620,31 @@ def savgol_const_accel(x, dt, params, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'forwardbackward'} : (bool) run smoother forwards and backwards
-                                                    (achieves better estimate at end points)
-    :return: x_hat : smoothed x
-             dxdt_hat : derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of two elements:
+
+                    - r: covariance of the x noise
+                    - q: covariance of the constant velocity model
+
+    :type params: list (float)
+
+
+    :param options: a dictionary indicating whether to run smoother forwards and backwards
+                    (usually achieves better estimate at end points)
+    :type params: dict {'forwardbackward': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
     if options is None:
         options = {'forwardbackward': True}

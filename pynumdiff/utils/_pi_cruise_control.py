@@ -23,8 +23,13 @@ parameters = {'omega_m': 420,
 def triangle(iterations, dt):
     """
     :param iterations:
+    :type iterations:
+
     :param dt:
+    :type dt:
+
     :return:
+    :rtype:
     """
     t = np.arange(0, iterations*dt, dt)
     continuous_x = np.sin(0.02*t*np.sqrt(t))
@@ -60,7 +65,10 @@ def triangle(iterations, dt):
 def effective_wheel_radius(v=20):
     """
     :param v:
+    :type v:
+
     :return:
+    :rtype:
     """
     return v
 
@@ -68,7 +76,10 @@ def effective_wheel_radius(v=20):
 def torque(omega):
     """
     :param omega:
+    :type omega:
+
     :return:
+    :rtype:
     """
     omega_m = parameters['omega_m']
     t_m = parameters['T_m']
@@ -80,10 +91,19 @@ def torque(omega):
 def step_forward(state_vals, disturbances, desired_v, dt):
     """
     :param state_vals:
+    :type state_vals:
+
     :param disturbances:
+    :type disturbances:
+
     :param desired_v:
+    :type desired_v:
+
     :param dt:
+    :type dt:
+
     :return:
+    :rtype:
     """
     p = state_vals[0, -1]
     v = state_vals[1, -1]
@@ -118,9 +138,16 @@ def step_forward(state_vals, disturbances, desired_v, dt):
 def hills(iterations, dt, factor):
     """
     :param iterations:
+    :type iterations:
+
     :param dt:
+    :type dt:
+
     :param factor:
+    :type factor:
+
     :return:
+    :rtype:
     """
     return triangle(iterations, dt)*0.3/factor
 
@@ -129,8 +156,13 @@ def hills(iterations, dt, factor):
 def desired_velocity(n, factor):
     """
     :param n:
+    :type n:
+
     :param factor:
+    :type factor:
+
     :return:
+    :rtype:
     """
     return np.matrix([2/factor]*n)
 
@@ -138,8 +170,13 @@ def desired_velocity(n, factor):
 def run(timeseries_length=4, dt=0.01):
     """
     :param timeseries_length:
+    :type timeseries_length:
+
     :param dt:
+    :type dt:
+
     :return:
+    :rtype:
     """
     t = np.arange(0, timeseries_length, dt)
     iterations = len(t)

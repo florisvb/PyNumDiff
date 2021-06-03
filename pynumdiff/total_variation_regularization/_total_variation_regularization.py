@@ -33,30 +33,35 @@ def iterative_velocity(x, dt, params, options=None):
     Use an iterative solver to find the total variation regularized 1st derivative.
     See __chartrand_tvregdiff__.py for details, author info, and license
     Methods described in: Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data,"
-                          ISRN Applied Mathematics, Vol. 2011, Article ID 164564, 2011.
+    ISRN Applied Mathematics, Vol. 2011, Article ID 164564, 2011.
     Original code (MATLAB and python):  https://sites.google.com/site/dnartrahckcir/home/tvdiff-code
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [iterations, (int)  : Number of iterations to run the solver.
-                                           More iterations results in blockier derivatives,
-                                           which approach the convex result
-                           gamma],     (float): Regularization parameter. Larger values result
-    :param options: (dict) {'cg_maxiter': None,  (int) : Max number of iterations to use in
-                                                   scipy.sparse.linalg.cg
-                                                   Default, None, results in maxiter = len(x)
-                                                   This works well in our test examples.
-                            'scale': 'small'}    (str) : This method has two different numerical options.
-                                                   From __chartrand_tvregdiff__.py:
-                                                       'large' or 'small' (case insensitive).  Default is
-                                                       'small'.  'small' has somewhat better boundary
-                                                       behavior, but becomes unwieldly for data larger than
-                                                       1000 entries or so.  'large' has simpler numerics but
-                                                       is more efficient for large-scale problems.  'large' is
-                                                       more readily modified for higher-order derivatives,
-                                                       since the implicit differentiation matrix is square.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list consisting of:
+
+                    - iterations: Number of iterations to run the solver. More iterations results in blockier derivatives, which approach the convex result
+                    - gamma: Regularization parameter.
+
+    :type params: list (int, float)
+
+    :param options: a dictionary with 2 key value pairs
+
+                    - 'cg_maxiter': Max number of iterations to use in scipy.sparse.linalg.cg. Default is None, results in maxiter = len(x). This works well in our test examples.
+                    - 'scale': This method has two different numerical options. From __chartrand_tvregdiff__.py: 'large' or 'small' (case insensitive).  Default is 'small'.  'small' has somewhat better boundary behavior, but becomes unwieldly for data larger than 1000 entries or so.  'large' has simpler numerics but is more efficient for large-scale problems. 'large' is more readily modified for higher-order derivatives, since the implicit differentiation matrix is square.
+
+    :type options: dict {'cg_maxiter': (int), 'scale': (string)}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -144,14 +149,28 @@ def velocity(x, dt, params, options=None):
     Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
     Default solver is MOSEK: https://www.mosek.com/
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [gamma], where gamma (float) is the regularization parameter
-                          or if 'iterate' in options: [gamma, num_iterations]
-    :param options: (dict) {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                          in testing, 'MOSEK' was the most robust.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: [gamma], where gamma (float) is the regularization parameter
+                    or if 'iterate' in options: [gamma, num_iterations]
+
+    :type params: list (float) or float
+
+    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
+                    in testing, 'MOSEK' was the most robust.
+
+    :type options: dict {'solver': SOLVER}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -170,14 +189,28 @@ def acceleration(x, dt, params, options=None):
     Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
     Default solver is MOSEK: https://www.mosek.com/
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [gamma], where gamma (float) is the regularization parameter
-                     or if 'iterate' in options: [gamma, num_iterations]
-    :param options: (dict) {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                                        in testing, 'MOSEK' was the most robust.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: [gamma], where gamma (float) is the regularization parameter
+                    or if 'iterate' in options: [gamma, num_iterations]
+
+    :type params: list (float) or float
+
+    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
+                    in testing, 'MOSEK' was the most robust.
+
+    :type options: dict {'solver': SOLVER}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -196,14 +229,28 @@ def jerk(x, dt, params, options=None):
     Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
     Default solver is MOSEK: https://www.mosek.com/
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [gamma], where gamma (float) is the regularization parameter
-                     or if 'iterate' in options: [gamma, num_iterations]
-    :param options: (dict) {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                                        in testing, 'MOSEK' was the most robust.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: [gamma], where gamma (float) is the regularization parameter
+                    or if 'iterate' in options: [gamma, num_iterations]
+
+    :type params: list (float) or float
+
+    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
+                    in testing, 'MOSEK' was the most robust.
+
+    :type options: dict {'solver': SOLVER}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -219,12 +266,22 @@ def jerk(x, dt, params, options=None):
 
 def smooth_acceleration(x, dt, params, options=None):
     """
+    ? ? ?
 
     :param x:
+    :type x:
+
     :param dt:
+    :type dt:
+
     :param params:
+    :type params:
+
     :param options:
+    :type options:
+
     :return:
+    :rtype:
     """
     if options is None:
         options = {'solver': 'MOSEK'}
@@ -247,14 +304,28 @@ def jerk_sliding(x, dt, params, options=None):
     Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
     Default solver is MOSEK: https://www.mosek.com/
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [gamma], where gamma (float) is the regularization parameter
-                     or if 'iterate' in options: [gamma, num_iterations]
-    :param options: (dict) {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                                        in testing, 'MOSEK' was the most robust.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: [gamma], where gamma (float) is the regularization parameter
+                    or if 'iterate' in options: [gamma, num_iterations]
+
+    :type params: list (float) or float
+
+    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
+                    in testing, 'MOSEK' was the most robust.
+
+    :type options: dict {'solver': SOLVER}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:

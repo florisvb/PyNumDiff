@@ -7,14 +7,27 @@ from pynumdiff.utils import utility
 
 def first_order(x, dt, params=None, options=None):
     """
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [iterations] : (int, optional)  number of iterations
-                                            (ignored if 'iterate' not in options)
-    :param options: (dict)  {'iterate'}  : (bool, optional) iterate the finite difference
-                                            method (smooths the estimates)
-    :return:    x_hat    : estimated (smoothed) x
-                dxdt_hat : estimated derivative of x
+    First-order centered difference method
+
+    :param x: array of time series to differentiate
+    :type x: np.array (floats)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: number of iterations (if 'iterate' is enabled in options)
+    :type params: list (int) or int, optional
+
+    :param options: a dictionary indicating whether to iteratively apply the difference method to smooth the estimates
+    :type options: dict {'iterate': boolean}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options and 'iterate' in options:
@@ -33,10 +46,21 @@ def first_order(x, dt, params=None, options=None):
 
 def second_order(x, dt):
     """
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :return:    x_hat: estimated (smoothed) x
-                dxdt_hat: estimated derivative of x
+    Second-order centered difference method
+
+    :param x: array of time series to differentiate
+    :type x: np.array (floats)
+
+    :param dt: time step size
+    :type dt: float
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
     dxdt_hat = (x[2:] - x[0:-2]) / (2 * dt)
     first_dxdt_hat = (-3 * x[0] + 4 * x[1] - x[2]) / (2 * dt)
@@ -59,12 +83,24 @@ def __x_hat_using_finite_difference__(x, dt):
 
 def __iterate_first_order__(x, dt, params):
     """
-    Iterate first order centered finite difference.
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [iterations] : (int) number of iterations
-    :return:    x_hat: estimated (smoothed) x
-                dxdt_hat: estimated derivative of x
+    Iterative first order centered finite difference.
+
+    :param x: array of time series to differentiate
+    :type x: np.array (floats)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: number of iterations (if 'iterate' is enabled in options)
+    :type params: list (int) or int, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
     if isinstance(params, list):
         iterations = params[0]

@@ -27,14 +27,16 @@ def get_filenames(path, contains, does_not_contain=('~', '.pyc')):
                 if nc in filename:
                     fileok = False
             if fileok:
-                filelist.append( os.path.join(path, filename) )
+                filelist.append(os.path.join(path, filename))
     return filelist
 
 
 def is_odd(num):
     """
-    :param num:
-    :return:
+    tell if it is an odd number
+
+    :param num: (integer) the number we need to tell
+    :return: (boolean) true or false
     """
     return num & 0x1
 
@@ -109,11 +111,12 @@ def total_variation(x):
 
 
 def peakdet(v, delta, x=None):
+
     """
     Converted from MATLAB script at http://billauer.co.il/peakdet.html
-    Returns two arrays
-    function [maxtab, mintab]=peakdet(v, delta, x)
-    %PEAKDET Detect peaks in a vector
+
+    % function [maxtab, mintab]=peakdet(v, delta, x)
+    % PEAKDET Detect peaks in a vector
     %        [MAXTAB, MINTAB] = PEAKDET(V, DELTA) finds the local
     %        maxima and minima ("peaks") in the vector V.
     %        MAXTAB and MINTAB consists of two columns. Column 1

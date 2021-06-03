@@ -136,23 +136,32 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name)
 def savgoldiff(x, dt, params):
     """
     Use the Savitzky-Golay to smooth the data and calculate the first derivative.
-    Uses scipy.signal.savgol_filter
-    The Savitzky-Golay is very similar to the sliding polynomial fit,
-    but slightly noisier, and much faster
+    It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the
+    sliding polynomial fit, but slightly noisier, and much faster
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [N,         : (int) order of the polynomial
-                            window_size,    : (int) size of the sliding window,
-                                                    must be odd (if not, 1 is added)
-                            smoothing_win]  : (int) size of the window used for gaussian smoothing,
-                                                    a good default is = window_size, but smaller for
-                                                    high freq data
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
 
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of three elements:
+
+                    - N: order of the polynomial
+                    - window_size: size of the sliding window, must be odd (if not, 1 is added)
+                    - smoothing_win: size of the window used for gaussian smoothing, a good default is window_size,
+                    but smaller for high frequnecy data
+
+    :type params: list (int)
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+
+    :rtype: tuple -> (np.array, np.array)
     """
-
     n, window_size, smoothing_win = params
 
     if window_size > len(x)-1:
@@ -233,17 +242,35 @@ def __polydiff__(x, dt, params, options=None):
 
 def polydiff(x, dt, params, options=None):
     """
-    Fit polynomials to the timeseries, and differentiate the polynomials.
+    Fit polynomials to the time series, and differentiate the polynomials.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: [N,            : (int)    order of the polynomial
-                    window_size], : (int)    size of the sliding window (ignored if not sliding)
-    :param options: (dict) {'sliding'      : (bool)   slide the method (True or False)
-                      'step_size'    : (int)    step size for sliding (smaller value is more accurate and more time consuming)
-                      'kernel_name'} : (string) kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of 2 elements:
+
+                    - N: order of the polynomial
+                    - window_size: size of the sliding window (ignored if not sliding)
+
+    :type params: list (int)
+
+    :param options: a dictionary consisting of 3 key value pairs:
+
+                    - 'sliding': whether to use sliding approach
+                    - 'step_size': step size for sliding
+                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+
+    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -299,17 +326,35 @@ def __chebydiff__(x, dt, params, options=None):
 
 def chebydiff(x, dt, params, options=None):
     """
-    Slide a smoothing derivative function across a timeseries with specified window size.
+    Slide a smoothing derivative function across a times eries with specified window size.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [N,            : (int)    order of the polynomial
-                            window_size], : (int)    size of the sliding window (ignored if not sliding)
-    :param options: (dict) {'sliding'      : (bool)   slide the method (True or False)
-                      'step_size'    : (int)    step size for sliding (smaller value is more accurate and more time consuming)
-                      'kernel_name'} : (string) kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of 2 elements:
+
+                    - N: order of the polynomial
+                    - window_size: size of the sliding window (ignored if not sliding)
+
+    :type params: list (int)
+
+    :param options: a dictionary consisting of 3 key value pairs:
+
+                    - 'sliding': whether to use sliding approach
+                    - 'step_size': step size for sliding
+                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+
+    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -515,18 +560,36 @@ def __lineardiff__(x, dt, params, options=None):
 
 def lineardiff(x, dt, params, options=None):
     """
-    Slide a smoothing derivative function across a timeseries with specified window size.
+    Slide a smoothing derivative function across a time series with specified window size.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [N,            : (int)    order of the dynamics (e.g. 3 means rank 3 A matrix, with states = {x, xdot, xddot})
-                            gamma,        : (float) regularization term
-                            window_size], : (int)    size of the sliding window (ignored if not sliding)
-    :param options: (dict) {'sliding'      : (bool)   slide the method (True or False)
-                            'step_size'    : (int)    step size for sliding (smaller value is more accurate and more time consuming)
-                            'kernel_name'} : (string) kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: a list of 3 elements:
+
+                    - N: order of the polynomial
+                    - gamma: regularization term
+                    - window_size: size of the sliding window (ignored if not sliding)
+
+    :type params: list (int, float, int)
+
+    :param options: a dictionary consisting of 3 key value pairs:
+
+                    - 'sliding': whether to use sliding approach
+                    - 'step_size': step size for sliding
+                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+
+    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:
@@ -567,19 +630,32 @@ def spectraldiff(x, dt, params, options=None):
     """
     Take a derivative in the fourier domain, with high frequency attentuation.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [wn]: (float) the high frequency cut off
-    :param options: (dict) {'even_extension',:   (bool) if True, extend the time series with
-                                                  an even extension so signal
-                                                  starts and ends at the same value.
-                      'pad_to_zero_dxdt'}: (bool) if True, extend the time series with
-                                                  extensions that smoothly force the derivative
-                                                  to zero. This allows the spectral derivative
-                                                  to fit data which does not start and end
-                                                  with derivatives equal to zero.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param x: array of time series to differentiate
+    :type x: np.array (float)
+
+    :param dt: time step size
+    :type dt: float
+
+    :param params: the high frequency cut off
+
+    :type params: list (float) or float
+
+    :param options: a dictionary consisting of 2 key value pairs:
+
+                    - 'even_extension': if True, extend the time series with an even extension so signal starts and ends
+                    at the same value.
+                    - 'pad_to_zero_dxdt': if True, extend the time series with extensions that smoothly force the
+                    derivative to zero. This allows the spectral derivative to fit data which does not start and end
+                    with derivatives equal to zero.
+
+    :type options: dict {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}, optional
+
+    :return: a tuple consisting of:
+
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+
+    :rtype: tuple -> (np.array, np.array)
     """
 
     if options is None:

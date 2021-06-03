@@ -14,22 +14,48 @@ _finite_difference = _utility.finite_difference
 def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None,
          show_error=True, markersize=5):
     """
-    :param x:
-    :param dt:
-    :param x_hat:
-    :param dxdt_hat:
-    :param x_truth:
-    :param dxdt_truth:
-    :param xlim:
-    :param ax_x:
-    :param ax_dxdt:
-    :param show_error:
-    :param markersize:
-    :return:
+    Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and
+    'dxdt_truth (black) vs dxdt_hat (red)'
+
+    :param x: array of noisy time series
+    :type x: np.array (float)
+
+    :param dt: a float number representing the time step size
+    :type dt: float
+
+    :param x_hat: array of smoothed estimation of x
+    :type x_hat: np.array (float)
+
+    :param dxdt_hat: array of estimated derivative
+    :type dxdt_hat: np.array (float)
+
+    :param x_truth: array of noise-free time series
+    :type x_truth: np.array (float)
+
+    :param dxdt_truth: array of true derivative
+    :type dxdt_truth: np.array (float)
+
+    :param xlim: a list specifying range of x
+    :type xlim: list (2 integers), optional
+
+    :param ax_x: axis of the first plot
+    :type ax_x: :class:`matplotlib.axes`, optional
+
+    :param ax_dxdt: axis of the second plot
+    :type ax_dxdt: :class:`matplotlib.axes`, optional
+
+    :param show_error: whether to show the rmse
+    :type show_error: boolean, optional
+
+    :param markersize: marker size of noisy observations
+    :type markersize: int, optional
+
+    :return: Display two plots
+    :rtype: None
     """
     t = _np.arange(0, dt*len(x), dt)
     if ax_x is None and ax_dxdt is None:
-        fig = _plt.figure(figsize=(20,6))
+        fig = _plt.figure(figsize=(20, 6))
         ax_x = fig.add_subplot(121)
         ax_dxdt = fig.add_subplot(122)
 
@@ -41,16 +67,20 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
             ax_x.plot(t, x_hat, color='red')
         ax_x.plot(t, x_truth, '--', color='black')
         ax_x.plot(t, x, '.', color='blue', zorder=-100, markersize=markersize)
-        ax_x.set_ylabel('Position')
-        ax_x.set_xlabel('Time')
+        ax_x.set_ylabel('Position', fontsize=20)
+        ax_x.set_xlabel('Time', fontsize=20)
         ax_x.set_xlim(xlim[0], xlim[-1])
+        ax_x.tick_params(axis='x', labelsize=15)
+        ax_x.tick_params(axis='y', labelsize=15)
 
     if ax_dxdt is not None:
         ax_dxdt.plot(t, dxdt_hat, color='red')
-        ax_dxdt.plot(t, dxdt_truth, '--', color='black')
-        ax_dxdt.set_ylabel('Velocity')
-        ax_dxdt.set_xlabel('Time')
+        ax_dxdt.plot(t, dxdt_truth, '--', color='black', linewidth=3)
+        ax_dxdt.set_ylabel('Velocity', fontsize=20)
+        ax_dxdt.set_xlabel('Time', fontsize=20)
         ax_dxdt.set_xlim(xlim[0], xlim[-1])
+        ax_dxdt.tick_params(axis='x', labelsize=15)
+        ax_dxdt.tick_params(axis='y', labelsize=15)
 
     if show_error:
         _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
@@ -59,9 +89,11 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
 
 def __rms_error__(a, e):
     """
-    :param a:
-    :param e:
-    :return:
+    Calculate rms error
+
+    :param a: the first array
+    :param e: the second array
+    :return: a float number representing the rms error
     """
     if _np.max(_np.abs(a-e)) > 1e16:
         return 1e16

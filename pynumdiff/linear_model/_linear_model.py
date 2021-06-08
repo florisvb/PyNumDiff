@@ -135,9 +135,7 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name)
 
 def savgoldiff(x, dt, params):
     """
-    Use the Savitzky-Golay to smooth the data and calculate the first derivative.
-    It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the
-    sliding polynomial fit, but slightly noisier, and much faster
+    Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
 
     :param x: array of time series to differentiate
     :type x: np.array (float)
@@ -149,8 +147,7 @@ def savgoldiff(x, dt, params):
 
                     - N: order of the polynomial
                     - window_size: size of the sliding window, must be odd (if not, 1 is added)
-                    - smoothing_win: size of the window used for gaussian smoothing, a good default is window_size,
-                    but smaller for high frequnecy data
+                    - smoothing_win: size of the window used for gaussian smoothing, a good default is window_size, but smaller for high frequnecy data
 
     :type params: list (int)
 
@@ -642,11 +639,8 @@ def spectraldiff(x, dt, params, options=None):
 
     :param options: a dictionary consisting of 2 key value pairs:
 
-                    - 'even_extension': if True, extend the time series with an even extension so signal starts and ends
-                    at the same value.
-                    - 'pad_to_zero_dxdt': if True, extend the time series with extensions that smoothly force the
-                    derivative to zero. This allows the spectral derivative to fit data which does not start and end
-                    with derivatives equal to zero.
+                    - 'even_extension': if True, extend the time series with an even extension so signal starts and ends at the same value.
+                    - 'pad_to_zero_dxdt': if True, extend the time series with extensions that smoothly force the derivative to zero. This allows the spectral derivative to fit data which does not start and end with derivatives equal to zero.
 
     :type options: dict {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}, optional
 

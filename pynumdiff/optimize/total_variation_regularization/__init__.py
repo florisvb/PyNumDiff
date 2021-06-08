@@ -1,0 +1,9 @@
+"""
+import useful functions from __total_variation_regularization__
+"""
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import iterative_velocity
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import velocity
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import acceleration
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import jerk
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import jerk_sliding
+from pynumdiff.optimize.total_variation_regularization.__total_variation_regularization__ import smooth_acceleration

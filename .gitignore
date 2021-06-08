@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -115,6 +114,5 @@ __pycache__
 *.zip
 *.egg-info
 dist
-build
 *.whl
 

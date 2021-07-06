@@ -7,7 +7,7 @@ import logging
 import scipy
 import numpy as np
 
-import pynumdiff.smooth_finite_difference as smooth_finite_difference
+from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
 

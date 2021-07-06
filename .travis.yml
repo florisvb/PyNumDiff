@@ -4,9 +4,9 @@ python:
   - 3.9
 
 install:
-  - pip3 install -r requirements.txt
-  - python3 setup.py install
+  - pip install -r requirements.txt
+  - python setup.py install
 
 script:
   - pytest pynumdiff
-  - python3 linting.py pynumdiff
+  - python linting.py pynumdiff

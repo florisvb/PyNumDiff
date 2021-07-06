@@ -46,7 +46,6 @@ kiwisolver==1.0.1
 lazy-object-proxy==1.6.0
 Markdown==3.3.4
 matlab-kernel==0.15.0
-matlabengineforpython===R2017b
 matplotlib==3.3.4
 mccabe==0.6.1
 metakernel==0.20.14

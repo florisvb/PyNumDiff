@@ -23,10 +23,7 @@ entrypoints==0.2.3
 enum34==1.1.6
 et-xmlfile==1.1.0
 fastprogress==1.0.0
-GPy==1.9.9
-gpytorch==1.4.1
 h5py==2.7.1
-hmlstm==0.0.1
 html5lib==0.9999999
 idna==2.10
 imagesize==1.2.0

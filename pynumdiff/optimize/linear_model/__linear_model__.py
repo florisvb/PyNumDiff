@@ -9,17 +9,8 @@ def spectraldiff(x, dt, params=None, options={'even_extension': True, 'pad_to_ze
                  tvgamma=1e-2, padding='auto', optimization_method='Nelder-Mead',
                  optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.linear_model.spectraldiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.linear_model.spectraldiff for detailed documentation.
     """
     # initial condition
     if params is None:
@@ -43,17 +34,8 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
              dxdt_truth=None, tvgamma=1e-2, padding='auto', optimization_method='Nelder-Mead',
              optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.linear_model.polydiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.linear_model.polydiff for detailed documentation.
     """
     # initial condition
     if params is None:
@@ -91,17 +73,8 @@ def polydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'kern
 def savgoldiff(x, dt, params=None, options={}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.linear_model.savgoldiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.linear_model.savgoldiff for detailed documentation.
     """
     # initial condition
     if params is None:
@@ -132,17 +105,8 @@ def chebydiff(x, dt, params=None, options={'sliding': True, 'step_size': 1, 'ker
               dxdt_truth=None, tvgamma=1e-2, padding='auto', optimization_method='Nelder-Mead',
               optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.linear_model.chebydiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.linear_model.chebydiff for detailed documentation.
     """
     # initial condition
     if params is None:
@@ -181,17 +145,8 @@ def lineardiff(x, dt, params=None, options={'sliding': True, 'step_size': 10, 'k
                dxdt_truth=None, tvgamma=1e-2, padding='auto', optimization_method='Nelder-Mead',
                optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.linear_model.lineardiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.linear_model.lineardiff for detailed documentation.
     """
     # initial condition
     if params is None:

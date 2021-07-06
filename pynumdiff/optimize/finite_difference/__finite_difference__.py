@@ -8,15 +8,10 @@ from pynumdiff.optimize.__optimize__ import __optimize__
 def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None,
                 tvgamma=1e-2, padding='auto', metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param metric:
-    :return:
+
+    Optimize the parameters for pynumdiff.finite_difference.first_order
+    See pynumdiff.optimize.__optimize__ and pynumdiff.finite_difference.first_order for detailed documentation.
+
     """
     # initial condition
     if params is None:

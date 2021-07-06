@@ -10,10 +10,19 @@ import scipy
 
 def get_filenames(path, contains, does_not_contain=('~', '.pyc')):
     """
-    :param path:
-    :param contains:
-    :param does_not_contain:
-    :return:
+    Create list of files found in given path that contain or do not contain certain strings.
+
+    :param path: path in which to look for files
+    :type path: string (directory path)
+
+    :param contains: string that filenames must contain
+    :type contains: string
+
+    :param does_not_contain: list of strings that filenames must not contain, optional
+    :type does_not_contain: list of strings
+
+    :return: list of filenames
+    :rtype: list of strings
     """
     cmd = 'ls ' + '"' + path + '"'
     ls = os.popen(cmd).read()
@@ -88,9 +97,16 @@ def hankel_matrix(x, num_delays, pad=False):  # fixed delay step of 1
 
 def matrix_inv(X, max_sigma=1e-16):
     """
-    :param X:
-    :param max_sigma:
-    :return:
+    Stable (pseudo) matrix inversion using singular value decomposition
+
+    :param X: matrix to invert
+    :type X: np.matrix or np.array
+
+    :param max_sigma: smallest singular values to take into account. matrix will be truncated prior to inversion based on this value.
+    :type max_sigma: float
+
+    :return: matrix pseudo inverse
+    :rtype: np.array or np.matrix
     """
     U, Sigma, V = np.linalg.svd(X, full_matrices=False)
     Sigma_inv = Sigma**-1
@@ -100,8 +116,14 @@ def matrix_inv(X, max_sigma=1e-16):
 
 def total_variation(x):
     """
-    :param x:
-    :return:
+    Calculate the total variation of an array
+
+    :param x: timeseries
+    :type x: np.array
+
+    :return: total variation
+    :rtype: float
+
     """
     if np.isnan(x).any():
         return np.nan
@@ -111,30 +133,23 @@ def total_variation(x):
 
 
 def peakdet(v, delta, x=None):
-
     """
-    Converted from MATLAB script at http://billauer.co.il/peakdet.html
+    Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.
 
-    % function [maxtab, mintab]=peakdet(v, delta, x)
-    % PEAKDET Detect peaks in a vector
-    %        [MAXTAB, MINTAB] = PEAKDET(V, DELTA) finds the local
-    %        maxima and minima ("peaks") in the vector V.
-    %        MAXTAB and MINTAB consists of two columns. Column 1
-    %        contains indices in V, and column 2 the found values.
-    %        With [MAXTAB, MINTAB] = PEAKDET(V, DELTA, X) the indices
-    %        in MAXTAB and MINTAB are replaced with the corresponding
-    %        X-values.
-    %
-    %        A point is considered a maximum peak if it has the maximal
-    %        value, and was preceded (to the left) by a value lower by
-    %        DELTA.
+    Converted from MATLAB script at http://billauer.co.il/peakdet.html
     % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
     % This function is released to the public domain; Any use is allowed.
 
-    :param v:
-    :param delta:
-    :param x:
-    :return:
+    :param v: array for which to find peaks and valleys
+    :typpe v: np.array
+
+    :param delta: threshold for finding peaks and valleys. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.
+    :type delta: float
+
+    :return: tuple of min and max locations and values:
+            - maxtab: array with locations (column 1) and values of maxima (column 2)
+            - mintab: array with locations (column 1) and values of minima (column 2)
+    :rtype: tuple -> (np.array, np.array)
 
     """
     maxtab = []
@@ -198,9 +213,16 @@ def finite_difference(x, dt):
 # Trapazoidal integration, with interpolated final point so that the lengths match.
 def integrate_dxdt_hat(dxdt_hat, dt):
     """
-    :param dxdt_hat:
-    :param dt:
-    :return:
+    Wrapper for scipy.integrate.cumtrapz to integrate dxdt_hat that ensures the integral has the same length
+
+    :param dxdt_hat: estimate derivative of timeseries
+    :type dxdt_hat: np.array
+
+    :param dt: time step in seconds
+    :type dt: float
+
+    :return: integral of dxdt_hat
+    :rtype: np.array
     """
     x = scipy.integrate.cumtrapz(dxdt_hat)
     first_value = x[0] - np.mean(dxdt_hat[0:1])
@@ -211,9 +233,16 @@ def integrate_dxdt_hat(dxdt_hat, dt):
 # Optimization routine to estimate the integration constant.
 def estimate_initial_condition(x, x_hat):
     """
-    :param x:
-    :param x_hat:
-    :return:
+    Integration leaves an unknown integration constant. This function finds a best fit integration constant given x, and x_hat (the integral of dxdt_hat)
+
+    :param x: timeseries of measurements
+    :type x: np.array
+
+    :param x_hat: smoothed estiamte of x, for the purpose of this function this should have been determined by integrate_dxdt_hat
+    :type x_hat: np.array
+
+    :return: integration constant (i.e. initial condition) that best aligns x_hat with x
+    :rtype: float
     """
     def f(x0, *args):
         x, x_hat = args[0]

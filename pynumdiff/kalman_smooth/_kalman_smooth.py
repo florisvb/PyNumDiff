@@ -116,7 +116,7 @@ def __constant_velocity__(x, dt, params, options=None):
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
     :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
+    :param dt: (float) time step size
     :param params: (list)  [r, : (float) covariance of the x noise
                             q] : (float) covariance of the constant velocity model
     :param options: (dict) {'backward'} : (bool) run smoother backwards in time

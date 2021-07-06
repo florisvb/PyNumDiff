@@ -22,14 +22,17 @@ parameters = {'omega_m': 420,
 
 def triangle(iterations, dt):
     """
-    :param iterations:
-    :type iterations:
+    Create sawtooth pattern of hills for the car to drive over.
 
-    :param dt:
-    :type dt:
+    :param iterations: number of time points in time series
+    :type iterations: int
 
-    :return:
-    :rtype:
+    :param dt: time step in seconds
+    :type dt: float
+
+    :return: time series of hills (angle of road as a function of time)
+    :rtype: np.matrix
+
     """
     t = np.arange(0, iterations*dt, dt)
     continuous_x = np.sin(0.02*t*np.sqrt(t))
@@ -64,22 +67,26 @@ def triangle(iterations, dt):
 
 def effective_wheel_radius(v=20):
     """
-    :param v:
+    Allow effective wheel radius to be a function of velocity.
+
+    :param v: ignored for now
     :type v:
 
-    :return:
-    :rtype:
+    :return: effective wheel radius, constant for now
+    :rtype: float
     """
     return v
 
 
 def torque(omega):
     """
-    :param omega:
-    :type omega:
+    Convert throttle input to Torque. See Astrom and Murray 2008 Chapter 3.
 
-    :return:
-    :rtype:
+    :param omega: throttle
+    :type omega: float
+
+    :return: motor torque
+    :rtype: float
     """
     omega_m = parameters['omega_m']
     t_m = parameters['T_m']
@@ -90,20 +97,24 @@ def torque(omega):
 # pylint: disable-msg=too-many-locals
 def step_forward(state_vals, disturbances, desired_v, dt):
     """
-    :param state_vals:
-    :type state_vals:
+    One-step Euler integrator that takes the current state, disturbances, and desired velocity and calculates the subsequent state.
 
-    :param disturbances:
-    :type disturbances:
+    :param state_vals: current state [position, velocity, road_angle]
+    :type state_vals: np.matrix
 
-    :param desired_v:
-    :type desired_v:
+    :param disturbances: current hill angle
+    :type disturbances: np.matrix
 
-    :param dt:
-    :type dt:
+    :param desired_velocity: current desired velocity
+    :type desired_velocity: np.matrix
 
-    :return:
-    :rtype:
+    :param dt: time step (seconds)
+    :type dt: float
+
+    :return: a tuple consisting of:
+            - new_state: new state
+            - u: control inputs
+    :rtype: tuple -> (np.matrix, np.matrix)
     """
     p = state_vals[0, -1]
     v = state_vals[1, -1]
@@ -137,17 +148,20 @@ def step_forward(state_vals, disturbances, desired_v, dt):
 # disturbance
 def hills(iterations, dt, factor):
     """
-    :param iterations:
-    :type iterations:
+    Wrapper for creating a hill profile for the car to drive over that has an appropriate length and magnitude
 
-    :param dt:
-    :type dt:
+    :param iterations: number of time points to simulate
+    :type iterations: int
 
-    :param factor:
-    :type factor:
+    :param dt: timestep of simulation in seconds
+    :type dt: float
 
-    :return:
-    :rtype:
+    :param factor: determines magnitude of the hills
+    :type factor: int
+
+
+    :return: hills, the output of the triangle function, a [1,M] matrix where M is the number of time points simulated
+    :rtype: np.matrix
     """
     return triangle(iterations, dt)*0.3/factor
 
@@ -155,28 +169,39 @@ def hills(iterations, dt, factor):
 # desired velocity
 def desired_velocity(n, factor):
     """
-    :param n:
-    :type n:
+    Wrapper for defining the desired velocity as a matrix with size [1, M], where M is the number of time points to simulate
+    See function "run" for how this function gets used.
 
-    :param factor:
-    :type factor:
+    :param n: number of time points to simulate
+    :type n: int
 
-    :return:
-    :rtype:
+    :param factor: factor that determines the magnitude of the desired velocity
+    :type factor: float
+
+    :return: desired velocity as function of time, a [1,M] matrix, M is the number of time points to simulate
+    :rtype: np.matrix
     """
     return np.matrix([2/factor]*n)
 
 
 def run(timeseries_length=4, dt=0.01):
     """
-    :param timeseries_length:
-    :type timeseries_length:
+    Simulate proportional integral control of a car attempting to maintain constant velocity while going up and down hills.
+    This function is used for testing differentiation methods.
 
-    :param dt:
-    :type dt:
+    See Astrom and Murray 2008 Chapter 3.
 
-    :return:
-    :rtype:
+    :param timeseries_length: number of seconds to simulate
+    :type timeseries_length: float
+
+    :param dt: timestep in seconds
+    :type dt: float
+
+    :return: a tuple consisting of arrays of size [N, M], where M is the number of time steps.:
+            - state_vals: state of the car, i.e. position and velocity as a function of time
+            - disturbances: disturbances, ie. hills, that the car is subjected to
+            - controls: control inputs applied by the car
+    :rtype: tuple -> (np.array, np.array, np.array)
     """
     t = np.arange(0, timeseries_length, dt)
     iterations = len(t)

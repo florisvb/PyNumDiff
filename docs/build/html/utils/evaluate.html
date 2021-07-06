@@ -91,6 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../linear_model.html">linear_model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="_pi_cruise_control.html">_pi_cruise_control</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">evaluate</a></li>
@@ -180,16 +181,20 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.evaluate.error_correlation">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">error_correlation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.error_correlation" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Calculate the error correlation (pearsons correlation coefficient) between the estimated dxdt and true dxdt</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dxdt_hat</strong> – </p></li>
-<li><p><strong>dxdt_truth</strong> – </p></li>
-<li><p><strong>padding</strong> – </p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>r-squared correlation coefficient</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -197,20 +202,27 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.evaluate.metrics">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">metrics</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.metrics" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – </p></li>
-<li><p><strong>dt</strong> – </p></li>
-<li><p><strong>x_hat</strong> – </p></li>
-<li><p><strong>dxdt_hat</strong> – </p></li>
-<li><p><strong>x_truth</strong> – </p></li>
-<li><p><strong>dxdt_truth</strong> – </p></li>
-<li><p><strong>padding</strong> – </p></li>
+<li><p><strong>x</strong> (<em>np.array</em>) – time series that was differentiated</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step in seconds</p></li>
+<li><p><strong>x_hat</strong> (<em>np.array</em>) – estimated (smoothed) x</p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>x_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of x, if known, optional</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>a tuple containing the following:
+- rms_rec_x: RMS error between the integral of dxdt_hat and x
+- rms_x: RMS error between x_hat and x_truth, returns None if x_truth is None
+- rms_dxdt: RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple -&gt; (float, float, float)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -248,16 +260,20 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.evaluate.rmse">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">rmse</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.rmse" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Calculate the Root Mean Squared Error between the estimated dxdt and true dxdt</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dxdt_hat</strong> – </p></li>
-<li><p><strong>dxdt_truth</strong> – </p></li>
-<li><p><strong>padding</strong> – </p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>Root Mean Squared Error</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>

@@ -1,5 +1,5 @@
 """
-functions for optimizing kalman smoothing
+functions for optimizing kalman smoothing approaches
 """
 import numpy as np
 import pynumdiff
@@ -72,17 +72,8 @@ def constant_velocity(x, dt, params=None, options={'forwardbackward': True}, dxd
                       padding='auto', optimization_method='Nelder-Mead', optimization_options={'maxiter': 10},
                       metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.kalman_smooth.constant_velocity
+    See pynumdiff.optimize.__optimize__ and pynumdiff.kalman_smooth.constant_velocity for detailed documentation.
     """
 
     # optimize
@@ -97,17 +88,8 @@ def constant_acceleration(x, dt, params=None, options={'forwardbackward': True},
                           padding='auto', optimization_method='Nelder-Mead',
                           optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.kalman_smooth.constant_acceleration
+    See pynumdiff.optimize.__optimize__ and pynumdiff.kalman_smooth.constant_acceleration for detailed documentation.
     """
 
     # optimize
@@ -121,17 +103,8 @@ def constant_acceleration(x, dt, params=None, options={'forwardbackward': True},
 def constant_jerk(x, dt, params=None, options={'forwardbackward': True}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                   optimization_method='Nelder-Mead', optimization_options={'maxiter': 10}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.kalman_smooth.constant_jerk
+    See pynumdiff.optimize.__optimize__ and pynumdiff.kalman_smooth.constant_jerk for detailed documentation.
     """
     # optimize
     func = pynumdiff.kalman_smooth.constant_jerk

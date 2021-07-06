@@ -50,17 +50,8 @@ def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale':
                        dxdt_truth=None, tvgamma=1e-2, padding='auto',
                        optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.iterative_velocity
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.iterative_velocity for detailed documentation.
     """
 
     # optimize
@@ -86,17 +77,8 @@ def iterative_velocity(x, dt, params=None, options={'cg_maxiter': 1000, 'scale':
 def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
              optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.velocity
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.velocity for detailed documentation.
     """
 
     # optimize
@@ -110,17 +92,8 @@ def velocity(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, t
 def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                  optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.acceleration
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.acceleration for detailed documentation.
     """
 
     # optimize
@@ -134,17 +107,8 @@ def acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=Non
 def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
          optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.jerk
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.jerk for detailed documentation.
     """
     # optimize
     function = pynumdiff.total_variation_regularization.jerk
@@ -157,17 +121,8 @@ def jerk(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgam
 def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
          optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.jerk_sliding
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.jerk_sliding for detailed documentation.
     """
 
     # optimize
@@ -181,17 +136,8 @@ def jerk_sliding(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=Non
 def smooth_acceleration(x, dt, params=None, options={'solver': 'MOSEK'}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                         optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.total_variation_regularization.smooth_acceleration
+    See pynumdiff.optimize.__optimize__ and pynumdiff.total_variation_regularization.smooth_acceleration for detailed documentation.
     """
     # initial condition
     if params is None:

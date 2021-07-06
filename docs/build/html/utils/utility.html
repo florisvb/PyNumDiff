@@ -91,6 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../linear_model.html">linear_model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="_pi_cruise_control.html">_pi_cruise_control</a></li>
 <li class="toctree-l3"><a class="reference internal" href="evaluate.html">evaluate</a></li>
@@ -180,15 +181,19 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.estimate_initial_condition">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">estimate_initial_condition</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.estimate_initial_condition" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Integration leaves an unknown integration constant. This function finds a best fit integration constant given x, and x_hat (the integral of dxdt_hat)</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – </p></li>
-<li><p><strong>x_hat</strong> – </p></li>
+<li><p><strong>x</strong> (<em>np.array</em>) – timeseries of measurements</p></li>
+<li><p><strong>x_hat</strong> (<em>np.array</em>) – smoothed estiamte of x, for the purpose of this function this should have been determined by integrate_dxdt_hat</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>integration constant (i.e. initial condition) that best aligns x_hat with x</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -214,16 +219,20 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.get_filenames">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">get_filenames</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">does_not_contain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('~',</span> <span class="pre">'.pyc')</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.get_filenames" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Create list of files found in given path that contain or do not contain certain strings.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> – </p></li>
-<li><p><strong>contains</strong> – </p></li>
-<li><p><strong>does_not_contain</strong> – </p></li>
+<li><p><strong>path</strong> (<em>string</em><em> (</em><em>directory path</em><em>)</em>) – path in which to look for files</p></li>
+<li><p><strong>contains</strong> (<em>string</em>) – string that filenames must contain</p></li>
+<li><p><strong>does_not_contain</strong> (<em>list of strings</em>) – list of strings that filenames must not contain, optional</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>list of filenames</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
 </dd>
 </dl>
 </dd></dl>
@@ -265,15 +274,19 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.integrate_dxdt_hat">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">integrate_dxdt_hat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.integrate_dxdt_hat" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Wrapper for scipy.integrate.cumtrapz to integrate dxdt_hat that ensures the integral has the same length</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dxdt_hat</strong> – </p></li>
-<li><p><strong>dt</strong> – </p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimate derivative of timeseries</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step in seconds</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>integral of dxdt_hat</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -302,15 +315,19 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.matrix_inv">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">matrix_inv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-16</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.matrix_inv" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Stable (pseudo) matrix inversion using singular value decomposition</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>X</strong> – </p></li>
-<li><p><strong>max_sigma</strong> – </p></li>
+<li><p><strong>X</strong> (<em>np.matrix</em><em> or </em><em>np.array</em>) – matrix to invert</p></li>
+<li><p><strong>max_sigma</strong> (<em>float</em>) – smallest singular values to take into account. matrix will be truncated prior to inversion based on this value.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>matrix pseudo inverse</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.array or np.matrix</p>
 </dd>
 </dl>
 </dd></dl>
@@ -318,32 +335,27 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.peakdet">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">peakdet</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.peakdet" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converted from MATLAB script at <a class="reference external" href="http://billauer.co.il/peakdet.html">http://billauer.co.il/peakdet.html</a></p>
-<p>% function [maxtab, mintab]=peakdet(v, delta, x)
-% PEAKDET Detect peaks in a vector
-%        [MAXTAB, MINTAB] = PEAKDET(V, DELTA) finds the local
-%        maxima and minima (“peaks”) in the vector V.
-%        MAXTAB and MINTAB consists of two columns. Column 1
-%        contains indices in V, and column 2 the found values.
-%        With [MAXTAB, MINTAB] = PEAKDET(V, DELTA, X) the indices
-%        in MAXTAB and MINTAB are replaced with the corresponding
-%        X-values.
-%
-%        A point is considered a maximum peak if it has the maximal
-%        value, and was preceded (to the left) by a value lower by
-%        DELTA.
+<dd><p>Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.</p>
+<p>Converted from MATLAB script at <a class="reference external" href="http://billauer.co.il/peakdet.html">http://billauer.co.il/peakdet.html</a>
 % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
 % This function is released to the public domain; Any use is allowed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>v</strong> – </p></li>
-<li><p><strong>delta</strong> – </p></li>
-<li><p><strong>x</strong> – </p></li>
+<li><p><strong>v</strong> – array for which to find peaks and valleys</p></li>
+<li><p><strong>delta</strong> (<em>float</em>) – threshold for finding peaks and valleys. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dt class="field-even">Typpe v</dt>
+<dd class="field-even"><p>np.array</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>tuple of min and max locations and values:
+- maxtab: array with locations (column 1) and values of maxima (column 2)
+- mintab: array with locations (column 1) and values of minima (column 2)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple -&gt; (np.array, np.array)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -351,12 +363,16 @@
 <dl class="py function">
 <dt id="pynumdiff.utils.utility.total_variation">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">total_variation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.total_variation" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Calculate the total variation of an array</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – </p>
+<dd class="field-odd"><p><strong>x</strong> (<em>np.array</em>) – timeseries</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>total variation</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>

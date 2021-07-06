@@ -59,18 +59,8 @@ def __kerneldiff__(func, x, dt, params=None, options={'iterate': False}, dxdt_tr
 def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2,
                padding='auto', metric='rmse'):
     """
-    Optimize the parameters for smooth_finite_difference.mediandiff
-    See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
-
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.mediandiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.mediandiff for detailed documentation.
     """
     func = pynumdiff.smooth_finite_difference.mediandiff
     opt_params, opt_val = __kerneldiff__(func, x, dt, params, options, dxdt_truth, tvgamma, padding, metric)
@@ -79,18 +69,8 @@ def mediandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
 
 def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse'):
     """
-    Optimize the parameters for smooth_finite_difference.meandiff
-    See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
-
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.meandiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.meandiff for detailed documentation.
     """
     func = pynumdiff.smooth_finite_difference.meandiff
     opt_params, opt_val = __kerneldiff__(func, x, dt, params, options, dxdt_truth, tvgamma, padding, metric)
@@ -100,18 +80,8 @@ def meandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tv
 def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2,
                  padding='auto', metric='rmse'):
     """
-    Optimize the parameters for smooth_finite_difference.gaussiandiff
-    See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
-
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.gaussiandiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.gaussiandiff for detailed documentation.
     """
     func = pynumdiff.smooth_finite_difference.gaussiandiff
     opt_params, opt_val = __kerneldiff__(func, x, dt, params, options, dxdt_truth, tvgamma, padding, metric)
@@ -121,18 +91,8 @@ def gaussiandiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None
 def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2,
                    padding='auto', metric='rmse'):
     """
-    Optimize the parameters for smooth_finite_difference.friedrichsdiff
-    See pynumdiff.optimize.smooth_finite_difference.docstring for detailed documentation.
-
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.friedrichsdiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.friedrichsdiff for detailed documentation.
     """
     func = pynumdiff.smooth_finite_difference.friedrichsdiff
     opt_params, opt_val = __kerneldiff__(func, x, dt, params, options, dxdt_truth, tvgamma, padding, metric)
@@ -142,17 +102,8 @@ def friedrichsdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=No
 def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.butterdiff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.butterdiff for detailed documentation.
     """
     # initial condition
     if params is None:
@@ -193,17 +144,8 @@ def butterdiff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, 
 def splinediff(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding='auto',
                optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}, metric='rmse'):
     """
-    :param x:
-    :param dt:
-    :param params:
-    :param options:
-    :param dxdt_truth:
-    :param tvgamma:
-    :param padding:
-    :param optimization_method:
-    :param optimization_options:
-    :param metric:
-    :return:
+    Optimize the parameters for pynumdiff.smooth_finite_difference.splinediff
+    See pynumdiff.optimize.__optimize__ and pynumdiff.smooth_finite_difference.splinediff for detailed documentation.
     """
     # initial condition
     if params is None:

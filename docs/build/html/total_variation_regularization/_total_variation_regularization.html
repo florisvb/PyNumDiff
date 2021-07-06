@@ -38,7 +38,7 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="utils" href="../utils.html" />
+    <link rel="next" title="optimize" href="../optimize.html" />
     <link rel="prev" title="total_variation_regularization" href="../total_variation_regularization.html" /> 
 </head>
 
@@ -94,6 +94,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">_total_variation_regularization</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils.html">utils</a></li>
 </ul>
 </li>
@@ -308,21 +309,26 @@ in testing, ‘MOSEK’ was the most robust.</p></li>
 <dl class="py function">
 <dt id="pynumdiff.total_variation_regularization._total_variation_regularization.smooth_acceleration">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.total_variation_regularization._total_variation_regularization.</span></code><code class="sig-name descname"><span class="pre">smooth_acceleration</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.total_variation_regularization._total_variation_regularization.smooth_acceleration" title="Permalink to this definition">¶</a></dt>
-<dd><p>? ? ?</p>
+<dd><p>Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
+And then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
+The end result is similar to the jerk method, but can be more time-efficient.</p>
+<p>Default solver is MOSEK: <a class="reference external" href="https://www.mosek.com/">https://www.mosek.com/</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – </p></li>
-<li><p><strong>dt</strong> – </p></li>
-<li><p><strong>params</strong> – </p></li>
-<li><p><strong>options</strong> – </p></li>
+<li><p><strong>x</strong> (<em>np.array of floats</em><em>, </em><em>1xN</em>) – time series to differentiate</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step</p></li>
+<li><p><strong>params</strong> (<em>list -&gt;</em><em> [</em><em>float</em><em>, </em><em>int</em><em>]</em>) – list with values [gamma, window_size], where gamma (float) is the regularization parameter, window_size (int) is the window_size to use for the gaussian kernel</p></li>
+<li><p><strong>options</strong> (<em>dict {'solver': SOLVER}</em>) – a dictionary indicating which SOLVER option to use, ie. ‘MOSEK’ or ‘CVXOPT’, in testing, ‘MOSEK’ was the most robust.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>a tuple consisting of:
+- x_hat: estimated (smoothed) x
+- dxdt_hat: estimated derivative of x</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p></p>
+<dd class="field-odd"><p>tuple -&gt; (np.array, np.array)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -365,7 +371,7 @@ in testing, ‘MOSEK’ was the most robust.</p></li>
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="../utils.html" class="btn btn-neutral float-right" title="utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../optimize.html" class="btn btn-neutral float-right" title="optimize" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="../total_variation_regularization.html" class="btn btn-neutral float-left" title="total_variation_regularization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

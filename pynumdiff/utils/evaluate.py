@@ -105,14 +105,35 @@ def __rms_error__(a, e):
 
 def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None):
     """
-    :param x:
-    :param dt:
-    :param x_hat:
-    :param dxdt_hat:
-    :param x_truth:
-    :param dxdt_truth:
-    :param padding:
-    :return:
+    Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.
+
+    :param x: time series that was differentiated
+    :type x: np.array
+
+    :param dt: time step in seconds
+    :type dt: float
+
+    :param x_hat: estimated (smoothed) x
+    :type x_hat: np.array
+
+    :param dxdt_hat: estimated xdot
+    :type dxdt_hat: np.array
+
+    :param x_truth: true value of x, if known, optional
+    :type x_truth: np.array like x or None
+
+    :param dxdt_truth: true value of dxdt, if known, optional
+    :type dxdt_truth: np.array like x or None
+
+    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
+    :type padding: int, None, or auto
+
+    :return: a tuple containing the following:
+            - rms_rec_x: RMS error between the integral of dxdt_hat and x
+            - rms_x: RMS error between x_hat and x_truth, returns None if x_truth is None
+            - rms_dxdt: RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
+    :rtype: tuple -> (float, float, float)
+
     """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(x))
@@ -143,10 +164,20 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None)
 
 def error_correlation(dxdt_hat, dxdt_truth, padding=None):
     """
-    :param dxdt_hat:
-    :param dxdt_truth:
-    :param padding:
-    :return:
+    Calculate the error correlation (pearsons correlation coefficient) between the estimated dxdt and true dxdt
+
+    :param dxdt_hat: estimated xdot
+    :type dxdt_hat: np.array
+
+    :param dxdt_truth: true value of dxdt, if known, optional
+    :type dxdt_truth: np.array like x or None
+
+    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
+    :type padding: int, None, or auto
+
+    :return: r-squared correlation coefficient
+    :rtype: float
+
     """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
@@ -159,10 +190,19 @@ def error_correlation(dxdt_hat, dxdt_truth, padding=None):
 
 def rmse(dxdt_hat, dxdt_truth, padding=None):
     """
-    :param dxdt_hat:
-    :param dxdt_truth:
-    :param padding:
-    :return:
+    Calculate the Root Mean Squared Error between the estimated dxdt and true dxdt
+
+    :param dxdt_hat: estimated xdot
+    :type dxdt_hat: np.array
+
+    :param dxdt_truth: true value of dxdt, if known, optional
+    :type dxdt_truth: np.array like x or None
+
+    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
+    :type padding: int, None, or auto
+
+    :return: Root Mean Squared Error
+    :rtype: float
     """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(dxdt_hat))

@@ -1,3 +1,4 @@
+
 """
 Optimization functions
 """
@@ -7,43 +8,6 @@ import numpy as np
 
 from pynumdiff.utils import utility
 from pynumdiff.utils import evaluate
-
-#################
-# Documentation #
-#################
-
-
-def docstring(x, dt, params=None, options={'iterate': False}, dxdt_truth=None, tvgamma=1e-2, padding=10):
-    """
-    All optimization calls have the same interface.
-
-    Parameters
-    ----------
-    x       : (np.array of floats, 1xN) time series to differentiate
-    dt      : (float) time step
-    params  : (list, list of lists, or None)  Initial guess for params, see finite_difference.first_order
-                                              If list: params is the initial condition
-                                              If list of lists: params is a list of multiple initial conditions
-                                              If None: default list of initial conditions is used (see code)
-    options : (dict)  options, see finite_difference.first_order
-
-    dxdt_truth : (like x) actual time series of the derivative of x, if known
-    tvgamma     : (float)  regularization value used to select for parameters that yield a smooth derivative.
-                           larger value results in a smoother derivative
-    padding     : (int)    number of time steps to ignore at the beginning and end of the time series in the optimization
-                           larger value causes the optimization to emphasize the accuracy of dxdt in the middle of the time series
-
-    Returns
-    -------
-    params : (list)  optimal parameters
-    value  : (float) optimal value of objective function
-    """
-
-    return None
-
-#################
-# Documentation #
-#################
 
 
 def __correct_params__(params, params_types, params_low, params_high):
@@ -116,11 +80,32 @@ def __go__(input_args):
 
 def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_options={'maxiter': 20}):
     """
-    :param params:
-    :param args:
-    :param optimization_method:
-    :param optimization_options:
-    :return:
+    Find the optimal parameters for a given differentiation method. This function gets called by optimize.METHOD_FAMILY.METHOD.
+    For example, optimize.smooth_finite_difference.butterdiff will call this function to determine the optimal parameters for butterdiff.
+    This function is a wrapper that parallelizes the __go__ function, which is a wrapper for __objective_function__.
+
+    :param params: Initial guess for params, list of guesses, or None
+    :type params: list, list of lists, or None
+
+    :param args: list of the following: function, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric
+                    - function      : function to optimize parameters for, i.e. optimize.smooth_finite_difference.butterdiff
+                    - x             : (np.array of floats, 1xN) time series to differentiate
+                    - dt            : (float) time step
+                    - params_types  : (list of types) types for each parameter, i.e. [int, int], or [int, float, float]
+                    - params_low    : (list) list of lowest allowable values for each parameter
+                    - params_high   : (list) list of highest allowable values for each parameter
+                    - options       : (dict)  options, see for example finite_difference.first_order
+                    - dxdt_truth    : (like x) actual time series of the derivative of x, if known
+                    - tvgamma       : (float)  regularization value used to select for parameters that yield a smooth derivative. Larger value results in a smoother derivative
+                    - padding       : (int)    number of time steps to ignore at the beginning and end of the time series in the optimization. Larger value causes the optimization to emphasize the accuracy of dxdt in the middle of the time series
+                    - metric        : (string) either 'rmse' or 'error_correlation', only applies if dxdt_truth is not None, see __objective_function__
+
+    :type args: list -> (function reference, np.array, float, list, list, list, dict, np.array, float, int, string)
+
+    :return: a tuple containing:
+            - optimal parameters
+            - optimal values of objective function
+    :rtype: tuple -> (list, float)
     """
     func, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric = args
     if padding == 'auto':

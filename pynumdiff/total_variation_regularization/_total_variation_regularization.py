@@ -266,22 +266,29 @@ def jerk(x, dt, params, options=None):
 
 def smooth_acceleration(x, dt, params, options=None):
     """
-    ? ? ?
+    Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
+    And then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
+    The end result is similar to the jerk method, but can be more time-efficient.
 
-    :param x:
-    :type x:
+    Default solver is MOSEK: https://www.mosek.com/
 
-    :param dt:
-    :type dt:
+    :param x: time series to differentiate
+    :type x: np.array of floats, 1xN
 
-    :param params:
-    :type params:
+    :param dt: time step
+    :type dt: float
 
-    :param options:
-    :type options:
+    :param params:  list with values [gamma, window_size], where gamma (float) is the regularization parameter, window_size (int) is the window_size to use for the gaussian kernel
+    :type params: list -> [float, int]
 
-    :return:
-    :rtype:
+    :param options: a dictionary indicating which SOLVER option to use, ie. 'MOSEK' or 'CVXOPT', in testing, 'MOSEK' was the most robust.
+    :type options: dict {'solver': SOLVER}
+
+    :return: a tuple consisting of:
+            - x_hat: estimated (smoothed) x
+            - dxdt_hat: estimated derivative of x
+    :rtype: tuple -> (np.array, np.array)
+
     """
     if options is None:
         options = {'solver': 'MOSEK'}

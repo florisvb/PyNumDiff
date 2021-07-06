@@ -94,6 +94,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils.html">utils</a></li>
 </ul>
 </li>
@@ -174,44 +175,6 @@
   <div class="section" id="module-pynumdiff.linear_model._linear_model">
 <span id="linear-model"></span><h1>_linear_model<a class="headerlink" href="#module-pynumdiff.linear_model._linear_model" title="Permalink to this headline">¶</a></h1>
 <p>This module implements some common finite difference schemes</p>
-<dl class="py class">
-<dt id="pynumdiff.linear_model._linear_model.DeWhiten">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">pynumdiff.linear_model._linear_model.</span></code><code class="sig-name descname"><span class="pre">DeWhiten</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.DeWhiten" title="Permalink to this definition">¶</a></dt>
-<dd><p>de-whiten class</p>
-<dl class="py method">
-<dt id="pynumdiff.linear_model._linear_model.DeWhiten.dewhiten">
-<code class="sig-name descname"><span class="pre">dewhiten</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.DeWhiten.dewhiten" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>m</strong> – </p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="pynumdiff.linear_model._linear_model.Whiten">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">pynumdiff.linear_model._linear_model.</span></code><code class="sig-name descname"><span class="pre">Whiten</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.Whiten" title="Permalink to this definition">¶</a></dt>
-<dd><p>whiten class</p>
-<dl class="py method">
-<dt id="pynumdiff.linear_model._linear_model.Whiten.whiten">
-<code class="sig-name descname"><span class="pre">whiten</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.Whiten.whiten" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>m</strong> – </p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 <dl class="py function">
 <dt id="pynumdiff.linear_model._linear_model.chebydiff">
 <code class="sig-prename descclassname"><span class="pre">pynumdiff.linear_model._linear_model.</span></code><code class="sig-name descname"><span class="pre">chebydiff</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.chebydiff" title="Permalink to this definition">¶</a></dt>
@@ -387,19 +350,6 @@
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>tuple -&gt; (np.array, np.array)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="pynumdiff.linear_model._linear_model.whiten_library">
-<code class="sig-prename descclassname"><span class="pre">pynumdiff.linear_model._linear_model.</span></code><code class="sig-name descname"><span class="pre">whiten_library</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">library</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.linear_model._linear_model.whiten_library" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>library</strong> – </p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
 </dd>
 </dl>
 </dd></dl>

@@ -9,5 +9,6 @@ API documentation
    linear_model
    smooth_finite_difference
    total_variation_regularization
+   optimize
    utils
 

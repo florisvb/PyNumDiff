@@ -14,7 +14,7 @@ colorama==0.4.4
 contextvars==2.4
 cvxpy==1.1.13
 cycler==0.10.0
-dataclasses==0.8
+dataclasses==0.6
 decorator==4.1.2
 DGP @ git+https://github.com/SheffieldML/PyDeepGP.git@f2a1f568a7462633a58ed433520dcf7f0c98515c
 dill==0.3.3

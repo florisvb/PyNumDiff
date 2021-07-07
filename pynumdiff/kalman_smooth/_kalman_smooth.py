@@ -6,7 +6,6 @@ import numpy as np
 
 from pynumdiff.linear_model import savgoldiff
 
-
 ####################
 # Helper functions #
 ####################

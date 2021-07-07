@@ -8,6 +8,10 @@ from unittest import TestCase
 from pynumdiff.linear_model import savgoldiff, spectraldiff, \
     polydiff, chebydiff, lineardiff
 
+import warnings
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+
+
 x = np.array([1., 4., 9., 3., 20.,
               8., 16., 2., 15., 10.,
               15., 3., 5., 7., 4.])
@@ -24,8 +28,8 @@ class TestLM(TestCase):
         dxdt = np.array([-29.5453,  156.853147,  261.970245,  224.16657,  117.336993,
                          -26.788542,  -81.239512,  -10.942197,   37.470096,  -37.004311,
                          -160.060586, -192.450136, -120.46908,   43.639278,  243.047964])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=3)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=3)
+        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_spectraldiff(self):
         params = [0.1]
@@ -35,8 +39,8 @@ class TestLM(TestCase):
         dxdt = np.array([104.803, 147., 172.464, 173.547, 147.67, 98.194,
                          33.754, -33.769, -92.105, -131.479, -146.761, -138.333,
                          -111.508, -74.752, -37.276])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=3)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=3)
+        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_polydiff(self):
         params = [2, 3]
@@ -47,8 +51,8 @@ class TestLM(TestCase):
         dxdt = np.array([330.730385, 284.267456, 299.891801, 305.441626, 205.475727,
                          -145.229037, -279.41178, 15.428548, 244.252341, 20.343789,
                          -326.727498, -288.988297, 33.647456, 27.861175, -344.695033])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=3)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=3)
+        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_chebydiff(self):
         params = [2, 3]
@@ -59,8 +63,8 @@ class TestLM(TestCase):
         dxdt = np.array([202.732652, 346.950235, -140.713336, 498.719617, 212.717775,
                          -185.13847, -266.604056, -51.792587, 377.969849,  -0.749768,
                          -297.654931, -455.876155, 197.575692, -24.809441, -150.109487])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=3)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=3)
+        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_lineardiff(self):
         params = [3, 5, 10]
@@ -71,5 +75,5 @@ class TestLM(TestCase):
         dxdt = np.array([36.409323, 164.63261, 342.074243, 283.516901, 15.884867,
                          -121.28366, -43.142966, 36.245352, 53.776983, -31.123294,
                          -167.533366, -200.18714, -129.999465, -1.085623, 82.900375])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=3)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=3)
+        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)

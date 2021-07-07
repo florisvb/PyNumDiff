@@ -52,7 +52,6 @@ prometheus-client==0.11.0
 prompt-toolkit==3.0.19
 ptyprocess==0.7.0
 py==1.10.0
-pychebfun==0.3
 pycparser==2.20
 Pygments==2.9.0
 pylint==2.9.3
@@ -74,3 +73,4 @@ traitlets==5.0.5
 wcwidth==0.2.5
 webencodings==0.5.1
 wrapt==1.12.1
+pychebfun==0.3

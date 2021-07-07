@@ -52,9 +52,11 @@ prometheus-client==0.11.0
 prompt-toolkit==3.0.19
 ptyprocess==0.7.0
 py==1.10.0
+pychebfun==0.3
 pycparser==2.20
 Pygments==2.9.0
 pylint==2.9.3
+pynumdiff==0.1.dev0
 pyparsing==2.4.7
 pyrsistent==0.18.0
 pytest==6.2.4

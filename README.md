@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >
-    <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="250" height="120" />
+    <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="480" height="320" />
   </a>
 </p>
 

@@ -1,5 +1,18 @@
-# PyNumDiff
-Methods for numerical differentiation of noisy time series data, including multi-objective optimization routines for automated parameter selection. 
+<p align="center">
+  <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >
+    <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="250" height="120" />
+  </a>
+</p>
+
+<p align="center">
+    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
+        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
+    <a href="#travis" alt="Travis Build Status">
+        <img src="https://travis-ci.com/luckystarufo/PyNumDiff.svg?branch=upgrade"/></a>
+</p>
+
+
+**PyNumDiff**: Python for Numerical Differentiation of noisy time series data
 
 ## Table of contents
 * [Introduction](#introduction)
@@ -97,4 +110,3 @@ F. van Breugel, J. Nathan Kutz and B. W. Brunton, "Numerical differentiation of 
 ## License
 
 ## Acknowledgments
-

@@ -8,9 +8,6 @@ from unittest import TestCase
 from pynumdiff.kalman_smooth import constant_velocity, constant_acceleration, \
     constant_jerk, known_dynamics
 
-import warnings
-warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
-
 
 x = np.array([1., 4., 9., 3., 20.,
               8., 16., 2., 15., 10.,

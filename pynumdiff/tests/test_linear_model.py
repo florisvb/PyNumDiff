@@ -8,9 +8,6 @@ from unittest import TestCase
 from pynumdiff.linear_model import savgoldiff, spectraldiff, \
     polydiff, chebydiff, lineardiff
 
-import warnings
-warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
-
 
 x = np.array([1., 4., 9., 3., 20.,
               8., 16., 2., 15., 10.,
@@ -68,12 +65,12 @@ class TestLM(TestCase):
 
     def test_lineardiff(self):
         params = [3, 5, 10]
-        x_hat, dxdt_hat = lineardiff(x, dt, params)
-        x_smooth = np.array([3.070917, 3.435011, 6.36357, 10.276495, 12.033908, 10.594193,
-                             9.608234, 9.731333, 10.333141, 10.806873, 9.710675, 7.456206,
-                             5.706933, 4.856216, 5.68522])
-        dxdt = np.array([36.409323, 164.63261, 342.074243, 283.516901, 15.884867,
-                         -121.28366, -43.142966, 36.245352, 53.776983, -31.123294,
-                         -167.533366, -200.18714, -129.999465, -1.085623, 82.900375])
+        x_hat, dxdt_hat = lineardiff(x, dt, params, options={'solver': 'CVXOPT'})
+        x_smooth = np.array([3.070975,  3.435072,  6.363585, 10.276584, 12.033974, 10.594136,
+                             9.608228,  9.731326, 10.333255, 10.806791,  9.710448,  7.456045,
+                             5.70695,  4.856271,  5.685251])
+        dxdt = np.array([36.409751,  164.630545,  342.075623,  283.519415,   15.877598,
+                         -121.287252,  -43.140514,   36.251305,   53.773231,  -31.140351,
+                         -167.537258, -200.174883, -129.988725,   -1.084955,   82.897991])
         np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)

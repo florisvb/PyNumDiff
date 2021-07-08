@@ -53,7 +53,7 @@ if warned:
 ####################
 
 
-def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name):
+def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name, solver=None):
     """
     Slide a smoothing derivative function across a timeseries with specified window size.
 
@@ -98,7 +98,7 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name)
 
         # run the function on the window
         _x = x[start:end]
-        x_hat, dxdt_hat = func(_x, dt, params, options={'weights': w})
+        x_hat, dxdt_hat = func(_x, dt, params, options={'weights': w, 'solver': solver})
 
         # stack results
         z_x_hat = np.zeros([len(x)])
@@ -414,9 +414,9 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC
     if A_known is not None:
         for i in range(A_known.shape[0]):
             for j in range(A_known.shape[1]):
-                if not np.isnan(A_known[i,j]):
-                    constraint_lo = A[i,j] >= A_known[i,j]-epsilon
-                    constraint_hi = A[i,j] <= A_known[i,j]+epsilon
+                if not np.isnan(A_known[i, j]):
+                    constraint_lo = A[i, j] >= A_known[i, j]-epsilon
+                    constraint_hi = A[i, j] <= A_known[i, j]+epsilon
                     constraints.extend([constraint_lo, constraint_hi])
 
     # Solve the problem
@@ -451,6 +451,9 @@ def __lineardiff__(x, dt, params, options=None):
     :return: x_hat    : estimated (smoothed) x
              dxdt_hat : estimated derivative of x
     """
+    if options is None:
+        options = {'solver': 'MOSEK'}
+
     N, gamma = params
     mean = np.mean(x)
     x = x - mean
@@ -458,13 +461,13 @@ def __lineardiff__(x, dt, params, options=None):
     # Generate the matrix of integrals of x
     X = [x]
     for n in range(1, N):
-        X.append(utility.integrate_dxdt_hat(X[-1], dt) )
+        X.append(utility.integrate_dxdt_hat(X[-1], dt))
     X = np.matrix(np.vstack(X[::-1]))
     integral_Xdot = X
     integral_X = __integrate_dxdt_hat_matrix__(X, dt)
 
     # Solve for A and the integration constants
-    A, C = __solve_for_A_and_C_given_X_and_Xdot__(integral_X, integral_Xdot, N, dt, gamma)
+    A, C = __solve_for_A_and_C_given_X_and_Xdot__(integral_X, integral_Xdot, N, dt, gamma, solver=options['solver'])
 
     # Add the integration constants
     Csum = 0
@@ -522,15 +525,26 @@ def lineardiff(x, dt, params, options=None):
     """
 
     if options is None:
-        options = {'sliding': True, 'step_size': 10, 'kernel_name': 'friedrichs'}
+        options = {'sliding': True, 'step_size': 10, 'kernel_name': 'friedrichs', 'solver': 'MOSEK'}
+
+    if 'sliding' not in options.keys():
+        options['sliding'] = True
+    if 'step_size' not in options.keys():
+        options['step_size'] = 10
+    if 'kernel_name' not in options.keys():
+        options['kernel_name'] = 'friedrichs'
+    if 'solver' not in options.keys():
+        options['solver'] = 'MOSEK'
 
     if 'sliding' in options.keys() and options['sliding'] is True:
         window_size = copy.copy(params[-1])
         params = params[0:-1]
 
         # forward and backward
-        x_hat_forward, _ = __slide_function__(__lineardiff__, x, dt, params, window_size, options['step_size'], options['kernel_name'])
-        x_hat_backward, _ = __slide_function__(__lineardiff__, x[::-1], dt, params, window_size, options['step_size'], options['kernel_name'])
+        x_hat_forward, _ = __slide_function__(__lineardiff__, x, dt, params, window_size, options['step_size'],
+                                              options['kernel_name'], options['solver'])
+        x_hat_backward, _ = __slide_function__(__lineardiff__, x[::-1], dt, params, window_size, options['step_size'],
+                                               options['kernel_name'], options['solver'])
 
         # weights
         w = np.arange(1, len(x_hat_forward)+1,1)[::-1]
@@ -548,7 +562,7 @@ def lineardiff(x, dt, params, options=None):
 
         return x_hat, dxdt_hat
 
-    return __lineardiff__(x, dt, params)
+    return __lineardiff__(x, dt, params, options)
 
 #######################
 # Spectral derivative #

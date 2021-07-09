@@ -152,7 +152,7 @@ We will frequently update simple examples for demo purposes, and here are curren
 * Larger values of `tvgamma` produce smoother derivatives
 * The value of `tvgamma` is largely universal across methods, making it easy to compare method results
 * The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
-* The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep: `tvgamma = np.exp( -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1 )`
+* The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep: `tvgamma=np.exp(-1.6*np.log(cutoff_frequency)-0.71*np.log(dt)-5.1)`
 
 
 ### Running the tests
@@ -167,9 +167,9 @@ To run tests locally, type:
 
 
 ## Citation
-```
+
 @ARTICLE{9241009, author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, journal={IEEE Access}, title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, year={2020}, volume={}, number={}, pages={1-1}, doi={10.1109/ACCESS.2020.3034077}}
-```
+
 
 ## License
 This project utilizes the [MIT LICENSE](LICENSE).

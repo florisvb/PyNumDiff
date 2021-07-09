@@ -1,4 +1,6 @@
 # PyNumDiff
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield)
+
 Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection. 
 
 ### Citing this package
@@ -74,3 +76,7 @@ This approach solves a loss function that balances the faithfulness and smoothne
 * Ground truth data known:  [notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2a_optimizing_parameters_with_dxdt_known.ipynb)
 * Ground truth data NOT known (real world):  [notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_large)

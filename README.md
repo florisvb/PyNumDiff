@@ -21,12 +21,12 @@
     * [Prerequisite](#prerequisite)
     * [Installing](#installing)
 * [Usage](#usage)
-    * [Examples](#examples)
+    * [Basic usages](#basic-usages)
+    * [Notebook examples](#notebook-examples)
+    * [Important notes](#important-notes)
     * [Running the tests](#running-the-tests)
 * [Citation](#citation)
-* [Contributing](#contributing)
 * [License](#license)
-* [Acknowledgments](#acknowledgments)
 
 ## Introduction
 
@@ -83,6 +83,8 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
 
 ## Getting Started
 
+### Prerequisite
+
 PyNumDiff requires common packages like `numpy`, `scipy`, `matplotlib`, `pytest` (for unittests), `pylint` 
 (for PEP8 style check). For a full list, you can check the file [requirements.txt](requirements.txt)
 
@@ -94,13 +96,15 @@ When using `cvxpy`, our default solver is set to be `MOSEK` (highly recommended)
 free academic license from their [website](https://www.mosek.com/products/academic-licenses/). Otherwise, you can also 
 use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advanced/index.html).
 
+### Installing
+
 The code is compatible with Python 3.x. It can be installed using pip or directly from the source code.
 
-### Installing via pip
+#### Installing via pip
 
 `pip install pynumdiff`
 
-### Installing from source
+#### Installing from source
 
 To install this package, run `python ./setup.py install` from inside this directory.
 

@@ -7,8 +7,8 @@ from os.path import join as pjoin
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 _version_major = 0
 _version_minor = 1
-_version_micro = ''  # use '' for first of series, number for 1 and above
-_version_extra = 'dev'
+_version_micro = 1  # use '' for first of series, number for 1 and above
+_version_extra = ''
 
 # Construct full version string from these.
 _ver = [_version_major, _version_minor]
@@ -33,8 +33,8 @@ description = "pynumdiff: numerical derivatives in python"
 long_description = """
 PyNumDiff
 =========
-PyNumDiff (pynumdiff) is a package for calculating numerical derivatives
-in python, using a variety of different methods.
+PyNumDiff (pynumdiff) is a Python package for calculating numerical derivatives for noisy time series data, 
+using a variety of different methods.
 """
 
 NAME = "pynumdiff"
@@ -53,5 +53,5 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'pynumdiff': [pjoin('data', '*')]}
-REQUIRES = ["numpy", "scipy", "matplotlib"]
-OPTIONAL_REQUIREMENTS = ["pydmd", "cvxpy", "pychebfun"]
+REQUIRES = ["numpy", "scipy", "matplotlib", "cvxpy", "pychebfun"]
+OPTIONAL_REQUIREMENTS = ["MOSEK"]

@@ -5,12 +5,14 @@
 </p>
 
 <p align="center">
-    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
-        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
     <a href="#travis" alt="Travis Build Status">
         <img src="https://travis-ci.com/luckystarufo/PyNumDiff.svg?branch=upgrade"/></a>
+    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
+        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
+    <a href="https://zenodo.org/badge/latestdoi/361922468">
+        <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
 </p>
 
 

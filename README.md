@@ -112,7 +112,7 @@ To install this package, run `python ./setup.py install` from inside this direct
 ## Usage
 
 **PyNumDiff** uses [Sphinx](http://www.sphinx-doc.org/en/stable/) for code documentation.
-So you can see more details about the API usage [there](https://pysindy.readthedocs.io/en/latest/).
+So you can see more details about the API usage [there](https://pynumdiff.readthedocs.io/en/latest/).
 
 ### Basic usages
 

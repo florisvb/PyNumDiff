@@ -1,0 +1,430 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>utility &mdash; PyNumDiff 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contact" href="../contact.html" />
+    <link rel="prev" title="simulate" href="simulate.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PyNumDiff
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../code.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../finite_difference.html">finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kalman_smooth.html">kalman_smooth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../linear_model.html">linear_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="_pi_cruise_control.html">_pi_cruise_control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="evaluate.html">evaluate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="simulate.html">simulate</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">utility</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../LICENSE.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyNumDiff</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../code.html">API documentation</a> &raquo;</li>
+        
+          <li><a href="../utils.html">utils</a> &raquo;</li>
+        
+      <li>utility</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/utils/utility.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pynumdiff.utils.utility">
+<span id="utility"></span><h1>utility<a class="headerlink" href="#module-pynumdiff.utils.utility" title="Permalink to this headline">¶</a></h1>
+<p>All kinds of utilities</p>
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.estimate_initial_condition">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">estimate_initial_condition</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.estimate_initial_condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integration leaves an unknown integration constant. This function finds a best fit integration constant given x, and x_hat (the integral of dxdt_hat)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – timeseries of measurements</p></li>
+<li><p><strong>x_hat</strong> (<em>np.array</em>) – smoothed estiamte of x, for the purpose of this function this should have been determined by integrate_dxdt_hat</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>integration constant (i.e. initial condition) that best aligns x_hat with x</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.finite_difference">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">finite_difference</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.finite_difference" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – (np.array of floats, 1xN) time series to differentiate</p></li>
+<li><p><strong>dt</strong> – (float) time step</p></li>
+<li><p><strong>params</strong> – (list): (int, optional) number of iterations ignored if ‘iterate’ not in options</p></li>
+<li><p><strong>options</strong> – (bool) iterate the finite difference method (smooths the estimates)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>x_hat: smoothed x; dxdt_hat: derivative of x</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.get_filenames">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">get_filenames</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">does_not_contain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('~',</span> <span class="pre">'.pyc')</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.get_filenames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create list of files found in given path that contain or do not contain certain strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>string</em><em> (</em><em>directory path</em><em>)</em>) – path in which to look for files</p></li>
+<li><p><strong>contains</strong> (<em>string</em>) – string that filenames must contain</p></li>
+<li><p><strong>does_not_contain</strong> (<em>list of strings</em>) – list of strings that filenames must not contain, optional</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of filenames</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.hankel_matrix">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">hankel_matrix</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_delays</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.hankel_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – numpy array or matrix</p></li>
+<li><p><strong>num_delays</strong> – int, number of times to 1-step shift data</p></li>
+<li><p><strong>pad</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>a Hankel Matrix m</p>
+<dl class="simple">
+<dt>e.g.  if</dt><dd><p>x = [a, b, c, d, e] and num_delays = 3</p>
+</dd>
+<dt>then with pad = False:</dt><dd><dl class="simple">
+<dt>m = [[‘a’, ‘b’, ‘c’],</dt><dd><p>[‘b’, ‘c’, ‘d’],
+[‘c’, ‘d’, ‘e’]]</p>
+</dd>
+</dl>
+</dd>
+<dt>or pad = True:</dt><dd><dl class="simple">
+<dt>m = [[‘a’, ‘b’, ‘c’, ‘d’, ‘e’],</dt><dd><p>[‘b’, ‘c’, ‘d’, ‘e’,  0],
+[‘c’, ‘d’, ‘e’,  0,   0]]</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.integrate_dxdt_hat">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">integrate_dxdt_hat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.integrate_dxdt_hat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for scipy.integrate.cumtrapz to integrate dxdt_hat that ensures the integral has the same length</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimate derivative of timeseries</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>integral of dxdt_hat</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.is_odd">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">is_odd</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.is_odd" title="Permalink to this definition">¶</a></dt>
+<dd><p>tell if it is an odd number</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>num</strong> – (integer) the number we need to tell</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(boolean) true or false</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.isnotebook">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">isnotebook</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.isnotebook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks to see if the environment is an interactive notebook or not.
+:return: True or False</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.matrix_inv">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">matrix_inv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-16</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.matrix_inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stable (pseudo) matrix inversion using singular value decomposition</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>np.matrix</em><em> or </em><em>np.array</em>) – matrix to invert</p></li>
+<li><p><strong>max_sigma</strong> (<em>float</em>) – smallest singular values to take into account. matrix will be truncated prior to inversion based on this value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>matrix pseudo inverse</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.array or np.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.peakdet">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">peakdet</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.peakdet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.</p>
+<p>Converted from MATLAB script at <a class="reference external" href="http://billauer.co.il/peakdet.html">http://billauer.co.il/peakdet.html</a>
+% Eli Billauer, 3.4.05 (Explicitly not copyrighted).
+% This function is released to the public domain; Any use is allowed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> – array for which to find peaks and valleys</p></li>
+<li><p><strong>delta</strong> (<em>float</em>) – threshold for finding peaks and valleys. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Typpe v</dt>
+<dd class="field-even"><p>np.array</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>tuple of min and max locations and values:
+- maxtab: array with locations (column 1) and values of maxima (column 2)
+- mintab: array with locations (column 1) and values of minima (column 2)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>tuple -&gt; (np.array, np.array)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.utility.total_variation">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.utility.</span></code><code class="sig-name descname"><span class="pre">total_variation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.utility.total_variation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the total variation of an array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>np.array</em>) – timeseries</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>total variation</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../contact.html" class="btn btn-neutral float-right" title="Contact" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="simulate.html" class="btn btn-neutral float-left" title="simulate" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Floris van Breugel, Yuying Liu.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

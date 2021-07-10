@@ -73,8 +73,9 @@ def __go__(input_args):
         result = scipy.optimize.minimize(__objective_function__, paramset, args=args, method=optimization_method,
                                          options=optimization_options)
         p = __correct_params__(result.x, params_types, params_low, params_high)
-    except ValueError:
+    except:
         return __correct_params__(paramset, params_types, params_low, params_high), 1000000000
+
     return p, result.fun
 
 
@@ -124,10 +125,8 @@ def __optimize__(params, args, optimization_method='Nelder-Mead', optimization_o
                       params_types, params_low, params_high]
         all_input_values.append(input_args)
 
-    # pylint: disable=consider-using-with
     pool = Pool()
     result = pool.map(__go__, all_input_values)
-
     pool.close()
     pool.join()
 

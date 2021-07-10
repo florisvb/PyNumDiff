@@ -1,0 +1,331 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>evaluate &mdash; PyNumDiff 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="simulate" href="simulate.html" />
+    <link rel="prev" title="_pi_cruise_control" href="_pi_cruise_control.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PyNumDiff
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../code.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../finite_difference.html">finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kalman_smooth.html">kalman_smooth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../linear_model.html">linear_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="_pi_cruise_control.html">_pi_cruise_control</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">evaluate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="simulate.html">simulate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utility.html">utility</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../LICENSE.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyNumDiff</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../code.html">API documentation</a> &raquo;</li>
+        
+          <li><a href="../utils.html">utils</a> &raquo;</li>
+        
+      <li>evaluate</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/utils/evaluate.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pynumdiff.utils.evaluate">
+<span id="evaluate"></span><h1>evaluate<a class="headerlink" href="#module-pynumdiff.utils.evaluate" title="Permalink to this headline">¶</a></h1>
+<p>Metrics and evaluations?</p>
+<dl class="py function">
+<dt id="pynumdiff.utils.evaluate.error_correlation">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">error_correlation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.error_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the error correlation (pearsons correlation coefficient) between the estimated dxdt and true dxdt</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>r-squared correlation coefficient</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.evaluate.metrics">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">metrics</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – time series that was differentiated</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step in seconds</p></li>
+<li><p><strong>x_hat</strong> (<em>np.array</em>) – estimated (smoothed) x</p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>x_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of x, if known, optional</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple containing the following:
+- rms_rec_x: RMS error between the integral of dxdt_hat and x
+- rms_x: RMS error between x_hat and x_truth, returns None if x_truth is None
+- rms_dxdt: RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple -&gt; (float, float, float)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.evaluate.plot">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">plot</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax_dxdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markersize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make comparison plots of ‘x (blue) vs x_truth (black) vs x_hat (red)’ and
+‘dxdt_truth (black) vs dxdt_hat (red)’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em><em> (</em><em>float</em><em>)</em>) – array of noisy time series</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – a float number representing the time step size</p></li>
+<li><p><strong>x_hat</strong> (<em>np.array</em><em> (</em><em>float</em><em>)</em>) – array of smoothed estimation of x</p></li>
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em><em> (</em><em>float</em><em>)</em>) – array of estimated derivative</p></li>
+<li><p><strong>x_truth</strong> (<em>np.array</em><em> (</em><em>float</em><em>)</em>) – array of noise-free time series</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array</em><em> (</em><em>float</em><em>)</em>) – array of true derivative</p></li>
+<li><p><strong>xlim</strong> (<em>list</em><em> (</em><em>2 integers</em><em>)</em><em>, </em><em>optional</em>) – a list specifying range of x</p></li>
+<li><p><strong>ax_x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes</span></code>, optional) – axis of the first plot</p></li>
+<li><p><strong>ax_dxdt</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes</span></code>, optional) – axis of the second plot</p></li>
+<li><p><strong>show_error</strong> (<em>boolean</em><em>, </em><em>optional</em>) – whether to show the rmse</p></li>
+<li><p><strong>markersize</strong> (<em>int</em><em>, </em><em>optional</em>) – marker size of noisy observations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Display two plots</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils.evaluate.rmse">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils.evaluate.</span></code><code class="sig-name descname"><span class="pre">rmse</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxdt_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dxdt_truth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils.evaluate.rmse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the Root Mean Squared Error between the estimated dxdt and true dxdt</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dxdt_hat</strong> (<em>np.array</em>) – estimated xdot</p></li>
+<li><p><strong>dxdt_truth</strong> (<em>np.array like x</em><em> or </em><em>None</em>) – true value of dxdt, if known, optional</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>None</em><em>, or </em><em>auto</em>) – number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Root Mean Squared Error</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="simulate.html" class="btn btn-neutral float-right" title="simulate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="_pi_cruise_control.html" class="btn btn-neutral float-left" title="_pi_cruise_control" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Floris van Breugel, Yuying Liu.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

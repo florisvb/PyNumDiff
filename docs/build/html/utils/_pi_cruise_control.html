@@ -1,0 +1,376 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>_pi_cruise_control &mdash; PyNumDiff 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="evaluate" href="evaluate.html" />
+    <link rel="prev" title="utils" href="../utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PyNumDiff
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../code.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../finite_difference.html">finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kalman_smooth.html">kalman_smooth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../linear_model.html">linear_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../smooth_finite_difference.html">smooth_finite_difference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../total_variation_regularization.html">total_variation_regularization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimize.html">optimize</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">_pi_cruise_control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="evaluate.html">evaluate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="simulate.html">simulate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utility.html">utility</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../LICENSE.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyNumDiff</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../code.html">API documentation</a> &raquo;</li>
+        
+          <li><a href="../utils.html">utils</a> &raquo;</li>
+        
+      <li>_pi_cruise_control</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/utils/_pi_cruise_control.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pynumdiff.utils._pi_cruise_control">
+<span id="pi-cruise-control"></span><h1>_pi_cruise_control<a class="headerlink" href="#module-pynumdiff.utils._pi_cruise_control" title="Permalink to this headline">¶</a></h1>
+<p>Simulation and Control of a cruise ?</p>
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.desired_velocity">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">desired_velocity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.desired_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for defining the desired velocity as a matrix with size [1, M], where M is the number of time points to simulate
+See function “run” for how this function gets used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – number of time points to simulate</p></li>
+<li><p><strong>factor</strong> (<em>float</em>) – factor that determines the magnitude of the desired velocity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>desired velocity as function of time, a [1,M] matrix, M is the number of time points to simulate</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.effective_wheel_radius">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">effective_wheel_radius</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.effective_wheel_radius" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow effective wheel radius to be a function of velocity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>v</strong> – ignored for now</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>effective wheel radius, constant for now</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.hills">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">hills</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.hills" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for creating a hill profile for the car to drive over that has an appropriate length and magnitude</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iterations</strong> (<em>int</em>) – number of time points to simulate</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – timestep of simulation in seconds</p></li>
+<li><p><strong>factor</strong> (<em>int</em>) – determines magnitude of the hills</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>hills, the output of the triangle function, a [1,M] matrix where M is the number of time points simulated</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.run">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">run</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate proportional integral control of a car attempting to maintain constant velocity while going up and down hills.
+This function is used for testing differentiation methods.</p>
+<p>See Astrom and Murray 2008 Chapter 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_length</strong> (<em>float</em>) – number of seconds to simulate</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – timestep in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple consisting of arrays of size [N, M], where M is the number of time steps.:
+- state_vals: state of the car, i.e. position and velocity as a function of time
+- disturbances: disturbances, ie. hills, that the car is subjected to
+- controls: control inputs applied by the car</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple -&gt; (np.array, np.array, np.array)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.step_forward">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">step_forward</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disturbances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desired_v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.step_forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-step Euler integrator that takes the current state, disturbances, and desired velocity and calculates the subsequent state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state_vals</strong> (<em>np.matrix</em>) – current state [position, velocity, road_angle]</p></li>
+<li><p><strong>disturbances</strong> (<em>np.matrix</em>) – current hill angle</p></li>
+<li><p><strong>desired_velocity</strong> (<em>np.matrix</em>) – current desired velocity</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step (seconds)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple consisting of:
+- new_state: new state
+- u: control inputs</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple -&gt; (np.matrix, np.matrix)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.torque">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">torque</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omega</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.torque" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert throttle input to Torque. See Astrom and Murray 2008 Chapter 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>omega</strong> (<em>float</em>) – throttle</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>motor torque</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pynumdiff.utils._pi_cruise_control.triangle">
+<code class="sig-prename descclassname"><span class="pre">pynumdiff.utils._pi_cruise_control.</span></code><code class="sig-name descname"><span class="pre">triangle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynumdiff.utils._pi_cruise_control.triangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create sawtooth pattern of hills for the car to drive over.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iterations</strong> (<em>int</em>) – number of time points in time series</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – time step in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>time series of hills (angle of road as a function of time)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="evaluate.html" class="btn btn-neutral float-right" title="evaluate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../utils.html" class="btn btn-neutral float-left" title="utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Floris van Breugel, Yuying Liu.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

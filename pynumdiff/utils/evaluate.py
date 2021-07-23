@@ -72,6 +72,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
         ax_x.set_xlim(xlim[0], xlim[-1])
         ax_x.tick_params(axis='x', labelsize=15)
         ax_x.tick_params(axis='y', labelsize=15)
+        ax_x.set_rasterization_zorder(0)
 
     if ax_dxdt is not None:
         ax_dxdt.plot(t, dxdt_hat, color='red')
@@ -81,6 +82,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
         ax_dxdt.set_xlim(xlim[0], xlim[-1])
         ax_dxdt.tick_params(axis='x', labelsize=15)
         ax_dxdt.tick_params(axis='y', labelsize=15)
+        ax_dxdt.set_rasterization_zorder(0)
 
     if show_error:
         _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)

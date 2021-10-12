@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: skip-file
 
 # u = TVRegDiff( data, iter, alph, u0, scale, ep, dx, plotflag, diagflag );
 #

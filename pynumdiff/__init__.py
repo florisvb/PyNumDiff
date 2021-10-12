@@ -1,13 +1,12 @@
-from pynumdiff.__version__ import __version__ as __version__ 
-
-import pynumdiff.finite_difference as finite_difference
-import pynumdiff.smooth_finite_difference as smooth_finite_difference
-import pynumdiff.total_variation_regularization as total_variation_regularization
-import pynumdiff.linear_model as linear_model
-import pynumdiff.kalman_smooth as kalman_smooth
-import pynumdiff.nnet as nnet
-
-import pynumdiff.augmented_data as augmented_data
-
-import pynumdiff.utils as utils
-import pynumdiff.optimize as optimize
+"""
+Import useful functions from all modules
+"""
+from pynumdiff.finite_difference import first_order, second_order
+from pynumdiff.smooth_finite_difference import mediandiff, meandiff, gaussiandiff, \
+    friedrichsdiff, butterdiff, splinediff
+from pynumdiff.total_variation_regularization import velocity, iterative_velocity, \
+    acceleration, smooth_acceleration, jerk, jerk_sliding
+from pynumdiff.linear_model import savgoldiff, spectraldiff, polydiff, chebydiff, \
+    lineardiff
+from pynumdiff.kalman_smooth import constant_velocity, constant_acceleration, constant_jerk, \
+    known_dynamics

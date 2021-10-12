@@ -1,0 +1,13 @@
+language: python
+
+python:
+  - 3.9
+
+install:
+  - pip install -r requirements.txt
+  - pip install pychebfun
+  - python setup.py install
+
+script:
+  - pytest pynumdiff --disable-pytest-warnings
+  - python linting.py pynumdiff

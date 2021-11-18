@@ -21,7 +21,7 @@ affiliations:
    index: 1
  - name: Department of Applied Mathematics, University of Washington
    index: 2
-- name: Department of Biology, University of Washington
+ - name: Department of Biology, University of Washington
    index: 3
 date: 10 July 2021
 bibliography: paper.bib

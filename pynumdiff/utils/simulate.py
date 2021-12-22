@@ -328,9 +328,9 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     t = _np.arange(0, timeseries_length, simdt)
 
     actual_vals, extra_measurements, controls = _pi_cruise_control.run(timeseries_length, simdt)
-    x = actual_vals[0, :]
-    dxdt = actual_vals[1, :]
-
+    x = _np.ravel(actual_vals[0, :])
+    dxdt = _np.ravel(actual_vals[1, :])
+    
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
     actual_vals = _np.matrix(_np.vstack((x, dxdt)))

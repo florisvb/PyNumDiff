@@ -56,7 +56,7 @@ def __convolutional_smoother__(x, kernel, iterations):
 ################################
 
 
-def mediandiff(x, dt, params, options):
+def mediandiff(x, dt, params, options={}):
     """
     Perform median smoothing using scipy.signal.medfilt
     followed by first order finite difference
@@ -105,7 +105,7 @@ def mediandiff(x, dt, params, options):
     return x_hat, dxdt_hat
 
 
-def meandiff(x, dt, params, options):
+def meandiff(x, dt, params, options={}):
     """
     Perform mean smoothing by convolving mean kernel with x
     followed by first order finite difference
@@ -152,7 +152,7 @@ def meandiff(x, dt, params, options):
     return x_hat, dxdt_hat
 
 
-def gaussiandiff(x, dt, params, options):
+def gaussiandiff(x, dt, params, options={}):
     """
     Perform gaussian smoothing by convolving gaussian kernel with x
     followed by first order finite difference
@@ -198,7 +198,7 @@ def gaussiandiff(x, dt, params, options):
     return x_hat, dxdt_hat
 
 
-def friedrichsdiff(x, dt, params, options):
+def friedrichsdiff(x, dt, params, options={}):
     """
     Perform friedrichs smoothing by convolving friedrichs kernel with x
     followed by first order finite difference
@@ -245,7 +245,7 @@ def friedrichsdiff(x, dt, params, options):
     return x_hat, dxdt_hat
 
 
-def butterdiff(x, dt, params, options):
+def butterdiff(x, dt, params, options={}):
     """
     Perform butterworth smoothing on x with scipy.signal.filtfilt
     followed by first order finite difference
@@ -300,7 +300,7 @@ def butterdiff(x, dt, params, options):
     return x_hat, dxdt_hat
 
 
-def splinediff(x, dt, params, options):
+def splinediff(x, dt, params, options={}):
     """
     Perform spline smoothing on x with scipy.interpolate.UnivariateSpline
     followed by first order finite difference

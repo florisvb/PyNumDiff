@@ -5,7 +5,7 @@ import numpy as np
 from pynumdiff.utils import utility
 
 
-def first_order(x, dt, params=None, options=None):
+def first_order(x, dt, params=None, options={}):
     """
     First-order centered difference method
 
@@ -29,7 +29,7 @@ def first_order(x, dt, params=None, options=None):
 
     :rtype: tuple -> (np.array, np.array)
     """
-    if options and 'iterate' in options:
+    if 'iterate' in options:
         assert params and isinstance(params, list), "params should be a non-empty list!"
         return __iterate_first_order__(x, dt, params)
 

@@ -133,7 +133,7 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name,
 #########################
 
 
-def savgoldiff(x, dt, params):
+def savgoldiff(x, dt, params, options=None):
     """
     Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
 

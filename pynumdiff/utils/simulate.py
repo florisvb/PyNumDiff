@@ -289,7 +289,7 @@ def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters
 
 
 def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5),
-               random_seed=1, dt=0.01, simdt=0.0001):
+               random_seed=1, dt=0.01):
     """
     Create a toy example of linear proportional integral controller with nonlinear control inputs
 
@@ -325,9 +325,9 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
 
     :rtype: tuple -> (np.array, np.array, np.array, list (np.array))
     """
-    t = _np.arange(0, timeseries_length, simdt)
+    t = _np.arange(0, timeseries_length, dt)
 
-    actual_vals, extra_measurements, controls = _pi_cruise_control.run(timeseries_length, simdt)
+    actual_vals, extra_measurements, controls = _pi_cruise_control.run(timeseries_length, dt)
     x = _np.ravel(actual_vals[0, :])
     dxdt = _np.ravel(actual_vals[1, :])
     
@@ -340,9 +340,8 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     pos = _np.ravel(actual_vals[0, :])
     vel = _np.ravel(actual_vals[1, :])
 
-    idx = _np.arange(0, len(t), int(dt/simdt))
-    return noisy_pos[idx], pos[idx], vel[idx], \
-           [_np.array(extra_measurements)[0, idx], _np.array(controls)[0, idx]]
+    return noisy_pos, pos, vel, \
+           [_np.array(extra_measurements), _np.array(controls)]
 
 
 def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5),

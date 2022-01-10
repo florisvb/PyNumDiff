@@ -23,14 +23,14 @@ def run(timeseries_length=4, dt=0.01):
     t = _np.arange(0, timeseries_length+dt, dt)
 
     # disturbance
-    hills = _np.sin(2*_np.pi*t) + 0.1*_np.sin(4*2*_np.pi*t + 0.5) + 0.7*_np.sin(1.7*2*_np.pi*t + 0.5)
+    hills = _np.sin(2*_np.pi*t) + 0.3*_np.sin(4*2*_np.pi*t + 0.5) + 1.2*_np.sin(1.7*2*_np.pi*t + 0.5)
     hills = 0.01*hills
 
     # parameters
     mg = 10000 # mass*gravity
     fr = 0.9 # friction
     ki = 5/0.01*dt # integral control
-    kp = 50/0.01*dt # proportional control
+    kp = 25/0.01*dt # proportional control
     vd = 0.5 # desired velocity
 
     A = _np.matrix([[1, dt, 0, 0, 0],
@@ -59,4 +59,5 @@ def run(timeseries_length=4, dt=0.01):
     xs = _np.hstack(xs)
     us = _np.hstack(us)
 
-    return xs[0:2, :], _np.matrix(hills), us
+    # [0:2, :]
+    return xs, _np.matrix(hills), us

@@ -50,7 +50,7 @@ def run(timeseries_length=4, dt=0.01):
     # run simulation
     xs = [x0]
     us = [_np.matrix([0, 0]).T]
-    for i in range(1, len(hills)):
+    for i in range(1, len(hills)-1):
         u = _np.matrix([hills[i], vd - xs[-1][1,0]]).T
         xnew = A*xs[-1] + B*u
         xs.append(xnew)

@@ -442,104 +442,48 @@ def constant_jerk(x, dt, params, options=None):
     return __constant_jerk__(x, dt, params, options={'backward': False})
 
 
-def __known_dynamics__(x, params, options=None):
+def known_dynamics(x, params, u=None, options=None):
     """
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+    :param x: matrix of time series of (noisy) measurements
+    :type x: np.matrix (float)
 
-    :param params: a list of two elements:
+    :param params: a list of:
+                    - x0: inital condition, matrix of Nx1, N = number of states
+                    - P0: initial covariance matrix of NxN
+                    - A: dynamics matrix, NxN
+                    - B: control input matrix, NxM, M = number of measurements
+                    - C: measurement dynamics, MxN
+                    - R: covariance matrix for the measurements, MxM
+                    - Q: covariance matrix for the model, NxN
+    :type params: list (matrix)
 
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
+    :param u: matrix of time series of control inputs
+    :type u: np.matrix (float)
 
-    :type params: list (float)
+    :param options: a dictionary indicating whether to run smoother
+    :type params: dict {'smooth': boolean}, optional
 
-
-    :param options: a dictionary indicating whether to run smoother backwards in time
-    :type params: dict {'backward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
+    :return: matrix:
+            - xhat_smooth: smoothed estimates of the full state x
 
     :rtype: tuple -> (np.array, np.array)
     """
     if options is None:
-        options = {'backward': False}
+        options = {'smooth': True}
 
     x0, P0, A, B, C, R, Q = params
     y = np.matrix(x)
-    u = None
-
-    if options['backward']:
-        A = A.I
-        y = y[:, ::-1]
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
     xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
 
-    x_hat = np.ravel(xhat_smooth[0, :])
-    dxdt_hat = np.ravel(xhat_smooth[1, :])
+    if not options['smooth']:
+        return xhat_fp
 
-    if not options['backward']:
-        return x_hat, dxdt_hat
+    return xhat_smooth
 
-    return x_hat[::-1], dxdt_hat[::-1]
-
-
-def known_dynamics(x, params, options=None):
-    """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother forwards and backwards
-                    (usually achieves better estimate at end points)
-    :type params: dict {'forwardbackward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-    if options is None:
-        options = {'forwardbackward': True}
-
-    if options['forwardbackward']:
-        x_hat_f, smooth_dxdt_hat_f = __known_dynamics__(x, params, options={'backward': False})
-        x_hat_b, smooth_dxdt_hat_b = __known_dynamics__(x, params, options={'backward': True})
-
-        w = np.zeros([len(x_hat_f)])
-        s = int(0.2*len(x_hat_f))
-        f = int(0.8*len(x_hat_f))
-        w[s:f] = np.arange(0, f-s, 1)
-        w[f:] = w[f-1]
-
-        w = w/np.max(w)
-
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
-
-        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0)
-
-        return x_hat, smooth_dxdt_hat_corrected
-
-    return __known_dynamics__(x, params, options={'backward': False})
 
 
 ###################################################################################################

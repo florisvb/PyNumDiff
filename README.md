@@ -109,19 +109,17 @@ The code is compatible with >=Python 3.5. It can be installed using pip or direc
 
 `pip install pynumdiff`
 
-#### Installing from source
-
-###### Using pip git+:
+#### Installing from source using pip git+:
 
 To install directly from github using pip: run `pip install git+https://github.com/florisvb/PyNumDiff`
 
-###### Using setup.py:
+#### Installing from source using using setup.py:
 
 To install from source code on your machine using setup.py requires pre-installing `numpy, scipy, matplotlib`. Then run `python ./setup.py install` from inside this directory. See below for example.
 
 #### Installation example
 
-`cvxpy` requires pythonX-dev packages. Here are several example installation workflows:
+`cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options. Here are several tested example installation workflows:
 
 ###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using pip git+:
 
@@ -136,7 +134,7 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```
-Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).
+<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 ###### Complete install on Ubuntu 18.04 using python3.6 in blank virtual environment using pip git+:
 
@@ -151,7 +149,7 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install Mosek
 ```
-Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).
+<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 ###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using setup.py:
 
@@ -167,7 +165,7 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```
-Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).
+<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 
 ## Usage

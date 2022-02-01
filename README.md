@@ -103,23 +103,13 @@ use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advance
 
 ### Installing
 
-The code is compatible with >=Python 3.5. It can be installed using pip or directly from the source code.
+The code is compatible with >=Python 3.5. It can be installed using pip or directly from the source code. Basic installation options include:
 
-#### Installing via pip
+* From PyPI using pip: `pip install pynumdiff`
+* From source using pip git+: `pip install git+https://github.com/florisvb/PyNumDiff`
+* From local source code using setup.py: requires pre-installing `numpy, scipy, matplotlib`. Then run `python ./setup.py install` from inside this directory. See below for example.
 
-`pip install pynumdiff`
-
-#### Installing from source using pip git+:
-
-To install directly from github using pip: run `pip install git+https://github.com/florisvb/PyNumDiff`
-
-#### Installing from source using using setup.py:
-
-To install from source code on your machine using setup.py requires pre-installing `numpy, scipy, matplotlib`. Then run `python ./setup.py install` from inside this directory. See below for example.
-
-#### Installation example
-
-`cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options. Here are several tested example installation workflows:
+Installation of the optional packages such as `cvxpy` can be tricky because `cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options. Here are several tested example installation workflows:
 
 ###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using pip git+:
 
@@ -134,22 +124,19 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```
-<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 ###### Complete install on Ubuntu 18.04 using python3.6 in blank virtual environment using pip git+:
 
 ```console
 sudo apt-get install python3.6-dev
 python3.6 -m venv ~/PYNUMDIFF36
-source ~/PYNUMDIFF35/bin/activate
-pip install --upgrade pip
+source ~/PYNUMDIFF36/bin/activate
 pip install --upgrade pip
 pip install git+https://github.com/florisvb/PyNumDiff
 pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install Mosek
 ```
-<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 ###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using setup.py:
 
@@ -165,7 +152,7 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```
-<em>Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
+<em>Note: for all options you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
 
 
 ## Usage

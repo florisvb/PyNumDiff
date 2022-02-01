@@ -92,9 +92,10 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
 PyNumDiff requires common packages like `numpy`, `scipy`, `matplotlib`, `pytest` (for unittests), `pylint` 
 (for PEP8 style check). For a full list, you can check the file [requirements.txt](requirements.txt)
 
-In addition, it also requires certain additional packages:
+In addition, it also requires certain additional packages for select functions, though these are not required for a successful install of PyNumDiff:
 * Total Variation Regularization methods: [`cvxpy`](http://www.cvxpy.org/install/index.html)
 * Linear Model Chebychev: [`pychebfun`](https://github.com/pychebfun/pychebfun/)
+* Optimize: [`cvxpy`](http://www.cvxpy.org/install/index.html)
 
 When using `cvxpy`, our default solver is set to be `MOSEK` (highly recommended), you would need to download their 
 free academic license from their [website](https://www.mosek.com/products/academic-licenses/). Otherwise, you can also 
@@ -102,7 +103,7 @@ use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advance
 
 ### Installing
 
-The code is compatible with Python 3.x. It can be installed using pip or directly from the source code.
+The code is compatible with >=Python 3.5. It can be installed using pip or directly from the source code.
 
 #### Installing via pip
 
@@ -110,7 +111,48 @@ The code is compatible with Python 3.x. It can be installed using pip or directl
 
 #### Installing from source
 
+###### Using setup.py:
+
 To install this package, run `python ./setup.py install` from inside this directory.
+
+###### Using pip git+:
+
+To install directly from github using pip: run `pip install git+https://github.com/florisvb/PyNumDiff`
+
+#### Installation example
+
+`cvxpy` requires pythonX-dev packages. Here are two example installation workflows:
+
+###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment:
+
+```console
+sudo apt-get install python3.5-dev
+python3.5 -m venv ~/PYNUMDIFF35
+source ~/PYNUMDIFF35/bin/activate
+pip install --upgrade pip
+pip install --upgrade pip
+pip install git+https://github.com/florisvb/PyNumDiff
+pip install git+https://github.com/pychebfun/pychebfun
+pip install cvxpy
+pip install git+http://github.com/MOSEK/Mosek.pip
+```
+Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).
+
+###### Complete install on Ubuntu 18.04 using python3.6 in blank virtual environment:
+
+```console
+sudo apt-get install python3.6-dev
+python3.6 -m venv ~/PYNUMDIFF36
+source ~/PYNUMDIFF35/bin/activate
+pip install --upgrade pip
+pip install --upgrade pip
+pip install git+https://github.com/florisvb/PyNumDiff
+pip install git+https://github.com/pychebfun/pychebfun
+pip install cvxpy
+pip install Mosek
+```
+Note: you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).
+
 
 
 ## Usage

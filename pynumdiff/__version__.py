@@ -53,5 +53,5 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'pynumdiff': [pjoin('data', '*')]}
-REQUIRES = ["numpy", "scipy", "matplotlib", "cvxpy", "pychebfun"]
-OPTIONAL_REQUIREMENTS = ["MOSEK"]
+REQUIRES = ["numpy", "scipy", "matplotlib"]
+OPTIONAL_REQUIREMENTS = ["cvxpy", "MOSEK", "pychebfun"]

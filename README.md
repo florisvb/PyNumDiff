@@ -105,11 +105,11 @@ use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advance
 
 The code is compatible with >=Python 3.5. It can be installed using pip or directly from the source code. Basic installation options include:
 
-* From PyPI using pip: `pip install pynumdiff`
+* From PyPI using pip: `pip install pynumdiff`. May require pre-installing `numpy, scipy, matplotlib`. 
 * From source using pip git+: `pip install git+https://github.com/florisvb/PyNumDiff`
 * From local source code using setup.py: requires pre-installing `numpy, scipy, matplotlib`. Then run `python ./setup.py install` from inside this directory. See below for example.
 
-Installation of the optional packages such as `cvxpy` can be tricky because `cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options. Here are several tested example installation workflows:
+Installation of the optional packages such as `cvxpy` can be tricky because `cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options (e.g. it is difficult to install python3.6-dev on Ubuntu 16.04). Here are several tested example installation workflows:
 
 ###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using pip git+:
 

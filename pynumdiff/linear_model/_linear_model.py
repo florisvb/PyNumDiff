@@ -362,8 +362,6 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC
     :param rows_of_interest:
     :return:
     """
-    assert isinstance(X, np.matrix)
-    assert isinstance(Xdot, np.matrix)
 
     if rows_of_interest == 'all':
         rows_of_interest = np.arange(0, X.shape[0])
@@ -402,8 +400,8 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC
     prob = cvxpy.Problem(obj, constraints)
     prob.solve(solver=solver)  # MOSEK does not take max_iters
 
-    A = np.matrix(A.value)
-    return A, np.matrix(C.value)
+    A = np.array(A.value)
+    return A, np.array(C.value)
 
 
 def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
@@ -412,9 +410,11 @@ def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
     :param dt:
     :return:
     """
-    assert isinstance(dxdt_hat, np.matrix)
-    x = np.matrix(scipy.integrate.cumtrapz(dxdt_hat, axis=1))
-    first_value = x[:, 0] - np.mean(dxdt_hat[:, 0:1], axis=1)
+    #assert isinstance(dxdt_hat, np.matrix)
+    if len(dxdt_hat.shape) == 1:
+        dxdt_hat = np.reshape(dxdt_hat, [1, len(dxdt_hat)])
+    x = np.array(scipy.integrate.cumtrapz(dxdt_hat, axis=1))
+    first_value = x[:, 0:1] - np.mean(dxdt_hat[:, 0:1], axis=1).reshape(dxdt_hat.shape[0], 1)
     x = np.hstack((first_value, x))*dt
     return x
 
@@ -437,11 +437,13 @@ def __lineardiff__(x, dt, params, options=None):
     mean = np.mean(x)
     x = x - mean
 
+
+
     # Generate the matrix of integrals of x
     X = [x]
     for n in range(1, N):
         X.append(utility.integrate_dxdt_hat(X[-1], dt))
-    X = np.matrix(np.vstack(X[::-1]))
+    X = (np.vstack(X[::-1]))
     integral_Xdot = X
     integral_X = __integrate_dxdt_hat_matrix__(X, dt)
 
@@ -457,10 +459,10 @@ def __lineardiff__(x, dt, params, options=None):
         den = math.factorial(t_exponent)
         Cn = np.vstack([1/den*C[i, C_subscript]*t**t_exponent for i in range(X.shape[0])])
         Csum = Csum + Cn
-    Csum = np.matrix(Csum)
+    Csum = np.array(Csum)
 
     # Use A and C to calculate the derivative
-    Xdot_reconstructed = (A*X + Csum)
+    Xdot_reconstructed = (A@X + Csum)
     dxdt_hat = np.ravel(Xdot_reconstructed[-1, :])
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

@@ -5,8 +5,17 @@ Unit tests for total variation regularization
 
 import numpy as np
 from unittest import TestCase
-from pynumdiff.total_variation_regularization import velocity, iterative_velocity, \
-    acceleration, smooth_acceleration, jerk, jerk_sliding
+from pynumdiff.total_variation_regularization import *
+import logging as _logging
+
+_logging.basicConfig(
+    level=_logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        _logging.FileHandler("debug.log"),
+        _logging.StreamHandler()
+    ]
+)
 
 x = np.array([1., 4., 9., 3., 20.,
               8., 16., 2., 15., 10.,
@@ -16,6 +25,13 @@ dt = 0.01
 
 class TestTVR(TestCase):
     def test_velocity(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping tvr.velocity test.'
+            _logging.info(__warning__)
+            return
+
         params = [0.5]
         x_hat, dxdt_hat = velocity(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([1.60206974,  3.84254116,  6.08301239,  8.32348272, 14.76608638,
@@ -40,6 +56,13 @@ class TestTVR(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_acceleration(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping tvr.acceleration test.'
+            _logging.info(__warning__)
+            return
+
         params = [1]
         x_hat, dxdt_hat = acceleration(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([0.87728375,  4.44441238,  7.31141687,  9.47829719, 10.94505335,
@@ -53,6 +76,13 @@ class TestTVR(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_smooth_acceleration(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping tvr.smooth_acceleration test.'
+            _logging.info(__warning__)
+            return
+
         params = [5, 30]
         x_hat, dxdt_hat = smooth_acceleration(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([4.16480747,  5.52913444,  6.77037146,  7.87267273,  8.79483088,
@@ -66,6 +96,13 @@ class TestTVR(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_jerk(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping tvr.jerk test.'
+            _logging.info(__warning__)
+            return
+
         params = [10]
         x_hat, dxdt_hat = jerk(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([0.71013072,  4.51405229,  7.42619407,  9.53278029, 10.92003519,
@@ -79,6 +116,13 @@ class TestTVR(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_jerk_sliding(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping tvr.jerk_sliding test.'
+            _logging.info(__warning__)
+            return
+
         params = [10]
         x_hat, dxdt_hat = jerk_sliding(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([0.71013072,  4.51405229,  7.42619407,  9.53278029, 10.92003519,

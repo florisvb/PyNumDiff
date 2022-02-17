@@ -9,23 +9,10 @@ import pynumdiff.smooth_finite_difference
 from pynumdiff.utils import utility
 __gaussian_kernel__ = utility.__gaussian_kernel__
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("debug.log"),
-        logging.StreamHandler()
-    ]
-)
-
 try:
     import cvxpy
 except ImportError:
-    logging.info('Import Error.\nCould not import cvxpy.\nTo use convex total variation regularized derivatives, '
-                 'install cvxpy (http://www.cvxpy.org/install/index.html)\n Recommended solver: MOSEK, '
-                 'free academic license available: https://www.mosek.com/products/academic-licenses/\n'
-                 'Despite this error, you can still use the iterative TVR method.\n')
-
+    pass
 
 # Iterative total variation regularization
 def iterative_velocity(x, dt, params, options=None):

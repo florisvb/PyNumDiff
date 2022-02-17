@@ -24,18 +24,18 @@ def __kalman_forward_update__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
     :param Q:
     :return:
     """
-    I = np.matrix(np.eye(A.shape[0]))
-    gammaW = np.matrix(np.eye(A.shape[0]))
+    I = np.array(np.eye(A.shape[0]))
+    gammaW = np.array(np.eye(A.shape[0]))
 
-    K_f = P_fm*C.T*(C*P_fm*C.T + R).I
+    K_f = P_fm@C.T@np.linalg.pinv(C@P_fm@C.T + R)
 
-    xhat_fp = xhat_fm + K_f*(y - C*xhat_fm)
+    xhat_fp = xhat_fm + K_f@(y - C@xhat_fm)
 
-    P_fp = (I - K_f*C)*P_fm
+    P_fp = (I - K_f@C)@P_fm
 
-    xhat_fm = A*xhat_fp + B*u
+    xhat_fm = A@xhat_fp + B@u
 
-    P_fm = A*P_fp*A.T + gammaW*Q*gammaW.T
+    P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
 
     return xhat_fp, xhat_fm, P_fp, P_fm
 
@@ -53,24 +53,15 @@ def __kalman_forward_filter__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
     :param Q:
     :return:
     """
-    assert isinstance(xhat_fm, np.matrix)
-    assert isinstance(P_fm, np.matrix)
-    assert isinstance(A, np.matrix)
-    assert isinstance(B, np.matrix)
-    assert isinstance(C, np.matrix)
-    assert isinstance(R, np.matrix)
-    assert isinstance(Q, np.matrix)
-    assert isinstance(y, np.matrix)
     if u is None:
-        u = np.matrix(np.zeros([B.shape[1], y.shape[1]]))
-    assert isinstance(u, np.matrix)
+        u = np.array(np.zeros([B.shape[1], y.shape[1]]))
 
     xhat_fp = None
     P_fp = []
     P_fm = [P_fm]
 
     for i in range(y.shape[1]):
-        _xhat_fp, _xhat_fm, _P_fp, _P_fm = __kalman_forward_update__(xhat_fm[:, -1], P_fm[-1], y[:, i], u[:, i],
+        _xhat_fp, _xhat_fm, _P_fp, _P_fm = __kalman_forward_update__(xhat_fm[:, [-1]], P_fm[-1], y[:, [i]], u[:, [i]],
                                                                      A, B, C, R, Q)
         if xhat_fp is None:
             xhat_fp = _xhat_fp
@@ -98,9 +89,9 @@ def __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A):
     xhat_smooth = copy.copy(xhat_fp)
     P_smooth = copy.copy(P_fp)
     for t in range(N-2, -1, -1):
-        L = P_fp[t]*A.T*P_fm[t].I
-        xhat_smooth[:, t] = xhat_fp[:, t] + L*(xhat_smooth[:, t+1] - xhat_fm[:, t+1])
-        P_smooth[t] = P_fp[t] - L*(P_smooth[t+1] - P_fm[t+1])
+        L = P_fp[t]@A.T@np.linalg.pinv(P_fm[t])
+        xhat_smooth[:, [t]] = xhat_fp[:, [t]] + L@(xhat_smooth[:, [t+1]] - xhat_fm[:, [t+1]])
+        P_smooth[t] = P_fp[t] - L@(P_smooth[t+1] - P_fm[t+1])
 
     return xhat_smooth, P_smooth
 
@@ -126,18 +117,24 @@ def __constant_velocity__(x, dt, params, options=None):
 
     r, q = params
 
-    A = np.matrix([[1, dt], [0, 1]])
-    B = np.matrix([[0], [0]])
-    C = np.matrix([[1, 0]])
-    R = np.matrix([[r]])
-    Q = np.matrix([[1e-16, 0], [0, q]])
-    x0 = np.matrix([[x[0]], [0]])
-    P0 = np.matrix(100*np.eye(2))
-    y = np.matrix(x)
+    if len(x.shape) == 2:
+        y = x
+    else:
+        y = np.reshape(x, [1, len(x)])
+
+    A = np.array([[1, dt], [0, 1]])
+    B = np.array([[0], [0]])
+    C = np.array([[1, 0]])
+    R = np.array([[r]])
+    Q = np.array([[1e-16, 0], [0, q]])
+    x0 = np.array([[x[0,0]], [0]])
+    P0 = np.array(100*np.eye(2))
     u = None
 
+    
+
     if options['backward']:
-        A = A.I
+        A = np.linalg.pinv(A)
         y = y[:, ::-1]
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
@@ -182,6 +179,11 @@ def constant_velocity(x, dt, params, options=None):
 
     :rtype: tuple -> (np.array, np.array)
     """
+    if len(x.shape) == 2:
+        pass
+    else:
+        x = np.reshape(x, [1, len(x)])
+
     if options is None:
         options = {'forwardbackward': True}
 
@@ -240,22 +242,27 @@ def __constant_acceleration__(x, dt, params, options=None):
         options = {'backward': False}
 
     r, q = params
-    A = np.matrix([[1, dt, 0],
+
+    if len(x.shape) == 2:
+        y = x
+    else:
+        y = np.reshape(x, [1, len(x)])
+
+    A = np.array([[1, dt, 0],
                    [0, 1, dt],
                    [0, 0,  1]])
-    B = np.matrix([[0], [0], [0]])
-    C = np.matrix([[1, 0, 0]])
-    R = np.matrix([[r]])
-    Q = np.matrix([[1e-16, 0, 0],
+    B = np.array([[0], [0], [0]])
+    C = np.array([[1, 0, 0]])
+    R = np.array([[r]])
+    Q = np.array([[1e-16, 0, 0],
                    [0, 1e-16, 0],
                    [0,     0, q]])
-    x0 = np.matrix([[x[0]], [0], [0]])
-    P0 = np.matrix(10*np.eye(3))
-    y = np.matrix(x)
+    x0 = np.array([[x[0,0]], [0], [0]])
+    P0 = np.array(10*np.eye(3))
     u = None
 
     if options['backward']:
-        A = A.I
+        A = np.linalg.pinv(A)
         y = y[:, ::-1]
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
@@ -300,6 +307,10 @@ def constant_acceleration(x, dt, params, options=None):
 
     :rtype: tuple -> (np.array, np.array)
     """
+    if len(x.shape) == 2:
+        pass
+    else:
+        x = np.reshape(x, [1, len(x)])
 
     if options is None:
         options = {'forwardbackward': True}
@@ -359,24 +370,30 @@ def __constant_jerk__(x, dt, params, options=None):
         options = {'backward': False}
 
     r, q = params
-    A = np.matrix([[1, dt, 0, 0],
+
+    if len(x.shape) == 2:
+        y = x
+    else:
+        y = np.reshape(x, [1, len(x)])
+
+    A = np.array([[1, dt, 0, 0],
                    [0, 1, dt, 0],
                    [0, 0,  1, dt],
                    [0, 0,  0, 1]])
-    B = np.matrix([[0], [0], [0], [0]])
-    C = np.matrix([[1, 0, 0, 0]])
-    R = np.matrix([[r]])
-    Q = np.matrix([[1e-16, 0, 0,     0],
+    B = np.array([[0], [0], [0], [0]])
+    C = np.array([[1, 0, 0, 0]])
+    R = np.array([[r]])
+    Q = np.array([[1e-16, 0, 0,     0],
                    [0, 1e-16, 0,     0],
                    [0,     0, 1e-16, 0],
                    [0,     0, 0,     q]])
-    x0 = np.matrix([[x[0]], [0], [0], [0]])
-    P0 = np.matrix(10*np.eye(4))
-    y = np.matrix(x)
+    x0 = np.array([[x[0,0]], [0], [0], [0]])
+    P0 = np.array(10*np.eye(4))
+    y = np.array(x)
     u = None
 
     if options['backward']:
-        A = A.I
+        A = np.linalg.pinv(A)
         y = y[:, ::-1]
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
@@ -421,6 +438,10 @@ def constant_jerk(x, dt, params, options=None):
 
     :rtype: tuple -> (np.array, np.array)
     """
+    if len(x.shape) == 2:
+        pass
+    else:
+        x = np.reshape(x, [1, len(x)])
 
     if options is None:
         options = {'forwardbackward': True}
@@ -447,7 +468,7 @@ def known_dynamics(x, params, u=None, options=None):
     Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
     :param x: matrix of time series of (noisy) measurements
-    :type x: np.matrix (float)
+    :type x: np.array (float)
 
     :param params: a list of:
                     - x0: inital condition, matrix of Nx1, N = number of states
@@ -460,7 +481,7 @@ def known_dynamics(x, params, u=None, options=None):
     :type params: list (matrix)
 
     :param u: matrix of time series of control inputs
-    :type u: np.matrix (float)
+    :type u: np.array (float)
 
     :param options: a dictionary indicating whether to run smoother
     :type params: dict {'smooth': boolean}, optional
@@ -470,11 +491,15 @@ def known_dynamics(x, params, u=None, options=None):
 
     :rtype: tuple -> (np.array, np.array)
     """
+    if len(x.shape) == 2:
+        y = x
+    else:
+        y = np.reshape(x, [1, len(x)])
+
     if options is None:
         options = {'smooth': True}
 
     x0, P0, A, B, C, R, Q = params
-    y = np.matrix(x)
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
     xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
@@ -527,24 +552,24 @@ def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options=None):
         options = {'backward': False}
 
     r1, r2, q = params
-    A = np.matrix([[1, dt, 0],
+    A = np.array([[1, dt, 0],
                    [0, 1, dt],
                    [0, 0,  1]])
-    B = np.matrix([[0], [0], [0]])
-    C = np.matrix([[1, 0, 0],
+    B = np.array([[0], [0], [0]])
+    C = np.array([[1, 0, 0],
                    [0, 1, 0]])
-    R = np.matrix([[r1, 0],
+    R = np.array([[r1, 0],
                    [0, r2]])
-    Q = np.matrix([[1e-16, 0, 0],
+    Q = np.array([[1e-16, 0, 0],
                    [0, 1e-16, 0],
                    [0,     0, q]])
-    x0 = np.matrix([[x[0]], [sg_dxdt_hat[0]], [0]])
-    P0 = np.matrix(10*np.eye(3))
-    y = np.matrix(np.vstack((x, sg_dxdt_hat)))
+    x0 = np.array([[x[0]], [sg_dxdt_hat[0]], [0]])
+    P0 = np.array(10*np.eye(3))
+    y = np.array(np.vstack((x, sg_dxdt_hat)))
     u = None
 
     if options['backward']:
-        A = A.I
+        A = np.linalg.pinv(A)
         y = y[:, ::-1]
 
     xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)

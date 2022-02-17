@@ -5,8 +5,19 @@ Unit tests for linear (smoothing) model
 
 import numpy as np
 from unittest import TestCase
-from pynumdiff.linear_model import savgoldiff, spectraldiff, \
-    polydiff, chebydiff, lineardiff
+import logging as _logging
+
+_logging.basicConfig(
+    level=_logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        _logging.FileHandler("debug.log"),
+        _logging.StreamHandler()
+    ]
+)
+
+
+from pynumdiff.linear_model import *
 
 
 x = np.array([1., 4., 9., 3., 20.,
@@ -52,6 +63,13 @@ class TestLM(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_chebydiff(self):
+        try:
+            import pychebfun
+        except:
+            __warning__ = '\nCannot import pychebfun, skipping chebydiff test.'
+            _logging.info(__warning__)
+            return
+
         params = [2, 3]
         x_hat, dxdt_hat = chebydiff(x, dt, params)
         x_smooth = np.array([1., 4.638844, 7.184256, 6.644655, 15.614775, 11.60484,
@@ -64,6 +82,13 @@ class TestLM(TestCase):
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_lineardiff(self):
+        try:
+            import cvxpy
+        except:
+            __warning__ = '\nCannot import cvxpy, skipping lineardiff test.'
+            _logging.info(__warning__)
+            return
+
         params = [3, 5, 10]
         x_hat, dxdt_hat = lineardiff(x, dt, params, options={'solver': 'CVXOPT'})
         x_smooth = np.array([3.070975,  3.435072,  6.363585, 10.276584, 12.033974, 10.594136,

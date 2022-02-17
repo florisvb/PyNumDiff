@@ -11,42 +11,20 @@ from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("debug.log"),
-        logging.StreamHandler()
-    ]
-)
+try:
+    import pychebfun
+except ImportError:
+    pass
+
+try:
+    import cvxpy
+except ImportError:
+    pass
 
 __friedrichs_kernel__ = utility.__friedrichs_kernel__
 __gaussian_kernel__ = utility.__gaussian_kernel__
 KERNELS = {'friedrichs': __friedrichs_kernel__,
            'gaussian': __gaussian_kernel__}
-
-# optional packages
-warned = False
-try:
-    import pychebfun
-except ImportError:
-    logging.info('Import Error\nCould not import pychebfun.\n'
-                 'Install pychebfun (https://github.com/pychebfun/pychebfun/) '
-                 'to use chebfun derivatives.\n')
-    warned = True
-try:
-    import cvxpy
-except ImportError:
-    logging.info('Import Error\nCould not import cvxpy.\n'
-                 'Install cvxpy (http://www.cvxpy.org/install/index.html) to use lineardiff.\n'
-                 'Recommended solver: MOSEK, free academic license available: '
-                 'https://www.mosek.com/products/academic-licenses/ \n')
-    warned = True
-
-if warned:
-    logging.info('Import Error\nDespite these import errors, '
-                 'you can still use many of the methods without additional installations.\n')
-
 
 ####################
 # Helper functions #
@@ -299,6 +277,7 @@ def __chebydiff__(x, dt, params, options=None):
     :return: x_hat    : estimated (smoothed) x
              dxdt_hat : estimated derivative of x
     """
+
     if isinstance(params, list):
         n = params[0]
     else:

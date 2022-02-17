@@ -21,7 +21,6 @@ def run(timeseries_length=4, dt=0.01):
     """
     
     t = _np.arange(0, timeseries_length+dt, dt)
-    print(t.shape)
 
     # disturbance
     hills = _np.sin(2*_np.pi*t) + 0.3*_np.sin(4*2*_np.pi*t + 0.5) + 1.2*_np.sin(1.7*2*_np.pi*t + 0.5)

@@ -21,6 +21,7 @@ def run(timeseries_length=4, dt=0.01):
     """
     
     t = _np.arange(0, timeseries_length+dt, dt)
+    print(t.shape)
 
     # disturbance
     hills = _np.sin(2*_np.pi*t) + 0.3*_np.sin(4*2*_np.pi*t + 0.5) + 1.2*_np.sin(1.7*2*_np.pi*t + 0.5)
@@ -33,31 +34,33 @@ def run(timeseries_length=4, dt=0.01):
     kp = 25/0.01*dt # proportional control
     vd = 0.5 # desired velocity
 
-    A = _np.matrix([[1, dt, 0, 0, 0],
+    A = _np.array([[1, dt, 0, 0, 0],
                    [0, 1, dt, 0, 0],
                    [0, -fr, 0, -mg, ki],
                    [0, 0, 0, 0, 0],
                    [0, 0, 0, 0, 1]])
 
-    B = _np.matrix([[0, 0],
+    B = _np.array([[0, 0],
                    [0, 0],
                    [0, kp],
                    [1, 0],
                    [0, 1]])
 
-    x0 = _np.matrix([0, 0, 0, hills[0], 0]).T
+    x0 = _np.array([0, 0, 0, hills[0], 0]).reshape(A.shape[0], 1)
 
     # run simulation
     xs = [x0]
-    us = [_np.matrix([0, 0]).T]
+    us = [_np.array([0, 0]).reshape([2,1])]
     for i in range(1, len(hills)-1):
-        u = _np.matrix([hills[i], vd - xs[-1][1,0]]).T
-        xnew = A*xs[-1] + B*u
+        u = _np.array([hills[i], vd - xs[-1][1,0]]).reshape([2,1])
+        xnew = A@xs[-1] + B@u
         xs.append(xnew)
         us.append(u)
 
     xs = _np.hstack(xs)
     us = _np.hstack(us)
 
-    # [0:2, :]
-    return xs, _np.matrix(hills), us
+    if len(hills.shape) == 1:
+        hills = _np.reshape(hills, [1, len(hills)])
+
+    return xs, hills, us

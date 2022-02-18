@@ -1,7 +1,8 @@
 # PyNumDiff
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield)
 
-Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection. 
+Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
+
 =======
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >

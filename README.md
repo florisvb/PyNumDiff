@@ -155,7 +155,7 @@ pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```
-<em>Note: for all options you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/).</em>
+<em>Note: If using the optional MOSEK solver for cvxpy you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/), free academic license.</em>
 
 
 ## Usage

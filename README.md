@@ -1,9 +1,7 @@
 # PyNumDiff
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield)
 
 Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
-=======
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >
     <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="300" height="200" />
@@ -19,6 +17,8 @@ Methods for numerical differentiation of noisy data, including multi-objective o
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
     <a href="https://zenodo.org/badge/latestdoi/361922468">
         <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
+    <a href="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield">
+        <img src="https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield" alt="DOI"></a>
 </p>
 
 

@@ -1,6 +1,6 @@
 # PyNumDiff
 
-**PyNumDiff**: Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
+Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >

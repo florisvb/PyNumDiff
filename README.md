@@ -81,7 +81,7 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
       |- setup.py
       |- .gitignore
       |- .travis.yml
-      |- LICENSE
+      |- LICENSE.txt
       |- requirements.txt
 
 
@@ -209,5 +209,5 @@ To run tests locally, type:
 
 
 ## License
-This project utilizes the [MIT LICENSE](LICENSE).
+This project utilizes the [MIT LICENSE](LICENSE.txt).
 100% open-source, feel free to utilize the code however you like. 

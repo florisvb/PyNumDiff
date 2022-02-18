@@ -1,6 +1,6 @@
 # PyNumDiff
 
-Methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
+**PyNumDiff**: Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >
@@ -20,9 +20,6 @@ Methods for numerical differentiation of noisy data, including multi-objective o
     <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield">
         <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield" alt="DOI"></a>
 </p>
-
-
-**PyNumDiff**: Python for Numerical Differentiation of noisy time series data.
 
 ## Table of contents
 * [Introduction](#introduction)

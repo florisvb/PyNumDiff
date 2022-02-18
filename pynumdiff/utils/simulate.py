@@ -84,10 +84,10 @@ def sine(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5), ra
     for f in frequencies:
         x += magnitude/len(frequencies)*_np.sin(t*2*_np.pi*f)
         dxdt += magnitude/len(frequencies)*_np.cos(t*2*_np.pi*f)*2*_np.pi*f
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
+    actual_vals = _np.array(_np.vstack((x, dxdt)))
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
     #
-    noisy_measurements = _np.matrix(noisy_x)
+    noisy_measurements = _np.array(noisy_x)
     #
     noisy_pos = _np.ravel(noisy_measurements)
     pos = _np.ravel(actual_vals[0, :])
@@ -161,8 +161,8 @@ def triangle(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5)
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
-    noisy_measurements = _np.matrix(noisy_x)
+    actual_vals = _np.array(_np.vstack((x, dxdt)))
+    noisy_measurements = _np.array(noisy_x)
 
     noisy_pos = _np.ravel(noisy_measurements)
     pos = _np.ravel(actual_vals[0, :])
@@ -217,13 +217,13 @@ def pop_dyn(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5),
         x.append(x[-1] + simdt*dxdt[-1])
         dxdt.append(r*x[-1]*(1-x[-1]/K))
 
-    x = _np.matrix(x)
-    dxdt = _np.matrix(dxdt)
+    x = _np.array(x)
+    dxdt = _np.array(dxdt)
 
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
-    noisy_measurements = _np.matrix(noisy_x)
+    actual_vals = _np.array(_np.vstack((x, dxdt)))
+    noisy_measurements = _np.array(noisy_x)
 
     noisy_pos = _np.ravel(noisy_measurements)
     pos = _np.ravel(actual_vals[0, :])
@@ -270,12 +270,11 @@ def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters
     """
     t = _np.arange(0, timeseries_length, simdt)
 
-    A = _np.matrix([[1, simdt, 0], [0, 1, simdt], [-100, -3, 0.01]])
-    print(A)
-    x0 = _np.matrix([[0], [2], [0]])
+    A = _np.array([[1, simdt, 0], [0, 1, simdt], [-100, -3, 0.01]])
+    x0 = _np.array([[0], [2], [0]])
     xs = x0
     for _ in t:
-        x = A*xs[:,-1]
+        x = A@xs[:,[-1]]
         xs = _np.hstack((xs, x))
 
     x = xs[0,:]
@@ -333,8 +332,8 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     
     noisy_x = __add_noise__(x, noise_type, noise_parameters, random_seed)
 
-    actual_vals = _np.matrix(_np.vstack((x, dxdt)))
-    noisy_measurements = _np.matrix(noisy_x)
+    actual_vals = _np.array(_np.vstack((x, dxdt)))
+    noisy_measurements = _np.array(noisy_x)
 
     noisy_pos = _np.ravel(noisy_measurements)
     pos = _np.ravel(actual_vals[0, :])
@@ -438,7 +437,7 @@ def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     x = x0[0]
     y = x0[1]
     z = x0[2]
-    xyz = _np.matrix([[x], [y], [z]])
+    xyz = _np.array([[x], [y], [z]])
     xyz_dot = None
 
     for _ in t:
@@ -448,13 +447,13 @@ def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
         ydot = x*(rho-z)-y
         zdot = x*y - beta*z
 
-        new_xyz_dot = _np.matrix([[xdot], [ydot], [zdot]])
+        new_xyz_dot = _np.array([[xdot], [ydot], [zdot]])
         if xyz_dot is None:
             xyz_dot = new_xyz_dot
         else:
             xyz_dot = _np.hstack((xyz_dot, new_xyz_dot))
 
-        new_xyz = xyz[:, -1] + simdt*new_xyz_dot
+        new_xyz = xyz[:, [-1]] + simdt*new_xyz_dot
         xyz = _np.hstack((xyz, new_xyz))
 
     if normalize:

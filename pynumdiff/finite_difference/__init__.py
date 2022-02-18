@@ -1,2 +1,5 @@
-from pynumdiff.finite_difference.__finite_difference__ import first_order as first_order
-from pynumdiff.finite_difference.__finite_difference__ import second_order as second_order
+"""
+Import useful functions from _finite_difference module
+"""
+from pynumdiff.finite_difference._finite_difference import first_order
+from pynumdiff.finite_difference._finite_difference import second_order

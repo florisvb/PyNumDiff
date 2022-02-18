@@ -1,12 +1,14 @@
+"""
+package version
+"""
 from __future__ import absolute_import, division, print_function
 from os.path import join as pjoin
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 _version_major = 0
 _version_minor = 1
-_version_micro = ''  # use '' for first of series, number for 1 and above
-_version_extra = 'dev'
-# _version_extra = ''  # Uncomment this for full releases
+_version_micro = 2  # use '' for first of series, number for 1 and above
+_version_extra = ''
 
 # Construct full version string from these.
 _ver = [_version_major, _version_minor]
@@ -29,35 +31,22 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
 description = "pynumdiff: numerical derivatives in python"
 # Long description will go up on the pypi page
 long_description = """
-
 PyNumDiff
-============================
-PyNumDiff (pynumdiff) is a package for calculating numerical derivatives
-in python, using a variety of different methods.
-
-.. _README: https://github.com/florisvb/pynumdiff/blob/master/README.md
-
-License
-=======
-``pynumdiff`` is licensed under the terms of the MIT license. See the file
-"LICENSE" for information on the history of this software, terms & conditions
-for usage, and a DISCLAIMER OF ALL WARRANTIES.
-
-All trademarks referenced herein are property of their respective holders.
-
-Copyright (c) 2018--, Floris van Breugel.
+=========
+PyNumDiff (pynumdiff) is a Python package for calculating numerical derivatives for noisy time series data, 
+using a variety of different methods.
 """
 
 NAME = "pynumdiff"
-MAINTAINER = "Floris van Breugel"
-MAINTAINER_EMAIL = "florisvb@gmail.com"
+MAINTAINER = "Yuying Liu"
+MAINTAINER_EMAIL = "yliu814@uw.edu"
 DESCRIPTION = description
 LONG_DESCRIPTION = long_description
-URL = "http://github.com/florisvb/pynumdiff"
+URL = "https://github.com/luckystarufo/PyNumDiff/tree/upgrade"
 DOWNLOAD_URL = ""
 LICENSE = "MIT"
-AUTHOR = "Floris van Breugel"
-AUTHOR_EMAIL = "florisvb@gmail.com"
+AUTHOR = "Floris van Breugel, Yuying Liu"
+AUTHOR_EMAIL = "florisvb@gmail.com, liuyuyingufo@gmail.com"
 PLATFORMS = "OS Independent"
 MAJOR = _version_major
 MINOR = _version_minor
@@ -65,4 +54,4 @@ MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'pynumdiff': [pjoin('data', '*')]}
 REQUIRES = ["numpy", "scipy", "matplotlib"]
-OPTIONAL_REQUIREMENTS = ["pydmd", "cvxpy", "pychebfun"]
+OPTIONAL_REQUIREMENTS = ["cvxpy", "MOSEK", "pychebfun"]

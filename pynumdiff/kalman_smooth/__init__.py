@@ -1,7 +1,9 @@
-from pynumdiff.kalman_smooth.__kalman_smooth__ import constant_velocity as constant_velocity
-from pynumdiff.kalman_smooth.__kalman_smooth__ import constant_acceleration as constant_acceleration
-from pynumdiff.kalman_smooth.__kalman_smooth__ import constant_jerk as constant_jerk
-from pynumdiff.kalman_smooth.__kalman_smooth__ import known_dynamics as known_dynamics
-from pynumdiff.kalman_smooth.__kalman_smooth__ import __known_dynamics__ as __known_dynamics__
-from pynumdiff.kalman_smooth.__kalman_smooth__ import __kalman_forward_filter__ as __kalman_forward_filter__
-from pynumdiff.kalman_smooth.__kalman_smooth__ import __kalman_backward_smooth__ as __kalman_backward_smooth__
+"""
+Import useful functions from _finite_difference module
+"""
+from pynumdiff.kalman_smooth._kalman_smooth import constant_velocity
+from pynumdiff.kalman_smooth._kalman_smooth import constant_acceleration
+from pynumdiff.kalman_smooth._kalman_smooth import constant_jerk
+from pynumdiff.kalman_smooth._kalman_smooth import known_dynamics
+from pynumdiff.kalman_smooth._kalman_smooth import __kalman_forward_filter__
+from pynumdiff.kalman_smooth._kalman_smooth import __kalman_backward_smooth__

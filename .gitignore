@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -63,9 +62,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
-
 # PyBuilder
 target/
 
@@ -102,3 +98,21 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# add
+*.[oa]
+*~
+.idea
+.DS_Store
+*.nc
+*.csv
+*.mat
+.coverage
+__pycache__
+*.tar
+*.tar.gz
+*.zip
+*.egg-info
+dist
+*.whl
+

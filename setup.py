@@ -7,23 +7,23 @@ ver_file = os.path.join('pynumdiff', '__version__.py')
 with open(ver_file) as f:
     exec(f.read())
 
-opts = dict(name="pynumdiff",
-            maintainer="Floris van Breugel",
-            maintainer_email="fvanbreugel@unr.edu",
-            description="Numerical derivatives of noisy data",
-            long_description="Numerical derivatives of noisy data",
-            license="MIT License",
-            url="https://github.com/florisvb/PyNumDiff",
-            download_url="https://github.com/florisvb/PyNumDiff/archive/0.0.3.tar.gz",
+opts = dict(name=NAME,
+            maintainer="Yuying Liu",
+            maintainer_email="yliu814@uw.edu",
+            description=DESCRIPTION,
+            long_description=LONG_DESCRIPTION,
+            url=URL,
+            download_url=DOWNLOAD_URL,
+            license=LICENSE,
             classifiers=CLASSIFIERS,
-            author="Floris van Breugel",
-            author_email="fvanbreugel@unr.edu",
+            author=AUTHOR,
+            author_email=AUTHOR_EMAIL,
             platforms=PLATFORMS,
-            version="0.0.3",
+            version=VERSION,
             packages=PACKAGES,
-            install_requires=["numpy",
-                              "matplotlib",
-                              "scipy"])
+            package_data=PACKAGE_DATA,
+            install_requires=REQUIRES,
+            requires=REQUIRES)
 
 
 if __name__ == '__main__':

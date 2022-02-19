@@ -29,14 +29,17 @@ def __kalman_forward_update__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
 
     K_f = P_fm@C.T@np.linalg.pinv(C@P_fm@C.T + R)
 
-    xhat_fp = xhat_fm + K_f@(y - C@xhat_fm)
-
-    P_fp = (I - K_f@C)@P_fm
-
-    xhat_fm = A@xhat_fp + B@u
-
-    P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
-
+    if y is not None and not np.isnan(y):
+        xhat_fp = xhat_fm + K_f@(y - C@xhat_fm)
+        P_fp = (I - K_f@C)@P_fm
+        xhat_fm = A@xhat_fp + B@u
+        P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
+    else:
+        xhat_fp = xhat_fm
+        P_fp = (I - K_f@C)@P_fm
+        xhat_fm = A@xhat_fp + B@u
+        P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
+        
     return xhat_fp, xhat_fm, P_fp, P_fm
 
 

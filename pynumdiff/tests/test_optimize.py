@@ -4,6 +4,7 @@ Unit tests for optimization module
 # pylint: skip-file
 import numpy as np
 from unittest import TestCase
+import pytest 
 
 from pynumdiff.optimize.finite_difference import first_order
 from pynumdiff.optimize.smooth_finite_difference import mediandiff, meandiff, gaussiandiff, \
@@ -14,16 +15,6 @@ from pynumdiff.optimize.kalman_smooth import constant_velocity, constant_acceler
     constant_jerk
 from pynumdiff.utils import simulate
 
-import logging as _logging
-
-_logging.basicConfig(
-    level=_logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        _logging.FileHandler("debug.log"),
-        _logging.StreamHandler()
-    ]
-)
 
 
 # simulation
@@ -104,9 +95,7 @@ class TestOPT(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping ' + 'TVR velocity' + ' test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_velocity", allow_module_level=True)
 
         params_1, val_1 = velocity(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
         params_2, val_2 = velocity(x, dt, params=None, tvgamma=0, dxdt_truth=None)
@@ -119,9 +108,7 @@ class TestOPT(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping ' + 'TVR acceleration' + ' test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_acceleration", allow_module_level=True)
 
         params_1, val_1 = acceleration(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
         params_2, val_2 = acceleration(x, dt, params=None, tvgamma=0, dxdt_truth=None)
@@ -152,9 +139,7 @@ class TestOPT(TestCase):
         try:
             import pychebfun
         except:
-            __warning__ = '\nCannot import pychebfun, skipping ' + 'chebydiff' + ' test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import pychebfun, skipping test_chebydiff", allow_module_level=True)
 
         params_1, val_1 = chebydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
         params_2, val_2 = chebydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)

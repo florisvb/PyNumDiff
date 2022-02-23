@@ -5,17 +5,8 @@ Unit tests for total variation regularization
 
 import numpy as np
 from unittest import TestCase
+import pytest
 from pynumdiff.total_variation_regularization import *
-import logging as _logging
-
-_logging.basicConfig(
-    level=_logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        _logging.FileHandler("debug.log"),
-        _logging.StreamHandler()
-    ]
-)
 
 x = np.array([1., 4., 9., 3., 20.,
               8., 16., 2., 15., 10.,
@@ -28,9 +19,7 @@ class TestTVR(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping tvr.velocity test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_velocity", allow_module_level=True)
 
         params = [0.5]
         x_hat, dxdt_hat = velocity(x, dt, params, options={'solver': 'CVXOPT'})
@@ -59,9 +48,7 @@ class TestTVR(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping tvr.acceleration test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_acceleration", allow_module_level=True)
 
         params = [1]
         x_hat, dxdt_hat = acceleration(x, dt, params, options={'solver': 'CVXOPT'})
@@ -79,9 +66,7 @@ class TestTVR(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping tvr.smooth_acceleration test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_smooth_acceleration", allow_module_level=True)
 
         params = [5, 30]
         x_hat, dxdt_hat = smooth_acceleration(x, dt, params, options={'solver': 'CVXOPT'})
@@ -99,9 +84,7 @@ class TestTVR(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping tvr.jerk test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_jerk", allow_module_level=True)
 
         params = [10]
         x_hat, dxdt_hat = jerk(x, dt, params, options={'solver': 'CVXOPT'})
@@ -119,9 +102,7 @@ class TestTVR(TestCase):
         try:
             import cvxpy
         except:
-            __warning__ = '\nCannot import cvxpy, skipping tvr.jerk_sliding test.'
-            _logging.info(__warning__)
-            return
+            pytest.skip("could not import cvxpy, skipping test_jerk_sliding", allow_module_level=True)
 
         params = [10]
         x_hat, dxdt_hat = jerk_sliding(x, dt, params, options={'solver': 'CVXOPT'})

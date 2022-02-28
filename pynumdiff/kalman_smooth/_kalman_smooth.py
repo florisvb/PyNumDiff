@@ -468,7 +468,7 @@ def constant_jerk(x, dt, params, options=None):
 
 def known_dynamics(x, params, u=None, options=None):
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+    Run a forward RTS Kalman smoother given known dynamics to estimate the derivative.
 
     :param x: matrix of time series of (noisy) measurements
     :type x: np.array (float)
@@ -521,20 +521,20 @@ def known_dynamics(x, params, u=None, options=None):
 
 def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options=None):
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative, where initial estimates of the velocity are first estimated using the savitzky-golay filter. 
 
     :param x: array of time series to differentiate
     :type x: np.array (float)
 
-    :param sg_dxdt_hat: ? ? ?
+    :param sg_dxdt_hat: initial velocity estimate
     :type sg_dxdt_hat: np.array (float)
 
     :param dt: time step size
     :type dt: float
 
     :param params: a list of two elements:
-
-                    - r: covariance of the x noise
+                    - r1: covariance of the x noise
+                    - r2: covariance of the vel noise
                     - q: covariance of the constant velocity model
 
     :type params: list (float)
@@ -589,7 +589,7 @@ def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options=None):
 
 def savgol_const_accel(x, dt, params, options=None):
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative, where initial estimates of the velocity are first estimated using the savitzky-golay filter. 
 
     :param x: array of time series to differentiate
     :type x: np.array (float)
@@ -597,9 +597,12 @@ def savgol_const_accel(x, dt, params, options=None):
     :param dt: time step size
     :type dt: float
 
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
+    :param params: a list of six elements:
+                    - N: for savgoldiff, order of the polynomial
+                    - window_size: for savgoldiff, size of the sliding window, must be odd (if not, 1 is added)
+                    - smoothing_win: for savgoldiff, size of the window used for gaussian smoothing, a good default is window_size, but smaller for high frequnecy data
+                    - r1: covariance of the x noise
+                    - r2: covariance of the vel noise
                     - q: covariance of the constant velocity model
 
     :type params: list (float)
@@ -620,9 +623,9 @@ def savgol_const_accel(x, dt, params, options=None):
     if options is None:
         options = {'forwardbackward': True}
 
-    N, window_size, r1, r2, q = params
+    N, window_size, smoothing_win, r1, r2, q = params
 
-    _, sg_dxdt_hat = savgoldiff(x, dt, [N, window_size])
+    _, sg_dxdt_hat = savgoldiff(x, dt, [N, window_size, smoothing_win])
 
     if options['forwardbackward']:
         x_hat_f, smooth_dxdt_hat_f = __savgol_const_accel__(x, sg_dxdt_hat, dt, [r1, r2, q],

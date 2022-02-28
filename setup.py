@@ -8,8 +8,8 @@ with open(ver_file) as f:
     exec(f.read())
 
 opts = dict(name=NAME,
-            maintainer="Yuying Liu",
-            maintainer_email="yliu814@uw.edu",
+            maintainer="Floris van Breugel, Yuying Liu",
+            maintainer_email="fvanbreugel@unr.edu, yliu814@uw.edu",
             description=DESCRIPTION,
             long_description=LONG_DESCRIPTION,
             url=URL,

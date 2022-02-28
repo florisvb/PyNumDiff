@@ -38,8 +38,8 @@ using a variety of different methods.
 """
 
 NAME = "pynumdiff"
-MAINTAINER = "Yuying Liu"
-MAINTAINER_EMAIL = "yliu814@uw.edu"
+MAINTAINER = "Floris van Breugel, Yuying Liu"
+MAINTAINER_EMAIL = "fvanbreugel@unr.edu, yliu814@uw.edu"
 DESCRIPTION = description
 LONG_DESCRIPTION = long_description
 URL = "https://github.com/luckystarufo/PyNumDiff/tree/upgrade"

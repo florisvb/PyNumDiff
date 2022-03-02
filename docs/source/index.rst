@@ -265,3 +265,14 @@ open-source, feel free to utilize the code however you like.
 
 .. |FOSSA Status| image:: https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=large
    :target: https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_large
+
+Developer's Guide
+-----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   code
+   contact
+   contributing
+   LICENSE

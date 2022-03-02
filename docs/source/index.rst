@@ -4,35 +4,6 @@ PyNumDiff
 Python methods for numerical differentiation of noisy data, including
 multi-objective optimization routines for automated parameter selection.
 
-.. raw:: html
-
-   <p align="center">
-
-.. raw:: html
-
-   </p>
-
-.. raw:: html
-
-   <p align="center">
-
-::
-
-    <a href="#travis" alt="Travis Build Status">
-        <img src="https://travis-ci.com/luckystarufo/PyNumDiff.svg?branch=upgrade"/></a>
-    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
-        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
-    <a href="https://badge.fury.io/py/pynumdiff">
-        <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
-    <a href="https://zenodo.org/badge/latestdoi/361922468">
-        <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield">
-        <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield" alt="DOI"></a>
-
-.. raw:: html
-
-   </p>
-
 Table of contents
 -----------------
 
@@ -127,10 +98,9 @@ check). For a full list, you can check the file
 
 In addition, it also requires certain additional packages for select
 functions, though these are not required for a successful install of
-PyNumDiff: \* Total Variation Regularization methods:
-```cvxpy`` <http://www.cvxpy.org/install/index.html>`__ \* Linear Model
-Chebychev: ```pychebfun`` <https://github.com/pychebfun/pychebfun/>`__
-\* Optimize: ```cvxpy`` <http://www.cvxpy.org/install/index.html>`__
+PyNumDiff: 
+- Total Variation Regularization methods: `cvxpy <http://www.cvxpy.org/install/index.html>`__ 
+- Linear Model Chebychev: `pychebfun <https://github.com/pychebfun/pychebfun/>`__
 
 When using ``cvxpy``, our default solver is set to be ``MOSEK`` (highly
 recommended), you would need to download their free academic license
@@ -241,13 +211,12 @@ Notebook examples
 ~~~~~~~~~~~~~~~~~
 
 We will frequently update simple examples for demo purposes, and here
-are currently exisiting ones: \* Differentiaion with different methods:
-`1\_basic\_tutorial.ipynb <examples/1_basic_tutorial.ipynb>`__ \*
-Parameter Optimization with known ground truth (only for demonstration
-purpose):
-`2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
-\* Parameter Optimization with unknown ground truth:
-`2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
+are currently exisiting ones: 
+- Differentiaion with different methods:
+`1\_basic\_tutorial.ipynb <examples/1_basic_tutorial.ipynb>`__ 
+- Parameter Optimization with known ground truth (only for demonstration
+purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
+- Parameter Optimization with unknown ground truth: `2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
 
 Important notes
 ~~~~~~~~~~~~~~~

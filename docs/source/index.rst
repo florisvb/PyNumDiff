@@ -1,111 +1,298 @@
-Welcome to PyNumDiff's documentation!
-=====================================
+PyNumDiff
+=========
 
+Python methods for numerical differentiation of noisy data, including
+multi-objective optimization routines for automated parameter selection.
 
-[Py]thon [Num]erical [Diff]erentiation for noisy time series measurements.
+.. raw:: html
 
-Description
------------
-PyNumDiff is a Python package that implements various methods for computing numerical derivatives of noisy data, which
-can be a critical step in developing dynamic models or designing control. There are four different families of methods
-implemented in this repository: smoothing followed by finite difference calculation, local approximation with linear
-models, Kalman filtering based methods and total variation regularization methods. Most of these methods have multiple
-parameters involved to tune. We take a principled approach and propose a multi-objective optimization framework for
-choosing parameters that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate.
-For more details, refer to `this paper`_.
+   <p align="center">
 
+.. raw:: html
 
-Installation
-------------
-Prerequisites
-^^^^^^^^^^^^^
-PyNumDiff requires common packages like `numpy`, `scipy`, `matplotlib`, `pytest` (for unittests), `pylint`
-(for PEP8 style check). For a full list, you can check the file `requirements.txt`_
+   </p>
 
-In addition, it also requires certain additional packages:
+.. raw:: html
 
-- Total Variation Regularization methods: `cvxpy`_
-- Linear Model Chebychev: `pychebfun`_
+   <p align="center">
 
-When using `cvxpy`, our default solver is set to be `MOSEK` (highly recommended), you would need to download their
-free academic license from their website_. Otherwise, you can also
-use other solvers which are listed here_.
-
-The code is compatible with Python 3.x. It can be installed using pip or directly from the source code.
-
-
-Installing via PIP
-^^^^^^^^^^^^^^^^^^
-Mac and Linux users can install pre-built binary packages using pip.
-To install the package just type:
 ::
 
-    pip install pynumdiff
+    <a href="#travis" alt="Travis Build Status">
+        <img src="https://travis-ci.com/luckystarufo/PyNumDiff.svg?branch=upgrade"/></a>
+    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
+        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
+    <a href="https://badge.fury.io/py/pynumdiff">
+        <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
+    <a href="https://zenodo.org/badge/latestdoi/361922468">
+        <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
+    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield">
+        <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield" alt="DOI"></a>
 
-Installing from source
-^^^^^^^^^^^^^^^^^^^^^^
-The official distribution is on GitHub, and you can clone the repository using
-::
+.. raw:: html
 
-    git clone https://github.com/luckystarufo/PyNumDiff.git
+   </p>
 
-To install the package just type:
-::
-
-    python setup.py install
-
-
-
-Developer's Guide
+Table of contents
 -----------------
 
-.. toctree::
-   :maxdepth: 1
+-  `Introduction <#introduction>`__
+-  `Structure <#structure>`__
+-  `Getting Started <#getting-started>`__
 
-   code
-   contact
-   contributing
-   LICENSE
+   -  `Prerequisite <#prerequisite>`__
+   -  `Installing <#installing>`__
 
-Tutorials
+-  `Usage <#usage>`__
+
+   -  `Basic usages <#basic-usages>`__
+   -  `Notebook examples <#notebook-examples>`__
+   -  `Important notes <#important-notes>`__
+   -  `Running the tests <#running-the-tests>`__
+
+-  `Citation <#citation>`__
+-  `License <#license>`__
+
+Introduction
+------------
+
+PyNumDiff is a Python package that implements various methods for
+computing numerical derivatives of noisy data, which can be a critical
+step in developing dynamic models or designing control. There are four
+different families of methods implemented in this repository: smoothing
+followed by finite difference calculation, local approximation with
+linear models, Kalman filtering based methods and total variation
+regularization methods. Most of these methods have multiple parameters
+involved to tune. We take a principled approach and propose a
+multi-objective optimization framework for choosing parameters that
+minimize a loss function to balance the faithfulness and smoothness of
+the derivative estimate. For more details, refer to `this
+paper <https://doi.org/10.1109/ACCESS.2020.3034077>`__.
+
+Structure
 ---------
-Basic Usages
-^^^^^^^^^^^^
-* Basic Usage: you provide the parameters
 
 ::
 
-   x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options)
+    PyNumDiff/
+      |- README.md
+      |- pynumdiff/
+         |- __init__.py
+         |- __version__.py
+         |- finite_difference/
+         |- kalman_smooth/
+         |- linear_model/
+         |- smooth_finite_difference/
+         |- total_variation_regularization/
+         |- utils/
+         |- optimize/
+            |- __init__.py
+            |- __optimize__.py
+            |- finite_difference/
+            |- kalman_smooth/
+            |- linear_model/
+            |- smooth_finite_difference/
+            |- total_variation_regularization/
+         |- tests/
+      |- examples
+         |- 1_basic_tutorial.ipynb
+         |- 2a_optimizing_parameters_with_dxdt_known.ipynb
+         |- 2b_optimizing_parameters_with_dxdt_unknown.ipynb
+      |- docs/
+         |- Makefile
+         |- make.bat
+         |- build/
+         |- source/
+            |- _static
+            |- _summaries
+            |- conf.py
+            |- index.rst
+            |- ...
+      |- setup.py
+      |- .gitignore
+      |- .travis.yml
+      |- LICENSE.txt
+      |- requirements.txt
 
-* For example, a few favorites:
+Getting Started
+---------------
 
-::
+Prerequisite
+~~~~~~~~~~~~
 
-    x_hat, dxdt_hat = pynumdiff.linear_model.savgoldiff(x, dt, [3, 20, 25])
-    x_hat, dxdt_hat = pynumdiff.kalman_smooth.constant_acceleration(x, dt, [1e-1, 1e-2])
-    x_hat, dxdt_hat = pynumdiff.total_variation_regularization.jerk(x, dt, [10])
-    x_hat, dxdt_hat = pynumdiff.smooth_finite_difference.butterdiff(x, dt, [3, 0.07])
+PyNumDiff requires common packages like ``numpy``, ``scipy``,
+``matplotlib``, ``pytest`` (for unittests), ``pylint`` (for PEP8 style
+check). For a full list, you can check the file
+`requirements.txt <requirements.txt>`__
 
-Examples
-^^^^^^^^
-We made some tutorial examples. Please refer to the official GitHub repository for the last
-updates in the examples folder. Here the list of the exported tutorials:
+In addition, it also requires certain additional packages for select
+functions, though these are not required for a successful install of
+PyNumDiff: \* Total Variation Regularization methods:
+```cvxpy`` <http://www.cvxpy.org/install/index.html>`__ \* Linear Model
+Chebychev: ```pychebfun`` <https://github.com/pychebfun/pychebfun/>`__
+\* Optimize: ```cvxpy`` <http://www.cvxpy.org/install/index.html>`__
 
-- `1_basic_tutorial.ipynb`_
-- `2a_optimizing_parameters_with_dxdt_known.ipynb`_
-- `2b_optimizing_parameters_with_dxdt_unknown.ipynb`_
+When using ``cvxpy``, our default solver is set to be ``MOSEK`` (highly
+recommended), you would need to download their free academic license
+from their
+`website <https://www.mosek.com/products/academic-licenses/>`__.
+Otherwise, you can also use other solvers which are listed
+`here <https://www.cvxpy.org/tutorial/advanced/index.html>`__.
 
-References
-----------
+Installing
+~~~~~~~~~~
 
-- F. van Breugel, J. Nathan Kutz and B. W. Brunton, "Numerical differentiation of noisy data: A unifying multi-objective optimization framework," in IEEE Access, doi: 10.1109/ACCESS.2020.3034077.
+The code is compatible with >=Python 3.5. It can be installed using pip
+or directly from the source code. Basic installation options include:
 
-.. _this paper: https://doi.org/10.1109/ACCESS.2020.3034077
-.. _website: https://www.mosek.com/products/academic-licenses/
-.. _cvxpy: http://www.cvxpy.org/install/index.html
-.. _pychebfun: https://github.com/pychebfun/pychebfun/
-.. _here: https://www.cvxpy.org/tutorial/advanced/index.html
-.. _requirements.txt: https://github.com/luckystarufo/PyNumDiff/blob/upgrade/requirements.txt
-.. _1_basic_tutorial.ipynb: https://github.com/luckystarufo/PyNumDiff/blob/upgrade/examples/1_basic_tutorial.ipynb
-.. _2a_optimizing_parameters_with_dxdt_known.ipynb: https://github.com/luckystarufo/PyNumDiff/blob/upgrade/examples/2a_optimizing_parameters_with_dxdt_known.ipynb
-.. _2b_optimizing_parameters_with_dxdt_unknown.ipynb: https://github.com/luckystarufo/PyNumDiff/blob/upgrade/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb
+-  From PyPI using pip: ``pip install pynumdiff``. May require
+   pre-installing ``numpy, scipy, matplotlib``.
+-  From source using pip git+:
+   ``pip install git+https://github.com/florisvb/PyNumDiff``
+-  From local source code using setup.py: requires pre-installing
+   ``numpy, scipy, matplotlib``. Then run ``python ./setup.py install``
+   from inside this directory. See below for example.
+
+Installation of the optional packages such as ``cvxpy`` can be tricky
+because ``cvxpy`` requires pythonX-dev packages. Depending on your
+version of Ubuntu it can be challenging to meet all the right
+requirements and installation options (e.g. it is difficult to install
+python3.6-dev on Ubuntu 16.04). Here are several tested example
+installation workflows:
+
+Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using pip git+:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: console
+
+    sudo apt-get install python3.5-dev
+    python3.5 -m venv ~/PYNUMDIFF35
+    source ~/PYNUMDIFF35/bin/activate
+    pip install --upgrade pip
+    pip install --upgrade pip
+    pip install git+https://github.com/florisvb/PyNumDiff
+    pip install git+https://github.com/pychebfun/pychebfun
+    pip install cvxpy
+    pip install git+http://github.com/MOSEK/Mosek.pip
+
+Complete install on Ubuntu 18.04 using python3.6 in blank virtual environment using pip git+:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: console
+
+    sudo apt-get install python3.6-dev
+    python3.6 -m venv ~/PYNUMDIFF36
+    source ~/PYNUMDIFF36/bin/activate
+    pip install --upgrade pip
+    pip install git+https://github.com/florisvb/PyNumDiff
+    pip install git+https://github.com/pychebfun/pychebfun
+    pip install cvxpy
+    pip install Mosek
+
+Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using setup.py:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: console
+
+    sudo apt-get install python3.5-dev
+    python3.5 -m venv ~/PYNUMDIFF35
+    source ~/PYNUMDIFF35/bin/activate
+    pip install --upgrade pip
+    pip install --upgrade pip
+    pip install numpy scipy matplotlib
+    python ./setup.py install
+    pip install git+https://github.com/pychebfun/pychebfun
+    pip install cvxpy
+    pip install git+http://github.com/MOSEK/Mosek.pip
+
+Note: If using the optional MOSEK solver for cvxpy you will also need a
+`MOSEK license <https://www.mosek.com/products/academic-licenses/>`__,
+free academic license.
+
+Usage
+-----
+
+**PyNumDiff** uses `Sphinx <http://www.sphinx-doc.org/en/stable/>`__ for
+code documentation. So you can see more details about the API usage
+`there <https://pynumdiff.readthedocs.io/en/latest/>`__.
+
+Basic usages
+~~~~~~~~~~~~
+
+-  Basic Usage: you provide the parameters
+
+   .. code:: bash
+
+           x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options)     
+
+-  Advanced usage: automated parameter selection through multi-objective
+   optimization
+
+   .. code:: bash
+
+           params, val = pynumdiff.optimize.sub_module.method(x, dt, params=None, 
+                                                              tvgamma=tvgamma, # hyperparameter
+                                                              dxdt_truth=None, # no ground truth data
+                                                              options={})
+           print('Optimal parameters: ', params)
+           x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options={'smooth': True})`
+
+Notebook examples
+~~~~~~~~~~~~~~~~~
+
+We will frequently update simple examples for demo purposes, and here
+are currently exisiting ones: \* Differentiaion with different methods:
+`1\_basic\_tutorial.ipynb <examples/1_basic_tutorial.ipynb>`__ \*
+Parameter Optimization with known ground truth (only for demonstration
+purpose):
+`2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
+\* Parameter Optimization with unknown ground truth:
+`2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
+
+Important notes
+~~~~~~~~~~~~~~~
+
+-  Larger values of ``tvgamma`` produce smoother derivatives
+-  The value of ``tvgamma`` is largely universal across methods, making
+   it easy to compare method results
+-  The optimization is not fast. Run it on subsets of your data if you
+   have a lot of data. It will also be much faster with faster
+   differentiation methods, like savgoldiff and butterdiff, and probably
+   too slow for sliding methods like sliding DMD and sliding LTI fit.
+-  The following heuristic works well for choosing ``tvgamma``, where
+   ``cutoff_frequency`` is the highest frequency content of the signal
+   in your data, and ``dt`` is the timestep:
+   ``tvgamma=np.exp(-1.6*np.log(cutoff_frequency)-0.71*np.log(dt)-5.1)``
+
+Running the tests
+~~~~~~~~~~~~~~~~~
+
+We are using Travis CI for continuous intergration testing. You can
+check out the current status
+`here <https://travis-ci.com/github/luckystarufo/PyNumDiff>`__.
+
+To run tests locally, type:
+
+.. code:: bash
+
+    > pytest pynumdiff
+
+Citation
+--------
+
+@ARTICLE{9241009, author={F. {van Breugel} and J. {Nathan Kutz} and B.
+W. {Brunton}}, journal={IEEE Access}, title={Numerical differentiation
+of noisy data: A unifying multi-objective optimization framework},
+year={2020}, volume={}, number={}, pages={1-1},
+doi={10.1109/ACCESS.2020.3034077}}
+
+License
+-------
+
+|FOSSA Status|
+
+This project utilizes the `MIT LICENSE <LICENSE.txt>`__. 100%
+open-source, feel free to utilize the code however you like.
+
+.. |FOSSA Status| image:: https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=large
+   :target: https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_large

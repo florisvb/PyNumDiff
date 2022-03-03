@@ -3,7 +3,7 @@
 Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">
-  <a href="https://pynumdiff.readthedocs.io/en/latest/" target="_blank" >
+  <a href="https://pynumdiff.readthedocs.io/en/master/" target="_blank" >
     <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="300" height="200" />
   </a>
 </p>
@@ -11,8 +11,8 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 <p align="center">
     <a href="#travis" alt="Travis Build Status">
         <img src="https://travis-ci.com/luckystarufo/PyNumDiff.svg?branch=upgrade"/></a>
-    <a href='https://pynumdiff.readthedocs.io/en/latest/?badge=latest'>
-        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=latest' alt='Documentation Status' /></a>
+    <a href='https://pynumdiff.readthedocs.io/en/master/?badge=master'>
+        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
     <a href="https://zenodo.org/badge/latestdoi/361922468">

@@ -181,7 +181,7 @@ So you can see more details about the API usage [there](https://pynumdiff.readth
 ### Notebook examples
 
 We will frequently update simple examples for demo purposes, and here are currently exisiting ones:
-* Differentiaion with different methods: [1_basic_tutorial.ipynb](examples/1_basic_tutorial.ipynb)
+* Differentiation with different methods: [1_basic_tutorial.ipynb](examples/1_basic_tutorial.ipynb)
 * Parameter Optimization with known ground truth (only for demonstration purpose):  [2a_optimizing_parameters_with_dxdt_known.ipynb](examples/2a_optimizing_parameters_with_dxdt_known.ipynb)
 * Parameter Optimization with unknown ground truth:  [2b_optimizing_parameters_with_dxdt_unknown.ipynb](./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
 

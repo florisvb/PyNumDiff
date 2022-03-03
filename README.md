@@ -197,7 +197,7 @@ We will frequently update simple examples for demo purposes, and here are curren
 ### Running the tests
 
 We are using Travis CI for continuous intergration testing. You can check out the current status 
-[here](https://travis-ci.com/github/luckystarufo/PyNumDiff).
+[here](https://travis-ci.com/github/florisvb/PyNumDiff).
 
 To run tests locally, type:
 ```bash

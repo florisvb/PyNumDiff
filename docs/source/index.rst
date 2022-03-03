@@ -249,17 +249,6 @@ of noisy data: A unifying multi-objective optimization framework},
 year={2020}, volume={}, number={}, pages={1-1},
 doi={10.1109/ACCESS.2020.3034077}}
 
-License
--------
-
-|FOSSA Status|
-
-This project utilizes the `MIT LICENSE <https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt>`__. 100%
-open-source, feel free to utilize the code however you like.
-
-.. |FOSSA Status| image:: https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=large
-   :target: https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_large
-
 Developer's Guide
 -----------------
 

@@ -182,10 +182,6 @@ free academic license.
 Usage
 -----
 
-**PyNumDiff** uses `Sphinx <http://www.sphinx-doc.org/en/stable/>`__ for
-code documentation. So you can see more details about the API usage
-`there <https://pynumdiff.readthedocs.io/en/latest/>`__.
-
 Basic usages
 ~~~~~~~~~~~~
 
@@ -212,11 +208,11 @@ Notebook examples
 
 We will frequently update simple examples for demo purposes, and here
 are currently exisiting ones: 
-- Differentiaion with different methods:
-`1\_basic\_tutorial.ipynb <examples/1_basic_tutorial.ipynb>`__ 
-- Parameter Optimization with known ground truth (only for demonstration
-purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
-- Parameter Optimization with unknown ground truth: `2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
+-  Differentiaion with different methods:
+`1\_basic\_tutorial.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/1_basic_tutorial.ipynb>`__ 
+-  Parameter Optimization with known ground truth (only for demonstration
+purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
+-  Parameter Optimization with unknown ground truth: `2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./https://github.com/florisvb/PyNumDiff/tree/master/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
 
 Important notes
 ~~~~~~~~~~~~~~~
@@ -238,7 +234,7 @@ Running the tests
 
 We are using Travis CI for continuous intergration testing. You can
 check out the current status
-`here <https://travis-ci.com/github/luckystarufo/PyNumDiff>`__.
+`here <https://travis-ci.com/github/florisvb/PyNumDiff>`__.
 
 To run tests locally, type:
 

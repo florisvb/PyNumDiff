@@ -94,7 +94,7 @@ Prerequisite
 PyNumDiff requires common packages like ``numpy``, ``scipy``,
 ``matplotlib``, ``pytest`` (for unittests), ``pylint`` (for PEP8 style
 check). For a full list, you can check the file
-`requirements.txt <requirements.txt>`__
+`requirements.txt <https://github.com/florisvb/PyNumDiff/blob/master/requirements.txt>`__
 
 In addition, it also requires certain additional packages for select
 functions, though these are not required for a successful install of

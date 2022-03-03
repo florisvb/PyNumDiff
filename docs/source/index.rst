@@ -207,10 +207,8 @@ Basic usages
 Notebook examples
 ~~~~~~~~~~~~~~~~~
 
--  Differentiaion with different methods:
-`1\_basic\_tutorial.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/1_basic_tutorial.ipynb>`__ 
--  Parameter Optimization with known ground truth (only for demonstration
-purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
+-  Differentiation with different methods: `1\_basic\_tutorial.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/1_basic_tutorial.ipynb>`__ 
+-  Parameter Optimization with known ground truth (only for demonstration purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
 -  Parameter Optimization with unknown ground truth: `2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./https://github.com/florisvb/PyNumDiff/tree/master/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
 
 

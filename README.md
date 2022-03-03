@@ -17,8 +17,6 @@ Python methods for numerical differentiation of noisy data, including multi-obje
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
     <a href="https://zenodo.org/badge/latestdoi/361922468">
         <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
-    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_shield">
-        <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=shield" alt="DOI"></a>
 </p>
 
 ## Table of contents
@@ -212,7 +210,6 @@ To run tests locally, type:
 
 
 ## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fflorisvb%2FPyNumDiff?ref=badge_large)
 
 This project utilizes the [MIT LICENSE](LICENSE.txt).
 100% open-source, feel free to utilize the code however you like. 

@@ -99,6 +99,7 @@ check). For a full list, you can check the file
 In addition, it also requires certain additional packages for select
 functions, though these are not required for a successful install of
 PyNumDiff: 
+
 -  Total Variation Regularization methods: `cvxpy <http://www.cvxpy.org/install/index.html>`__ 
 -  Linear Model Chebychev: `pychebfun <https://github.com/pychebfun/pychebfun/>`__
 
@@ -206,13 +207,12 @@ Basic usages
 Notebook examples
 ~~~~~~~~~~~~~~~~~
 
-We will frequently update simple examples for demo purposes, and here
-are currently exisiting ones: 
 -  Differentiaion with different methods:
 `1\_basic\_tutorial.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/1_basic_tutorial.ipynb>`__ 
 -  Parameter Optimization with known ground truth (only for demonstration
 purpose): `2a\_optimizing\_parameters\_with\_dxdt\_known.ipynb <https://github.com/florisvb/PyNumDiff/tree/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb>`__
 -  Parameter Optimization with unknown ground truth: `2b\_optimizing\_parameters\_with\_dxdt\_unknown.ipynb <./https://github.com/florisvb/PyNumDiff/tree/master/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb>`__
+
 
 Important notes
 ~~~~~~~~~~~~~~~

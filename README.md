@@ -10,7 +10,7 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 
 <p align="center">
     <a href="#travis" alt="Travis Build Status">
-        <img src="https://travis-ci.com/florisvb/PyNumDiff.svg?branch=upgrade"/></a>
+        <img src="https://travis-ci.com/florisvb/PyNumDiff.svg?branch=master"/></a>
     <a href='https://pynumdiff.readthedocs.io/en/master/?badge=master'>
         <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">

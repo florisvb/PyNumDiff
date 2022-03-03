@@ -99,8 +99,8 @@ check). For a full list, you can check the file
 In addition, it also requires certain additional packages for select
 functions, though these are not required for a successful install of
 PyNumDiff: 
-- Total Variation Regularization methods: `cvxpy <http://www.cvxpy.org/install/index.html>`__ 
-- Linear Model Chebychev: `pychebfun <https://github.com/pychebfun/pychebfun/>`__
+-  Total Variation Regularization methods: `cvxpy <http://www.cvxpy.org/install/index.html>`__ 
+-  Linear Model Chebychev: `pychebfun <https://github.com/pychebfun/pychebfun/>`__
 
 When using ``cvxpy``, our default solver is set to be ``MOSEK`` (highly
 recommended), you would need to download their free academic license

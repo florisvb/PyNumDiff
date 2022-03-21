@@ -15,8 +15,8 @@ Python methods for numerical differentiation of noisy data, including multi-obje
         <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
-    <a href="https://zenodo.org/badge/latestdoi/159711175">
-        <img src="https://zenodo.org/badge/159711175.svg" alt="DOI"></a>
+    <a href="https://zenodo.org/badge/latestdoi/361922468">
+        <img src="https://zenodo.org/badge/361922468.svg" alt="DOI"></a>
 </p>
 
 ## Table of contents
@@ -205,8 +205,14 @@ To run tests locally, type:
 
 ## Citation
 
-@ARTICLE{9241009, author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, journal={IEEE Access}, title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, year={2020}, volume={}, number={}, pages={1-1}, doi={10.1109/ACCESS.2020.3034077}}
 
+#### PyNumDiff python package:
+
+JOSS in review
+
+#### Optimization algorithm:
+
+@ARTICLE{9241009, author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, journal={IEEE Access}, title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, year={2020}, volume={}, number={}, pages={1-1}, doi={10.1109/ACCESS.2020.3034077}}
 
 
 ## License

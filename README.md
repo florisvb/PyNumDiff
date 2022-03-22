@@ -196,8 +196,21 @@ So you can see more details about the API usage [there](https://pynumdiff.readth
 ```bash
         x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options)     
 ```
-* Advanced usage: automated parameter selection through multi-objective optimization
+* Intermediate usage: automated parameter selection through multi-objective optimization
 ```bash
+        params, val = pynumdiff.optimize.sub_module.method(x, dt, params=None, 
+                                                           tvgamma=tvgamma, # hyperparameter
+                                                           dxdt_truth=None, # no ground truth data
+                                                           options={})
+        print('Optimal parameters: ', params)
+        x_hat, dxdt_hat = pynumdiff.sub_module.method(x, dt, params, options={'smooth': True})`
+```
+* Advanced usage: automated parameter selection through multi-objective optimization using a user-defined cutoff frequency
+```bash
+        # cutoff_freq: estimate by (a) counting the number of true peaks per second in the data or (b) look at power spectra and choose cutoff
+        log_gamma = -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1 # see: https://ieeexplore.ieee.org/abstract/document/9241009
+        tvgamma = np.exp(log_gamma) 
+
         params, val = pynumdiff.optimize.sub_module.method(x, dt, params=None, 
                                                            tvgamma=tvgamma, # hyperparameter
                                                            dxdt_truth=None, # no ground truth data

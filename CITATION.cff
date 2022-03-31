@@ -1,0 +1,33 @@
+cff-version: 1.1.0
+message: "If you use this software, please at least cite the JOSS publication referenced below."
+authors:
+  - family-names: van Breugel
+    given-names: Floris
+  - family-names: Liu
+    given-names: Yuying
+  - family-names: Brunton
+    given-names: Bing W.
+  - family-names: Kutz
+    given-names: J. Nathan
+title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+version: 0.1.2.4
+date-released: 2022-03-21
+doi: 10.5281/zenodo.6374098
+references:
+  - type: article
+    title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+    authors:
+      - family-names: van Breugel
+        given-names: Floris
+      - family-names: Liu
+        given-names: Yuying
+      - family-names: Brunton
+        given-names: Bing W.
+      - family-names: Kutz
+        given-names: J. Nathan
+    journal: Journal of Open Source Software
+    year: 2022
+    volume: 7
+    number: 71 
+    pages: 4078
+    doi: 10.21105/joss.04078

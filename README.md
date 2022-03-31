@@ -89,32 +89,33 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
 
 ## Citation
 
+See CITATION.cff file as well as the following references.
 
 #### PyNumDiff python package:
 
-@article{PyNumDiff2022,
-  doi = {10.21105/joss.04078},
-  url = {https://doi.org/10.21105/joss.04078},
-  year = {2022},
-  publisher = {The Open Journal},
-  volume = {7},
-  number = {71},
-  pages = {4078},
-  author = {Floris Van Breugel and Yuying Liu and Bingni W. Brunton and J. Nathan Kutz},
-  title = {PyNumDiff: A Python package for numerical differentiation of noisy time-series data},
-  journal = {Journal of Open Source Software}
-}
+  @article{PyNumDiff2022,
+    doi = {10.21105/joss.04078},
+    url = {https://doi.org/10.21105/joss.04078},
+    year = {2022},
+    publisher = {The Open Journal},
+    volume = {7},
+    number = {71},
+    pages = {4078},
+    author = {Floris Van Breugel and Yuying Liu and Bingni W. Brunton and J. Nathan Kutz},
+    title = {PyNumDiff: A Python package for numerical differentiation of noisy time-series data},
+    journal = {Journal of Open Source Software}
+  }
 
 
 #### Optimization algorithm:
 
-@article{ParamOptimizationDerivatives2020, 
-doi={10.1109/ACCESS.2020.3034077}
-author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, 
-journal={IEEE Access}, 
-title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, 
-year={2020}
-}
+  @article{ParamOptimizationDerivatives2020, 
+  doi={10.1109/ACCESS.2020.3034077}
+  author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, 
+  journal={IEEE Access}, 
+  title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, 
+  year={2020}
+  }
 
 ## Getting Started
 

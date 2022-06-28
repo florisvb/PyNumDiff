@@ -101,7 +101,7 @@ See CITATION.cff file as well as the following references.
       volume = {7},
       number = {71},
       pages = {4078},
-      author = {Floris Van Breugel and Yuying Liu and Bingni W. Brunton and J. Nathan Kutz},
+      author = {Floris van Breugel and Yuying Liu and Bingni W. Brunton and J. Nathan Kutz},
       title = {PyNumDiff: A Python package for numerical differentiation of noisy time-series data},
       journal = {Journal of Open Source Software}
     }

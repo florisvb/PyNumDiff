@@ -30,6 +30,10 @@ cutoff_frequency = 0.1
 log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
 tvgamma = np.exp(log_gamma)
 
+def get_err_msg(actual_params, desired_params):
+    err_msg = 'Actual params were: ' + ', '.join(map(str, actual_params)) + ' instead of: ' + ', '.join(map(str, desired_params))
+    return err_msg
+
 class TestOPT(TestCase):
     def test_first_order(self):
         params_1, val_1 = first_order(x, dt, params=None, options={'iterate': True},
@@ -74,8 +78,8 @@ class TestOPT(TestCase):
     def test_butterdiff(self):
         params_1, val_1 = butterdiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
         params_2, val_2 = butterdiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-        np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3)
-        np.testing.assert_almost_equal(params_2, [2, 0.99], decimal=3)
+        np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3, err_msg=get_err_msg(params_1, [9, 0.157]))
+        np.testing.assert_almost_equal(params_2, [2, 0.99], decimal=3, err_msg=get_err_msg(params_2, [2, 0.99]))
     
     def test_splinediff(self):
         params_1, val_1 = splinediff(x, dt, params=None, options={'iterate': True},

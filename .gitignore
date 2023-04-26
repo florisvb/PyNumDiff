@@ -115,4 +115,4 @@ __pycache__
 *.egg-info
 dist
 *.whl
-
+.vscode

@@ -126,7 +126,6 @@ PyNumDiff requires common packages like `numpy`, `scipy`, `matplotlib`, `pytest`
 
 In addition, it also requires certain additional packages for select functions, though these are not required for a successful install of PyNumDiff:
 * Total Variation Regularization methods: [`cvxpy`](http://www.cvxpy.org/install/index.html)
-* Linear Model Chebychev: [`pychebfun`](https://github.com/pychebfun/pychebfun/)
 
 When using `cvxpy`, our default solver is set to be `MOSEK` (highly recommended), you would need to download their 
 free academic license from their [website](https://www.mosek.com/products/academic-licenses/). Otherwise, you can also 
@@ -151,7 +150,6 @@ source ~/PYNUMDIFF35/bin/activate
 pip install --upgrade pip
 pip install --upgrade pip
 pip install git+https://github.com/florisvb/PyNumDiff
-pip install git+https://github.com/pychebfun/pychebfun
 pip install cvxpy
 pip install git+http://github.com/MOSEK/Mosek.pip
 ```

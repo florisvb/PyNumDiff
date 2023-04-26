@@ -11,10 +11,10 @@ from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
 
-try:
-    import pychebfun
-except ImportError:
-    pass
+# try:
+#     import pychebfun
+# except ImportError:
+#     pass
 
 try:
     import cvxpy
@@ -263,88 +263,89 @@ def polydiff(x, dt, params, options=None):
 
 #############
 # Chebychev #
+# Removed - Not Useful and requires old package
 #############
 
 
-def __chebydiff__(x, dt, params, options=None):
-    """
-    Fit the timeseries with chebyshev polynomials, and differentiate this model.
+# def __chebydiff__(x, dt, params, options=None):
+#     """
+#     Fit the timeseries with chebyshev polynomials, and differentiate this model.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [N] : (int) order of the polynomial
-    :param options:
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
-    """
+#     :param x: (np.array of floats, 1xN) time series to differentiate
+#     :param dt: (float) time step
+#     :param params: (list) [N] : (int) order of the polynomial
+#     :param options:
+#     :return: x_hat    : estimated (smoothed) x
+#              dxdt_hat : estimated derivative of x
+#     """
 
-    if isinstance(params, list):
-        n = params[0]
-    else:
-        n = params
+#     if isinstance(params, list):
+#         n = params[0]
+#     else:
+#         n = params
 
-    mean = np.mean(x)
-    x = x - mean
+#     mean = np.mean(x)
+#     x = x - mean
 
-    def f(y):
-        t = np.linspace(-1, 1, len(x))
-        return np.interp(y, t, x)
+#     def f(y):
+#         t = np.linspace(-1, 1, len(x))
+#         return np.interp(y, t, x)
 
-    # Chebychev polynomial
-    poly = pychebfun.chebfun(f, N=n, domain=[-1, 1])
-    ts = np.linspace(poly.domain()[0], poly.domain()[-1], len(x))
+#     # Chebychev polynomial
+#     poly = pychebfun.chebfun(f, N=n, domain=[-1, 1])
+#     ts = np.linspace(poly.domain()[0], poly.domain()[-1], len(x))
 
-    x_hat = poly(ts) + mean
-    dxdt_hat = poly.differentiate()(ts)*(2/len(x))/dt
+#     x_hat = poly(ts) + mean
+#     dxdt_hat = poly.differentiate()(ts)*(2/len(x))/dt
 
-    return x_hat, dxdt_hat
+#     return x_hat, dxdt_hat
 
 
-def chebydiff(x, dt, params, options=None):
-    """
-    Slide a smoothing derivative function across a times eries with specified window size.
+# def chebydiff(x, dt, params, options=None):
+#     """
+#     Slide a smoothing derivative function across a times eries with specified window size.
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+#     :param x: array of time series to differentiate
+#     :type x: np.array (float)
 
-    :param dt: time step size
-    :type dt: float
+#     :param dt: time step size
+#     :type dt: float
 
-    :param params: a list of 2 elements:
+#     :param params: a list of 2 elements:
 
-                    - N: order of the polynomial
-                    - window_size: size of the sliding window (ignored if not sliding)
+#                     - N: order of the polynomial
+#                     - window_size: size of the sliding window (ignored if not sliding)
 
-    :type params: list (int)
+#     :type params: list (int)
 
-    :param options: a dictionary consisting of 3 key value pairs:
+#     :param options: a dictionary consisting of 3 key value pairs:
 
-                    - 'sliding': whether to use sliding approach
-                    - 'step_size': step size for sliding
-                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+#                     - 'sliding': whether to use sliding approach
+#                     - 'step_size': step size for sliding
+#                     - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
 
-    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
+#     :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
 
-    :return: a tuple consisting of:
+#     :return: a tuple consisting of:
 
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
+#             - x_hat: estimated (smoothed) x
+#             - dxdt_hat: estimated derivative of x
 
-    :rtype: tuple -> (np.array, np.array)
-    """
+#     :rtype: tuple -> (np.array, np.array)
+#     """
 
-    if options is None:
-        options = {'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}
+#     if options is None:
+#         options = {'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}
 
-    if 'sliding' in options.keys() and options['sliding']:
-        window_size = copy.copy(params[-1])
-        if window_size < params[0]*2:
-            window_size = params[0]*2+1
-            params[1] = window_size
-        return __slide_function__(__chebydiff__, x, dt, params, window_size,
-                                  options['step_size'], options['kernel_name'])
+#     if 'sliding' in options.keys() and options['sliding']:
+#         window_size = copy.copy(params[-1])
+#         if window_size < params[0]*2:
+#             window_size = params[0]*2+1
+#             params[1] = window_size
+#         return __slide_function__(__chebydiff__, x, dt, params, window_size,
+#                                   options['step_size'], options['kernel_name'])
 
-    return __chebydiff__(x, dt, params)
+#     return __chebydiff__(x, dt, params)
 
 
 def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,

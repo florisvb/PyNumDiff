@@ -11,11 +11,11 @@ _logging.basicConfig(
     ]
 )
 
-try:
-    import pychebfun
-    __pychebfun_installed__ = True
-except:
-    __pychebfun_installed__ = False
+# try:
+#     import pychebfun
+#     __pychebfun_installed__ = True
+# except:
+#     __pychebfun_installed__ = False
 
 try:
     import cvxpy
@@ -24,14 +24,14 @@ except:
     __cvxpy_installed__ = False
 
 
-if __pychebfun_installed__:
-    from pynumdiff.linear_model._linear_model import chebydiff
-else:
-    __warning__ =   '\nLimited Linear Model Support Detected! \n'\
-                    '---> PYCHEBFUN is not installed. \n'\
-                    '---> Install pychebfun to use chebfun derivatives (https://github.com/pychebfun/pychebfun/) \n'\
-                    'You can still use other methods \n'
-    _logging.info(__warning__)
+# if __pychebfun_installed__:
+#     from pynumdiff.linear_model._linear_model import chebydiff
+# else:
+#     __warning__ =   '\nLimited Linear Model Support Detected! \n'\
+#                     '---> PYCHEBFUN is not installed. \n'\
+#                     '---> Install pychebfun to use chebfun derivatives (https://github.com/pychebfun/pychebfun/) \n'\
+#                     'You can still use other methods \n'
+#     _logging.info(__warning__)
 
 if __cvxpy_installed__:
     from pynumdiff.linear_model._linear_model import lineardiff

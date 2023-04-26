@@ -147,13 +147,13 @@ class TestOPT(TestCase):
         self.assertListEqual(params_1, [6, 50])
         self.assertListEqual(params_2, [4, 10])
     
-    def test_chebydiff(self):
-        try:
-            import pychebfun
-        except:
-            pytest.skip("could not import pychebfun, skipping test_chebydiff", allow_module_level=True)
+    # def test_chebydiff(self):
+    #     try:
+    #         import pychebfun
+    #     except:
+    #         pytest.skip("could not import pychebfun, skipping test_chebydiff", allow_module_level=True)
 
-        params_1, val_1 = chebydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-        params_2, val_2 = chebydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-        self.assertListEqual(params_1, [9, 108])
-        self.assertListEqual(params_2, [9, 94])
+    #     params_1, val_1 = chebydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    #     params_2, val_2 = chebydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+    #     self.assertListEqual(params_1, [9, 108])
+    #     self.assertListEqual(params_2, [9, 94])

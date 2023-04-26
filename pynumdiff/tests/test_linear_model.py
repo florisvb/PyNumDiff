@@ -62,24 +62,24 @@ class TestLM(TestCase):
         np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
         np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
-    def test_chebydiff(self):
-        try:
-            import pychebfun
-        except:
-            __warning__ = '\nCannot import pychebfun, skipping chebydiff test.'
-            _logging.info(__warning__)
-            return
+    # def test_chebydiff(self):
+    #     try:
+    #         import pychebfun
+    #     except:
+    #         __warning__ = '\nCannot import pychebfun, skipping chebydiff test.'
+    #         _logging.info(__warning__)
+    #         return
 
-        params = [2, 3]
-        x_hat, dxdt_hat = chebydiff(x, dt, params)
-        x_smooth = np.array([1., 4.638844, 7.184256, 6.644655, 15.614775, 11.60484,
-                             12.284141, 6.082226, 12.000615, 12.058705, 12.462283, 5.018101,
-                             4.674378, 6.431201, 4.])
-        dxdt = np.array([202.732652, 346.950235, -140.713336, 498.719617, 212.717775,
-                         -185.13847, -266.604056, -51.792587, 377.969849,  -0.749768,
-                         -297.654931, -455.876155, 197.575692, -24.809441, -150.109487])
-        np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
-        np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
+    #     params = [2, 3]
+    #     x_hat, dxdt_hat = chebydiff(x, dt, params)
+    #     x_smooth = np.array([1., 4.638844, 7.184256, 6.644655, 15.614775, 11.60484,
+    #                          12.284141, 6.082226, 12.000615, 12.058705, 12.462283, 5.018101,
+    #                          4.674378, 6.431201, 4.])
+    #     dxdt = np.array([202.732652, 346.950235, -140.713336, 498.719617, 212.717775,
+    #                      -185.13847, -266.604056, -51.792587, 377.969849,  -0.749768,
+    #                      -297.654931, -455.876155, 197.575692, -24.809441, -150.109487])
+    #     np.testing.assert_almost_equal(x_smooth, x_hat, decimal=2)
+    #     np.testing.assert_almost_equal(dxdt, dxdt_hat, decimal=2)
 
     def test_lineardiff(self):
         try:

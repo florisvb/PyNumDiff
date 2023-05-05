@@ -37,7 +37,6 @@ package = "https://pypi.org/project/pynumdiff/"
 advanced = [
     "cvxpy",
     "MOSEK",
-    "pychebfun"
 ]
 dev = [
 "appnope==0.1.2",

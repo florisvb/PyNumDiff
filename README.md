@@ -22,18 +22,22 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 </p>
 
 ## Table of contents
-* [Introduction](#introduction)
-* [Structure](#structure)
-* [Getting Started](#getting-started)
-    * [Prerequisite](#prerequisite)
-    * [Installing](#installing)
-* [Usage](#usage)
-    * [Basic usages](#basic-usages)
-    * [Notebook examples](#notebook-examples)
-    * [Important notes](#important-notes)
-    * [Running the tests](#running-the-tests)
-* [Citation](#citation)
-* [License](#license)
+- [PyNumDiff](#pynumdiff)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Structure](#structure)
+  - [Citation](#citation)
+      - [PyNumDiff python package:](#pynumdiff-python-package)
+      - [Optimization algorithm:](#optimization-algorithm)
+  - [Getting Started](#getting-started)
+    - [Prerequisite](#prerequisite)
+    - [Installing](#installing)
+  - [Usage](#usage)
+    - [Basic usages](#basic-usages)
+    - [Notebook examples](#notebook-examples)
+    - [Important notes](#important-notes)
+    - [Running the tests](#running-the-tests)
+  - [License](#license)
 
 ## Introduction
 
@@ -81,7 +85,6 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
             |- conf.py
             |- index.rst
             |- ...
-      |- setup.py
       |- .gitignore
       |- .travis.yml
       |- LICENSE.txt
@@ -135,52 +138,16 @@ use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advance
 
 The code is compatible with >=Python 3.5. It can be installed using pip or directly from the source code. Basic installation options include:
 
-* From PyPI using pip: `pip install pynumdiff`. May require pre-installing `numpy, scipy, matplotlib`. 
+* From PyPI using pip: `pip install pynumdiff`.
 * From source using pip git+: `pip install git+https://github.com/florisvb/PyNumDiff`
-* From local source code using setup.py: requires pre-installing `numpy, scipy, matplotlib`. Then run `python ./setup.py install` from inside this directory. See below for example.
+* From local source code using setup.py: Run `pip install .` from inside this directory. See below for example.
 
-Installation of the optional packages such as `cvxpy` can be tricky because `cvxpy` requires pythonX-dev packages. Depending on your version of Ubuntu it can be challenging to meet all the right requirements and installation options (e.g. it is difficult to install python3.6-dev on Ubuntu 16.04). Here are several tested example installation workflows:
+For additional solvers, run `pip install pynumdiff[advanced]`.  This includes `cvxpy`,
+which can be tricky when compiling from source.  If an error occurs in installing
+`cvxpy`, see [cvxpy install documentation](https://www.cvxpy.org/install/), install
+`cvxpy` according to those instructions, and try `pip install pynumdiff[advanced]`
+again.
 
-###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using pip git+:
-
-```console
-sudo apt-get install python3.5-dev
-python3.5 -m venv ~/PYNUMDIFF35
-source ~/PYNUMDIFF35/bin/activate
-pip install --upgrade pip
-pip install --upgrade pip
-pip install git+https://github.com/florisvb/PyNumDiff
-pip install cvxpy
-pip install git+http://github.com/MOSEK/Mosek.pip
-```
-
-###### Complete install on Ubuntu 18.04 using python3.6 in blank virtual environment using pip git+:
-
-```console
-sudo apt-get install python3.6-dev
-python3.6 -m venv ~/PYNUMDIFF36
-source ~/PYNUMDIFF36/bin/activate
-pip install --upgrade pip
-pip install git+https://github.com/florisvb/PyNumDiff
-pip install git+https://github.com/pychebfun/pychebfun
-pip install cvxpy
-pip install Mosek
-```
-
-###### Complete install on Ubuntu 16.04 using python3.5 in blank virtual environment using setup.py:
-
-```console
-sudo apt-get install python3.5-dev
-python3.5 -m venv ~/PYNUMDIFF35
-source ~/PYNUMDIFF35/bin/activate
-pip install --upgrade pip
-pip install --upgrade pip
-pip install numpy scipy matplotlib
-python ./setup.py install
-pip install git+https://github.com/pychebfun/pychebfun
-pip install cvxpy
-pip install git+http://github.com/MOSEK/Mosek.pip
-```
 <em>Note: If using the optional MOSEK solver for cvxpy you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/), free academic license.</em>
 
 

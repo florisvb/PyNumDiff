@@ -61,7 +61,7 @@ pytest==6.2.4
 python-dateutil==2.8.1
 pyzmq==22.1.0
 qdldl==0.1.5.post0
-scipy==1.7.0
+scipy==1.15.0
 scs==2.1.4
 Send2Trash==1.7.1
 six==1.16.0

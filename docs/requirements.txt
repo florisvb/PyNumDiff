@@ -68,7 +68,7 @@ six==1.16.0
 terminado==0.10.1
 testpath==0.5.0
 toml==0.10.2
-tornado==6.3.3
+tornado==6.4.2
 traitlets==5.0.5
 wcwidth==0.2.5
 webencodings==0.5.1

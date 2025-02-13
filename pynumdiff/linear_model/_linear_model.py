@@ -414,7 +414,7 @@ def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
     #assert isinstance(dxdt_hat, np.matrix)
     if len(dxdt_hat.shape) == 1:
         dxdt_hat = np.reshape(dxdt_hat, [1, len(dxdt_hat)])
-    x = np.array(scipy.integrate.cumtrapz(dxdt_hat, axis=1))
+    x = np.array(scipy.integrate.cumulative_trapezoid(dxdt_hat, axis=1))
     first_value = x[:, 0:1] - np.mean(dxdt_hat[:, 0:1], axis=1).reshape(dxdt_hat.shape[0], 1)
     x = np.hstack((first_value, x))*dt
     return x

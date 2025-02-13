@@ -228,7 +228,7 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             g = AT(A(u)) + ATb + alph * L * u
 
             # Prepare to solve linear equation.
-            tol = 1e-4
+            rtol = 1e-4
             # Simple preconditioner.
             P = alph * sparse.spdiags(L.diagonal() + 1, 0, n + 1, n + 1)
 
@@ -237,8 +237,8 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
 
             if diagflag:
                 [s, info_i] = sparse.linalg.cg(
-                    linop, g, x0=None, tol=tol, maxiter=maxit, callback=None,
-                    M=P, atol='legacy')
+                    linop, g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
+                    M=P, atol=0)
                 #print('iteration {0:4d}: relative change = {1:.3e}, '
                 #      'gradient norm = {2:.3e}\n'.format(ii,
                 #                                         np.linalg.norm(
@@ -251,8 +251,8 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
                 #    print("WARNING - illegal input or breakdown")
             else:
                 [s, info_i] = sparse.linalg.cg(
-                    linop, g, x0=None, tol=tol, maxiter=maxit, callback=None,
-                    M=P, atol='legacy')
+                    linop, g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
+                    M=P, atol=0)
             # Update solution.
             u = u - s
             # Display plot.
@@ -300,7 +300,7 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             # droptol = 1.0e-2
             R = sparse.dia_matrix(np.linalg.cholesky(B.todense()))
             # Prepare to solve linear equation.
-            tol = 1.0e-4
+            rtol = 1.0e-4
 
             def linop(v): return (alph * L * v + AT(A(v)))
             linop = splin.LinearOperator((n, n), linop)
@@ -308,8 +308,8 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             print(maxit)
             if diagflag:
                 [s, info_i] = sparse.linalg.cg(
-                    linop, -g, x0=None, tol=tol, maxiter=maxit, callback=None,
-                    M=np.dot(R.transpose(), R), atol='legacy')
+                    linop, -g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
+                    M=np.dot(R.transpose(), R), atol=0)
                 print('iteration {0:4d}: relative change = {1:.3e}, '
                       'gradient norm = {2:.3e}\n'.format(ii,
                                                          np.linalg.norm(s[0]) /
@@ -322,8 +322,8 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
 
             else:
                 [s, info_i] = sparse.linalg.cg(
-                    linop, -g, x0=None, tol=tol, maxiter=maxit, callback=None,
-                    M=np.dot(R.transpose(), R), atol='legacy')
+                    linop, -g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
+                    M=np.dot(R.transpose(), R), atol=0)
             # Update current solution
             u = u + s
             # Display plot.

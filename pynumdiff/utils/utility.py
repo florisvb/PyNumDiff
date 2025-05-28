@@ -129,22 +129,16 @@ def peakdet(v, delta, x=None):
 
 # Trapazoidal integration, with interpolated final point so that the lengths match.
 def integrate_dxdt_hat(dxdt_hat, dt):
-    """
-    Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures the integral has the same length
+    """Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures the integral has the same length
 
-    :param dxdt_hat: estimate derivative of timeseries
-    :type dxdt_hat: np.array
+    :param np.array[float] dxdt_hat: estimate derivative of timeseries
+    :param float dt: time step in seconds
 
-    :param dt: time step in seconds
-    :type dt: float
-
-    :return: integral of dxdt_hat
-    :rtype: np.array
+    :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """
     x = scipy.integrate.cumulative_trapezoid(dxdt_hat)
-    first_value = x[0] - np.mean(dxdt_hat[0:1])
-    x = np.hstack((first_value, x))*dt
-    return x
+    first_value = x[0] - dxdt_hat[0]
+    return np.hstack((first_value, x))*dt
 
 
 # Optimization routine to estimate the integration constant.

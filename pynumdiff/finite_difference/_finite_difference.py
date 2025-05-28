@@ -22,9 +22,9 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
     """
     if params != None and 'iterate' in options:
         warn("""`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.""")
-        return __iterate_first_order__(x, dt, params)
+        return _iterate_first_order(x, dt, params)
     elif num_iterations:
-        return __iterate_first_order__(x, dt, num_iterations)
+        return _iterate_first_order(x, dt, num_iterations)
 
     dxdt_hat = np.diff(x) / dt # Calculate the finite difference
     dxdt_hat = np.hstack((dxdt_hat[0], dxdt_hat, dxdt_hat[-1])) # Pad the data
@@ -50,11 +50,8 @@ def second_order(x, dt):
     return x, dxdt_hat
 
 
-def __x_hat_using_finite_difference__(x, dt):
-    """
-    :param x:
-    :param dt:
-    :return:
+def _x_hat_using_finite_difference(x, dt):
+    """Find a smoothed estimate of the true function by taking FD and then integrating with trapezoids
     """
     x_hat, dxdt_hat = first_order(x, dt)
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
@@ -62,7 +59,7 @@ def __x_hat_using_finite_difference__(x, dt):
     return x_hat + x0
 
 
-def __iterate_first_order__(x, dt, num_iterations):
+def _iterate_first_order(x, dt, num_iterations):
     """Iterative first order centered finite difference.
 
     :param np.array[float] x: array of time series to differentiate
@@ -73,14 +70,12 @@ def __iterate_first_order__(x, dt, num_iterations):
              - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
-    # set up weights
-    w = np.arange(0, len(x), 1)
-    w = w / np.max(w)
+    w = np.arange(len(x)) / (len(x) - 1) # set up weights, [0., ... 1.0]
 
     # forward backward passes
     for _ in range(num_iterations):
-        xf = __x_hat_using_finite_difference__(x, dt)
-        xb = __x_hat_using_finite_difference__(x[::-1], dt)
+        xf = _x_hat_using_finite_difference(x, dt)
+        xb = _x_hat_using_finite_difference(x[::-1], dt)
         x = xf * w + xb[::-1] * (1 - w)
 
     x_hat, dxdt_hat = first_order(x, dt)

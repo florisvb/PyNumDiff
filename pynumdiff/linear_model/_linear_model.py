@@ -1,20 +1,10 @@
-"""
-This module implements some common finite difference schemes
-"""
-import copy
-import math
-import logging
-import scipy
+import copy, math, logging, scipy
 import numpy as np
+from warnings import warn
 
 from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
-
-# try:
-#     import pychebfun
-# except ImportError:
-#     pass
 
 try:
     import cvxpy
@@ -29,8 +19,6 @@ KERNELS = {'friedrichs': __friedrichs_kernel__,
 ####################
 # Helper functions #
 ####################
-
-
 def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name, solver=None):
     """
     Slide a smoothing derivative function across a timeseries with specified window size.
@@ -109,8 +97,6 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name,
 #########################
 # Savitzky-Golay filter #
 #########################
-
-
 def savgoldiff(x, dt, params, options=None):
     """
     Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
@@ -166,8 +152,6 @@ def savgoldiff(x, dt, params, options=None):
 ######################
 # Polynomial fitting #
 ######################
-
-
 def __polydiff__(x, dt, params, options=None):
     """
     Fit polynomials to the timeseries, and differentiate the polynomials.
@@ -439,7 +423,6 @@ def __lineardiff__(x, dt, params, options=None):
     x = x - mean
 
 
-
     # Generate the matrix of integrals of x
     X = [x]
     for n in range(1, N):
@@ -546,52 +529,40 @@ def lineardiff(x, dt, params, options=None):
 
     return __lineardiff__(x, dt, params, options)
 
-#######################
-# Spectral derivative #
-#######################
+###############################
+# Fourier Spectral derivative #
+###############################
+def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True, pad_to_zero_dxdt=True):
+    """Take a derivative in the fourier domain, with high frequency attentuation.
 
+    :param np.array[float] x: array of time series to differentiate
+    :param float dt: time step size
+    :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
+    :param dict options: (**deprecated**, prefer :code:`even_extension`
+        and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
+    :param float high_freq_cutoff: The high frequency cutoff. Frequencies below this threshold will be kept, and above will be zeroed.
+    :param bool even_extension: if True, extend the time series with an even extension so signal starts and ends at the same value.
+    :param bool pad_to_zero_dxdt: if True, extend the time series with extensions that smoothly force the derivative to zero. This
+            allows the spectral derivative to fit data which does not start and end with derivatives equal to zero.
 
-def spectraldiff(x, dt, params, options=None):
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Take a derivative in the fourier domain, with high frequency attentuation.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: the high frequency cut off
-
-    :type params: list (float) or float
-
-    :param options: a dictionary consisting of 2 key value pairs:
-
-                    - 'even_extension': if True, extend the time series with an even extension so signal starts and ends at the same value.
-                    - 'pad_to_zero_dxdt': if True, extend the time series with extensions that smoothly force the derivative to zero. This allows the spectral derivative to fit data which does not start and end with derivatives equal to zero.
-
-    :type options: dict {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'even_extension': True, 'pad_to_zero_dxdt': True}
-
-    if isinstance(params, list):
-        wn = params[0]
-    else:
-        wn = params
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("""`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`,
+            `even_extension`, and `pad_to_zero_dxdt` instead.""")
+        if options is None:
+            even_extension = True
+            pad_to_zero_dxdt = True
+        high_freq_cutoff = params[0] if isinstance(params, list) else params
+    elif high_freq_cutoff == None:
+        raise ValueError("`high_freq_cutoff` must be given.")
 
     original_L = len(x)
 
     # make derivative go to zero at ends (optional)
-    if options['pad_to_zero_dxdt']:
+    if pad_to_zero_dxdt:
         padding = 100
         pre = x[0]*np.ones(padding)
         post = x[-1]*np.ones(padding)
@@ -603,7 +574,7 @@ def spectraldiff(x, dt, params, options=None):
         padding = 0
 
     # Do even extension (optional)
-    if options['even_extension'] is True:
+    if even_extension is True:
         x = np.hstack((x, x[::-1]))
 
     # If odd, make N even, and pad x
@@ -615,12 +586,12 @@ def spectraldiff(x, dt, params, options=None):
         N = L
 
     # Define the frequency range.
-    k = np.asarray(list(range(0, int(N/2))) + [0] + list(range( int(-N/2) + 1,0)))
+    k = np.asarray(list(range(0, int(N/2))) + [0] + list(range(int(-N/2) + 1,0)))
     k = k*2*np.pi/(dt*N)
 
-    # Frequency based smoothing: remove signals with a frequency higher than wn
-    discrete_wn = int(wn*N)
-    k[discrete_wn:N-discrete_wn] = 0
+    # Frequency based smoothing: remove signals with a frequency higher than high_freq_cutoff
+    discrete_high_freq_cutoff = int(high_freq_cutoff*N)
+    k[discrete_high_freq_cutoff:N-discrete_high_freq_cutoff] = 0
 
     # Derivative = 90 deg phase shift
     dxdt_hat = np.real(np.fft.ifft(1.0j * k * np.fft.fft(x)))

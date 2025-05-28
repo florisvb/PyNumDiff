@@ -81,9 +81,8 @@ Structure
             |- ...
       |- setup.py
       |- .gitignore
-      |- .travis.yml
       |- LICENSE.txt
-      |- requirements.txt
+      |- pyproject.toml
 
 Getting Started
 ---------------

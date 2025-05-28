@@ -9,8 +9,6 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 </p>
 
 <p align="center">
-    <a href="#travis" alt="Travis Build Status">
-        <img src="https://travis-ci.com/florisvb/PyNumDiff.svg?branch=master"/></a>
     <a href='https://pynumdiff.readthedocs.io/en/master/?badge=master'>
         <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
@@ -86,9 +84,8 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
             |- index.rst
             |- ...
       |- .gitignore
-      |- .travis.yml
       |- LICENSE.txt
-      |- requirements.txt
+      |- pyproject.toml
 
 ## Citation
 
@@ -125,7 +122,7 @@ See CITATION.cff file as well as the following references.
 ### Prerequisite
 
 PyNumDiff requires common packages like `numpy`, `scipy`, `matplotlib`, `pytest` (for unittests), `pylint` 
-(for PEP8 style check). For a full list, you can check the file [requirements.txt](requirements.txt)
+(for PEP8 style check). For a full list, you can check the file [pyproject.toml](pyproject.toml)
 
 In addition, it also requires certain additional packages for select functions, though these are not required for a successful install of PyNumDiff:
 * Total Variation Regularization methods: [`cvxpy`](http://www.cvxpy.org/install/index.html)

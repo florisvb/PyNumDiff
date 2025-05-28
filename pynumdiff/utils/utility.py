@@ -1,69 +1,5 @@
-"""
-All kinds of utilities
-"""
-import os
-import sys
-import copy
+import os, sys, copy, scipy
 import numpy as np
-import scipy
-
-
-def get_filenames(path, contains, does_not_contain=('~', '.pyc')):
-    """
-    Create list of files found in given path that contain or do not contain certain strings.
-
-    :param path: path in which to look for files
-    :type path: string (directory path)
-
-    :param contains: string that filenames must contain
-    :type contains: string
-
-    :param does_not_contain: list of strings that filenames must not contain, optional
-    :type does_not_contain: list of strings
-
-    :return: list of filenames
-    :rtype: list of strings
-    """
-    cmd = 'ls ' + '"' + path + '"'
-    ls = os.popen(cmd).read()
-    all_filelist = ls.split('\n')
-    all_filelist.remove('')
-    filelist = []
-    for _, filename in enumerate(all_filelist):
-        if contains in filename:
-            fileok = True
-            for nc in does_not_contain:
-                if nc in filename:
-                    fileok = False
-            if fileok:
-                filelist.append(os.path.join(path, filename))
-    return filelist
-
-
-def is_odd(num):
-    """
-    tell if it is an odd number
-
-    :param num: (integer) the number we need to tell
-    :return: (boolean) true or false
-    """
-    return num & 0x1
-
-
-def isnotebook():
-    """
-    Checks to see if the environment is an interactive notebook or not.
-    :return: True or False
-    """
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        # elif shell == 'TerminalInteractiveShell':
-        #     return False  # Terminal running IPython
-        return False  # Other type (?)
-    except NameError:
-        return False      # Probably standard Python interpreter
 
 
 def hankel_matrix(x, num_delays, pad=False):  # fixed delay step of 1
@@ -189,25 +125,6 @@ def peakdet(v, delta, x=None):
                 lookformax = True
 
     return np.array(maxtab), np.array(mintab)
-
-
-# simple finite difference
-def finite_difference(x, dt):
-    """
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list): (int, optional) number of iterations ignored if 'iterate' not in options
-    :param options: (bool) iterate the finite difference method (smooths the estimates)
-    :return: x_hat: smoothed x; dxdt_hat: derivative of x
-    """
-    # Calculate the finite difference
-    dxdt_hat = np.diff(x)/dt
-    # Pad the data
-    dxdt_hat = np.hstack((dxdt_hat[0], dxdt_hat, dxdt_hat[-1]))
-    # Re-finite dxdt_hat using linear interpolation
-    dxdt_hat = np.mean((dxdt_hat[0:-1], dxdt_hat[1:]), axis=0)
-
-    return x, dxdt_hat
 
 
 # Trapazoidal integration, with interpolated final point so that the lengths match.

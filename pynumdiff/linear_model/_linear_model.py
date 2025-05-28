@@ -539,7 +539,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :param float dt: time step size
     :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
     :param dict options: (**deprecated**, prefer :code:`even_extension`
-        and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
+            and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
     :param float high_freq_cutoff: The high frequency cutoff. Frequencies below this threshold will be kept, and above will be zeroed.
     :param bool even_extension: if True, extend the time series with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the time series with extensions that smoothly force the derivative to zero. This

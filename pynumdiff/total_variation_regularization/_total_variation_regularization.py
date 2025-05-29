@@ -7,7 +7,6 @@ import numpy as np
 from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__
 import pynumdiff.smooth_finite_difference
 from pynumdiff.utils import utility
-__gaussian_kernel__ = utility.__gaussian_kernel__
 
 try:
     import cvxpy
@@ -283,7 +282,7 @@ def smooth_acceleration(x, dt, params, options=None):
     gamma, window_size = params
 
     x_hat, dxdt_hat = acceleration(x, dt, [gamma], options=options)
-    kernel = __gaussian_kernel__(window_size)
+    kernel = utility._gaussian_kernel(window_size)
     dxdt_hat = pynumdiff.smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

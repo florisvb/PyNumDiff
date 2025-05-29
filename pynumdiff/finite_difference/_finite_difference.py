@@ -22,6 +22,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
     """
     if params != None and 'iterate' in options:
         warn("""`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.""")
+        if isinstance(params, list): params = params[0]
         return _iterate_first_order(x, dt, params)
     elif num_iterations:
         return _iterate_first_order(x, dt, num_iterations)

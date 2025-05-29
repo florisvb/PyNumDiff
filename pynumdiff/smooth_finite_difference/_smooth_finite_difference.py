@@ -7,9 +7,6 @@ import scipy.signal
 # included code
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
-__friedrichs_kernel__ = utility.__friedrichs_kernel__
-__gaussian_kernel__ = utility.__gaussian_kernel__
-__mean_kernel__ = utility.__mean_kernel__
 
 
 #####################
@@ -129,7 +126,7 @@ def meandiff(x, dt, params, options={}):
         else:
             window_size = params
 
-    kernel = __mean_kernel__(window_size)
+    kernel = utility._mean_kernel(window_size)
     x_hat = __convolutional_smoother__(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
@@ -175,7 +172,7 @@ def gaussiandiff(x, dt, params, options={}):
         else:
             window_size = params
 
-    kernel = __gaussian_kernel__(window_size)
+    kernel = utility._gaussian_kernel(window_size)
     x_hat = __convolutional_smoother__(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
@@ -222,7 +219,7 @@ def friedrichsdiff(x, dt, params, options={}):
         else:
             window_size = params
 
-    kernel = __friedrichs_kernel__(window_size)
+    kernel = utility._friedrichs_kernel(window_size)
     x_hat = __convolutional_smoother__(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 

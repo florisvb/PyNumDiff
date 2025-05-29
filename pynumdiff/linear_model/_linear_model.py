@@ -11,10 +11,8 @@ try:
 except ImportError:
     pass
 
-__friedrichs_kernel__ = utility.__friedrichs_kernel__
-__gaussian_kernel__ = utility.__gaussian_kernel__
-KERNELS = {'friedrichs': __friedrichs_kernel__,
-           'gaussian': __gaussian_kernel__}
+KERNELS = {'friedrichs': utility._friedrichs_kernel,
+           'gaussian': utility._gaussian_kernel}
 
 ####################
 # Helper functions #
@@ -139,7 +137,7 @@ def savgoldiff(x, dt, params, options=None):
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, n, deriv=1) / dt
 
-    kernel = __gaussian_kernel__(smoothing_win)
+    kernel = utility._gaussian_kernel(smoothing_win)
     dxdt_hat = smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

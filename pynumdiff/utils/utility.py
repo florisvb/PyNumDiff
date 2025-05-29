@@ -164,30 +164,23 @@ def estimate_initial_condition(x, x_hat):
 
 
 # kernels
-def __mean_kernel__(window_size):
-    """
-    :param window_size:
-    :return:
+def _mean_kernel(window_size):
+    """A uniform boxcar of total integral 1
     """
     return np.ones(window_size)/window_size
 
 
-def __gaussian_kernel__(window_size):
-    """
-    :param window_size:
-    :return:
+def _gaussian_kernel(window_size):
+    """A truncated gaussian
     """
     sigma = window_size / 6.
     t = np.linspace(-2.7*sigma, 2.7*sigma, window_size)
-    gaussian_func = lambda t, sigma: 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2))
-    ker = gaussian_func(t, sigma)
+    ker = 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2)) # gaussian function itself
     return ker / np.sum(ker)
 
 
-def __friedrichs_kernel__(window_size):
-    """
-    :param window_size:
-    :return:
+def _friedrichs_kernel(window_size):
+    """A bump function
     """
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))

@@ -20,7 +20,6 @@ def hankel_matrix(x, num_delays, pad=False):  # fixed delay step of 1
                          ['b', 'c', 'd', 'e',  0],
                          ['c', 'd', 'e',  0,   0]]
     """
-
     m = copy.copy(x)
     for d in range(1, num_delays):
         xi = x[:, d:]

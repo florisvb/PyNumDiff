@@ -138,7 +138,7 @@ def savgoldiff(x, dt, params, options=None):
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, n, deriv=1) / dt
 
     kernel = utility._gaussian_kernel(smoothing_win)
-    dxdt_hat = smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
+    dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
     x0 = utility.estimate_initial_condition(x, x_hat)

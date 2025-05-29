@@ -184,3 +184,23 @@ def _friedrichs_kernel(window_size):
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)
+
+
+def convolutional_smoother(x, kernel, iterations):
+    """Perform smoothing by convolving x with a kernel.
+
+    :param np.array[float] x: 1D data
+    :param np.array[float] kernel: kernel to use in convolution
+    :param int iterations: number of iterations, >=1
+    :return: **x_hat** (np.array[float]) -- smoothed x
+    """
+    x_hat = np.hstack((x[::-1], x, x[::-1])) # pad
+    w = np.arange(len(x_hat)) / (len(x_hat) - 1) # weights
+
+    for _ in range(iterations):
+        x_hat_f = np.convolve(x_hat, kernel, 'same')
+        x_hat_b = np.convolve(x_hat[::-1], kernel, 'same')[::-1]
+        
+        x_hat = x_hat_f*w + x_hat_b*(1-w)
+
+    return x_hat[len(x):len(x)*2]

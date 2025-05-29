@@ -9,37 +9,9 @@ from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
 
 
-#####################
-# Smoothing methods #
-#####################
-
-# convolve kernels
-def __convolutional_smoother__(x, kernel, iterations):
-    """
-    Perform mean smoothing by convolving mean kernel with x
-    followed by first order finite difference
-
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param kernel: (np.array of floats, 1 x window_size) kernel to use in convolution
-    :param iterations: (int) number of iterations, >=1
-    :return: x_hat : smoothed x
-    """
-    x_hat = np.hstack((x[::-1], x, x[::-1])) # pad
-    for _ in range(iterations):
-        x_hat_f = np.convolve(x_hat, kernel, 'same')
-        x_hat_b = np.convolve(x_hat[::-1], kernel, 'same')[::-1]
-
-        w = np.arange(0, len(x_hat_f), 1)
-        w = w/np.max(w)
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-
-    return x_hat[len(x):len(x)*2]
-
 ################################
 # Smoothing finite differences #
 ################################
-
-
 def mediandiff(x, dt, params, options={}):
     """
     Perform median smoothing using scipy.signal.medfilt
@@ -127,7 +99,7 @@ def meandiff(x, dt, params, options={}):
             window_size = params
 
     kernel = utility._mean_kernel(window_size)
-    x_hat = __convolutional_smoother__(x, kernel, iterations)
+    x_hat = utility.convolutional_smoother(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
     return x_hat, dxdt_hat
@@ -173,7 +145,7 @@ def gaussiandiff(x, dt, params, options={}):
             window_size = params
 
     kernel = utility._gaussian_kernel(window_size)
-    x_hat = __convolutional_smoother__(x, kernel, iterations)
+    x_hat = utility.convolutional_smoother(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
     return x_hat, dxdt_hat
@@ -220,7 +192,7 @@ def friedrichsdiff(x, dt, params, options={}):
             window_size = params
 
     kernel = utility._friedrichs_kernel(window_size)
-    x_hat = __convolutional_smoother__(x, kernel, iterations)
+    x_hat = utility.convolutional_smoother(x, kernel, iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
     return x_hat, dxdt_hat

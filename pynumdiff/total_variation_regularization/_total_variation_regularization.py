@@ -283,7 +283,7 @@ def smooth_acceleration(x, dt, params, options=None):
 
     x_hat, dxdt_hat = acceleration(x, dt, [gamma], options=options)
     kernel = utility._gaussian_kernel(window_size)
-    dxdt_hat = pynumdiff.smooth_finite_difference.__convolutional_smoother__(dxdt_hat, kernel, 1)
+    dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
     x0 = utility.estimate_initial_condition(x, x_hat)

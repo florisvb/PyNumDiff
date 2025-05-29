@@ -1,5 +1,3 @@
-"""
-Import useful functions from _finite_difference module
-"""
-from pynumdiff.finite_difference._finite_difference import first_order
-from pynumdiff.finite_difference._finite_difference import second_order
+from ._finite_difference import first_order, second_order
+
+__all__ = ['first_order', 'second_order'] # So these get treated as direct members of the module by sphinx

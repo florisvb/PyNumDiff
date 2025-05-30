@@ -1,10 +1,5 @@
+"""Apply smoothing method before finite difference.
 """
-Import useful functions from _smooth_finite_difference
-"""
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import mediandiff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import meandiff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import gaussiandiff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import friedrichsdiff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import butterdiff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import splinediff
-from pynumdiff.smooth_finite_difference._smooth_finite_difference import __convolutional_smoother__
+from ._smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
+
+__all__ = ['mediandiff', 'meandiff', 'gaussiandiff', 'friedrichsdiff', 'butterdiff', 'splinediff'] # So these get treated as direct members of the module by sphinx

@@ -1,7 +1,5 @@
 linear_model
 ============
 
-.. toctree::
-   :maxdepth: 1
-
-   linear_model/_linear_model
+.. automodule:: pynumdiff.linear_model
+    :members:

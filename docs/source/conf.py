@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyNumDiff'
-copyright = '2021, Floris van Breugel, Yuying Liu'
-author = 'Floris van Breugel, Yuying Liu'
+copyright = '2025, Floris van Breugel, Yuying Liu, Pavel Komarov'
+author = 'Floris van Breugel, Yuying Liu, Pavel Komarov'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.2'

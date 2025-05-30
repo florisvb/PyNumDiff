@@ -7,7 +7,7 @@ import scipy.stats as _scipy_stats
 
 # local imports
 from pynumdiff.utils import utility as _utility
-_finite_difference = _utility.finite_difference
+from pynumdiff.finite_difference import first_order as _finite_difference
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments

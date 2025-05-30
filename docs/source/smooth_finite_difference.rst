@@ -1,7 +1,5 @@
 smooth_finite_difference
 ========================
 
-.. toctree::
-   :maxdepth: 1
-
-   smooth_finite_difference/_smooth_finite_difference
+.. automodule:: pynumdiff.smooth_finite_difference
+    :members:

@@ -5,9 +5,9 @@ import numpy as _np
 from scipy.integrate import odeint
 
 # local imports
-from pynumdiff.utils import utility as _utility
+from pynumdiff.utils.utility import peakdet
 from pynumdiff.utils import _pi_cruise_control
-_finite_difference = _utility.finite_difference
+from pynumdiff.finite_difference import first_order as _finite_difference
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments, no-member
@@ -136,7 +136,7 @@ def triangle(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5)
     continuous_x = _np.sin(t*t)
 
     # find peaks and valleys
-    peaks, valleys = _utility.peakdet(continuous_x, 0.1)
+    peaks, valleys = peakdet(continuous_x, 0.1)
 
     # organize peaks and valleys
     if len(peaks) > 0:

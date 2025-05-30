@@ -1,6 +1,3 @@
-"""
-This module implements some common total variation regularization methods
-"""
 import logging
 import numpy as np
 

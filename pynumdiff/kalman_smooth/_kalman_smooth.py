@@ -1,6 +1,3 @@
-"""
-This module implements Kalman filters
-"""
 import copy
 import numpy as np
 

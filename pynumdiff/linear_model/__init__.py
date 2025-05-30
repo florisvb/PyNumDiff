@@ -1,3 +1,5 @@
+"""This module implements interpolation-based differentiation schemes.
+"""
 try:
     import cvxpy
     from ._linear_model import lineardiff

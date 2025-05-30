@@ -1,3 +1,5 @@
+"""This module implements some common total variation regularization methods
+"""
 try:
     import cvxpy
     from ._total_variation_regularization import velocity, acceleration, jerk, jerk_sliding, smooth_acceleration

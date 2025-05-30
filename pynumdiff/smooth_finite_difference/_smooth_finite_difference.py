@@ -1,6 +1,3 @@
-"""
-Apply smoothing method before finite difference
-"""
 import numpy as np
 import scipy.signal
 

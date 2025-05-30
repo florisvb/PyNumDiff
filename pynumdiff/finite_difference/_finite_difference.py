@@ -1,6 +1,3 @@
-"""
-This module implements some common finite difference schemes
-"""
 import numpy as np
 from pynumdiff.utils import utility
 from warnings import warn

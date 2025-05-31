@@ -1,0 +1,7 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  docs_dir: docs
+  builder: html # Use the 'sphinx' builder (default for 'make html')
+

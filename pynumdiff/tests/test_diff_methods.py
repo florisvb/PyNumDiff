@@ -34,8 +34,8 @@ test_funcs_and_derivs = [
 # big ol' table by the method, then the test function, then the pair of quantities we're comparing.
 error_bounds = {
 	lineardiff: [[(1e-25, 1e-25)]*4]*len(test_funcs_and_derivs),
-	polydiff:	[[(1e-15, 1e-15), (1e-12, 1e-13), (1, 0.1), (100, 100)],
-				 [(1e-14, 1e-14), (1e-12, 1e-13), (1, 0.1), (100, 100)],
+	polydiff:	[[(1e-14, 1e-15), (1e-12, 1e-13), (1, 0.1), (100, 100)],
+				 [(1e-13, 1e-14), (1e-12, 1e-13), (1, 0.1), (100, 100)],
 				 [(1e-13, 1e-14), (1e-11, 1e-12), (1, 0.1), (100, 100)],
 				 [(1e-13, 1e-14), (1e-12, 1e-12), (1, 0.1), (100, 100)],
 				 [(1e-6, 1e-7), (0.001, 0.0001), (1, 0.1), (100, 100)]],

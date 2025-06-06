@@ -135,43 +135,32 @@ def integrate_dxdt_hat(dxdt_hat, dt):
 
     :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """
-    x = scipy.integrate.cumulative_trapezoid(dxdt_hat)
-    first_value = x[0] - dxdt_hat[0]
-    return np.hstack((first_value, x))*dt
+    return np.hstack((0, scipy.integrate.cumulative_trapezoid(dxdt_hat)))*dt
 
 
 # Optimization routine to estimate the integration constant.
 def estimate_initial_condition(x, x_hat):
+    """Integration leaves an unknown integration constant. This function finds a best fit integration constant given x and
+    x_hat (the integral of dxdt_hat) by optimizing :math:`\\min_c ||x - \\hat{x} + c||_2`.
+
+    :param np.array[float] x: timeseries of measurements
+    :param np.array[float] x_hat: smoothed estiamte of x, for the purpose of this function this should have been determined
+        by integrate_dxdt_hat
+
+    :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
     """
-    Integration leaves an unknown integration constant. This function finds a best fit integration constant given x, and x_hat (the integral of dxdt_hat)
-
-    :param x: timeseries of measurements
-    :type x: np.array
-
-    :param x_hat: smoothed estiamte of x, for the purpose of this function this should have been determined by integrate_dxdt_hat
-    :type x_hat: np.array
-
-    :return: integration constant (i.e. initial condition) that best aligns x_hat with x
-    :rtype: float
-    """
-    def f(x0, *args):
-        x, x_hat = args[0]
-        error = np.linalg.norm(x - (x_hat+x0))
-        return error
-    result = scipy.optimize.minimize(f, [0], args=[x, x_hat], method='SLSQP')
-    return result.x
+    return scipy.optimize.minimize(lambda x0, x, xhat: np.linalg.norm(x - (x_hat+x0)), # fn to minimize in 1st argument
+        0, args=(x, x_hat), method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
 
 
 # kernels
 def _mean_kernel(window_size):
-    """A uniform boxcar of total integral 1
-    """
+    """A uniform boxcar of total integral 1"""
     return np.ones(window_size)/window_size
 
 
 def _gaussian_kernel(window_size):
-    """A truncated gaussian
-    """
+    """A truncated gaussian"""
     sigma = window_size / 6.
     t = np.linspace(-2.7*sigma, 2.7*sigma, window_size)
     ker = 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2)) # gaussian function itself
@@ -179,8 +168,7 @@ def _gaussian_kernel(window_size):
 
 
 def _friedrichs_kernel(window_size):
-    """A bump function
-    """
+    """A bump function"""
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)

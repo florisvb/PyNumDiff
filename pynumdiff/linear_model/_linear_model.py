@@ -508,7 +508,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
             `even_extension`, and `pad_to_zero_dxdt` instead.""", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
         if options != None:
-            if 'even_extension' in options: high_freq_cutoff = options['even_extension']
+            if 'even_extension' in options: even_extension = options['even_extension']
             if 'pad_to_zero_dxdt' in options: pad_to_zero_dxdt = options['pad_to_zero_dxdt']
     elif high_freq_cutoff == None:
         raise ValueError("`high_freq_cutoff` must be given.")

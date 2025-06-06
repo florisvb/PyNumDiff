@@ -96,33 +96,27 @@ def _slide_function(func, x, dt, args, window_size, step_size, kernel_name):
 #########################
 # Savitzky-Golay filter #
 #########################
-def savgoldiff(x, dt, params, options=None):
+def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None, smoothing_win=None):
+    """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
+
+    :param np.array[float] x: array of time series to differentiate
+    :param float dt: time step size
+    :param list params: (**deprecated**, prefer :code:`polynomial_order`, :code:`window_size`, and :code:`smoothing_win`)
+    :param dict options: (**deprecated**)
+    :param int polynomial_order: order of the polynomial
+    :param int window_size: size of the sliding window, must be odd (if not, 1 is added)
+    :param int smoothing_win: size of the window used for gaussian smoothing, a good default is window_size, but smaller for high frequnecy data
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of three elements:
-
-                    - N: order of the polynomial
-                    - window_size: size of the sliding window, must be odd (if not, 1 is added)
-                    - smoothing_win: size of the window used for gaussian smoothing, a good default is window_size, but smaller for high frequnecy data
-
-    :type params: list (int)
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-    n, window_size, smoothing_win = params
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`,
+            `window_size`, and `smoothing_win` instead.""", DeprecationWarning)
+        polynomial_order, window_size, smoothing_win = params
+    elif polynomial_order == None or window_size == None or smoothing_win == None:
+        raise ValueError("`polynomial_order`, `window_size`, and `smoothing_win` must be given.")
 
     if window_size > len(x)-1:
         window_size = len(x)-1
@@ -130,13 +124,13 @@ def savgoldiff(x, dt, params, options=None):
     if smoothing_win > len(x)-1:
         smoothing_win = len(x)-1
 
-    if window_size <= n:
-        window_size = n + 1
+    if window_size <= polynomial_order:
+        window_size = polynomial_order + 1
 
     if not window_size % 2:  # then make odd
         window_size += 1
 
-    dxdt_hat = scipy.signal.savgol_filter(x, window_size, n, deriv=1) / dt
+    dxdt_hat = scipy.signal.savgol_filter(x, window_size, polynomial_order, deriv=1) / dt
 
     kernel = utility._gaussian_kernel(smoothing_win)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
@@ -306,18 +300,7 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
 
 def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
                                            solver='MOSEK', A_known=None, epsilon=1e-6, rows_of_interest='all'):
-    """
-    :param X:
-    :param Xdot:
-    :param num_integrations:
-    :param dt:
-    :param gammaC:
-    :param gammaA:
-    :param solver:
-    :param A_known:
-    :param epsilon:
-    :param rows_of_interest:
-    :return:
+    """Given state and the derivative, find the system evolution and measurement matrices.
     """
 
     if rows_of_interest == 'all':
@@ -362,12 +345,8 @@ def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC
 
 
 def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
+    """Do integration analogous to integrate_dxdt_hat in the utilities, except on a 2D matrix.
     """
-    :param dxdt_hat:
-    :param dt:
-    :return:
-    """
-    #assert isinstance(dxdt_hat, np.matrix)
     if len(dxdt_hat.shape) == 1:
         dxdt_hat = np.reshape(dxdt_hat, [1, len(dxdt_hat)])
     x = np.array(scipy.integrate.cumulative_trapezoid(dxdt_hat, axis=1))

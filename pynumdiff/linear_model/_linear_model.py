@@ -17,23 +17,24 @@ KERNELS = {'friedrichs': utility._friedrichs_kernel,
 ####################
 # Helper functions #
 ####################
-def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name, solver=None):
-    """
-    Slide a smoothing derivative function across a timeseries with specified window size.
+def _slide_function(func, x, dt, args, window_size, step_size, kernel_name):
+    """Slide a smoothing derivative function across a timeseries with specified window size.
 
-    :param func: (function) name of the function to slide
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) see func for requirements
-    :param window_size: (int) size of the sliding window
-    :param step_size: (int) step size for slide (e.g. 1 means slide by 1 step)
-    :param kernel_name: (string) name of the smoothing kernel (e.g. 'friedrichs' or 'gaussian')
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param callable func: name of the function to slide
+    :param np.array[float] x: time series to differentiate
+    :param float dt: time step
+    :param dict args: see func for requirements
+    :param int window_size: size of the sliding window
+    :param int step_size: step size for slide (e.g. 1 means slide by 1 step)
+    :param str kernel_name: name of the smoothing kernel (e.g. 'friedrichs' or 'gaussian')
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
 
     # get smoothing kernel
-    if not window_size % 2:  # then make odd
+    if not window_size % 2: # then make odd
         window_size += 1
     ker = KERNELS[kernel_name](window_size)
 
@@ -62,7 +63,7 @@ def __slide_function__(func, x, dt, params, window_size, step_size, kernel_name,
 
         # run the function on the window
         _x = x[start:end]
-        x_hat, dxdt_hat = func(_x, dt, params, options={'weights': w, 'solver': solver})
+        x_hat, dxdt_hat = func(_x, dt, *args, weights=w)
 
         # stack results
         z_x_hat = np.zeros([len(x)])
@@ -150,97 +151,70 @@ def savgoldiff(x, dt, params, options=None):
 ######################
 # Polynomial fitting #
 ######################
-def __polydiff__(x, dt, params, options=None):
+def _polydiff(x, dt, polynomial_order, weights=None):
+    """Fit polynomials to the timeseries, and differentiate the polynomials.
+
+    :param np.array[float] x: time series to differentiate
+    :param float dt: time step
+    :param int polynomial_order: order of the polynomial
+    :param np.array[float] weights: weights applied to each point in calculating the polynomial fit.
+        Defaults to 1s if missing.
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Fit polynomials to the timeseries, and differentiate the polynomials.
-
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list)  [N]        : (int)                order of the polynomial
-    :param options:(dict) {'weights'} : (np.array, optional) weights applied to each point in calculating the
-                                                             polynomial fit. Defaults to 1s if missing.
-
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
-
-    """
-    if isinstance(options, dict) and 'weights' in options.keys():
-        w = options['weights']
-    else:
-        w = np.ones_like(x)
-
-    if isinstance(params, list):
-        order = params[0]
-    else:
-        order = params
+    if weights is None:
+        weights = np.ones(x.shape)
 
     t = np.arange(1, len(x)+1)*dt
 
-    #  polyfit
-    r = np.polyfit(t, x, order, w=w)[::-1]
+    r = np.polyfit(t, x, polynomial_order, w=weights) # polyfit returns highest order first
+    dr = np.polyder(r) # power rule already implemented for us
 
-    # derivative coefficients
-    dr = copy.copy(r[1:])
-    for i, _ in enumerate(dr):
-        dr[i] = dr[i]*(i + 1)
-
-    # evaluate dxdt_hat
-    dxdt_hat = 0
-    for i, _ in enumerate(dr):
-        dxdt_hat += dr[i]*t**i
-
-    # evaluate smooth x
-    x_hat = 0
-    for i, _ in enumerate(r):
-        x_hat += r[i]*t**i
+    dxdt_hat = np.polyval(dr, t) # evaluate the derivative and original polynomials at points t
+    x_hat = np.polyval(r, t) # smoothed x
 
     return x_hat, dxdt_hat
 
 
-def polydiff(x, dt, params, options=None):
+def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None,
+    sliding=True, step_size=1, kernel='friedrichs'):
+    """Fit polynomials to the time series, and differentiate the polynomials.
+
+    :param np.array[float] x: array of time series to differentiate
+    :param float dt: time step size
+    :param list[int] params: (**deprecated**, prefer :code:`polynomial_order` and :code:`window_size`)
+    :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, and :code:`kernel`)
+            a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
+    :param int polynomial_order: order of the polynomial
+    :param int window_size: size of the sliding window (ignored if not sliding)
+    :param bool sliding: whether to use sliding approach
+    :param int step_size: step size for sliding
+    :param str kernel: kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Fit polynomials to the time series, and differentiate the polynomials.
+    if params != None:
+        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`
+            and `window_size` instead.""", DeprecationWarning)
+        polynomial_order, window_size = params
+        if options != None:
+            if 'sliding' in options: sliding = options['sliding']
+            if 'step_size' in options: step_size = options['step_size']
+            if 'kernel_name' in options: kernel = options['kernel_name']
+    elif polynomial_order == None or window_size == None:
+        raise ValueError("`polynomial_order` and `window_size` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+    if window_size < polynomial_order*3:
+        window_size = polynomial_order*3+1
 
-    :param dt: time step size
-    :type dt: float
+    if sliding:
+        return _slide_function(_polydiff, x, dt, [polynomial_order], window_size, step_size, kernel)
 
-    :param params: a list of 2 elements:
-
-                    - N: order of the polynomial
-                    - window_size: size of the sliding window (ignored if not sliding)
-
-    :type params: list (int)
-
-    :param options: a dictionary consisting of 3 key value pairs:
-
-                    - 'sliding': whether to use sliding approach
-                    - 'step_size': step size for sliding
-                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-
-    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}
-
-    if 'sliding' in options.keys() and options['sliding'] is True:
-        window_size = copy.copy(params[-1])
-        if window_size < params[0]*3:
-            window_size = params[0]*3+1
-            params[1] = window_size
-        return __slide_function__(__polydiff__, x, dt, params, window_size, options['step_size'], options['kernel_name'])
-
-    return __polydiff__(x, dt, params, options={})
+    return _polydiff(x, dt, polynomial_order)
 
 
 #############
@@ -402,24 +376,22 @@ def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
     return x
 
 
-def __lineardiff__(x, dt, params, options=None):
-    """
-    Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative
+def _lineardiff(x, dt, N, gamma, solver='MOSEK', weights=None):
+    """Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param params: (list) [N,     : (int, >1) order (e.g. 2: velocity; 3: acceleration)
-                           gamma] : (float) regularization term
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
-    """
-    if options is None:
-        options = {'solver': 'MOSEK'}
+    :param np.array[float] x: time series to differentiate
+    :param float dt: time step
+    :param int > 1 N: order (e.g. 2: velocity; 3: acceleration)
+    :param float gamma: regularization term
+    :param np.array[float] weights: Bug? Currently not used here, although `lineardiff` takes a kernel
+    :param str solver: which cvxpy solver to use
 
-    N, gamma = params
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
     mean = np.mean(x)
     x = x - mean
-
 
     # Generate the matrix of integrals of x
     X = [x]
@@ -430,7 +402,7 @@ def __lineardiff__(x, dt, params, options=None):
     integral_X = __integrate_dxdt_hat_matrix__(X, dt)
 
     # Solve for A and the integration constants
-    A, C = __solve_for_A_and_C_given_X_and_Xdot__(integral_X, integral_Xdot, N, dt, gamma, solver=options['solver'])
+    A, C = __solve_for_A_and_C_given_X_and_Xdot__(integral_X, integral_Xdot, N, dt, gamma, solver=solver)
 
     # Add the integration constants
     Csum = 0
@@ -453,61 +425,45 @@ def __lineardiff__(x, dt, params, options=None):
     return x_hat, dxdt_hat
 
 
-def lineardiff(x, dt, params, options=None):
+def lineardiff(x, dt, params=None, options=None, polynomial_order=None, gamma=None, window_size=None,
+    sliding=True, step_size=10, kernel='friedrichs', solver='MOSEK'):
+    """Slide a smoothing derivative function across a time series with specified window size.
+
+    :param np.array[float] x: array of time series to differentiate
+    :param float dt: time step size
+    :param list[int, float, int] params: (**deprecated**, prefer :code:`polynomial_order`, :code:`gamma`, and :code:`window_size`)
+    :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, :code:`kernel`, and :code:`solver`
+            a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
+    :param int polynomial_order: order of the polynomial
+    :param float gamma: regularization term
+    :param int window_size: size of the sliding window (ignored if not sliding)
+    :param bool sliding: whether to use sliding approach
+    :param int step_size: step size for sliding
+    :param str kernel_name: kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+    :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Slide a smoothing derivative function across a time series with specified window size.
+    if params != None:
+        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`,
+            `gamma`, and `window_size` instead.""", DeprecationWarning)
+        polynomial_order, gamma, window_size = params
+        if options != None:
+            if 'sliding' in options: sliding = options['sliding']
+            if 'step_size' in options: step_size = options['step_size']
+            if 'kernel_name' in options: kernel = options['kernel_name']
+            if 'solver' in options: solver = options['solver']
+    elif polynomial_order == None or gamma == None or window_size == None:
+        raise ValueError("`polynomial_order`, `gamma`, and `window_size` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of 3 elements:
-
-                    - N: order of the polynomial
-                    - gamma: regularization term
-                    - window_size: size of the sliding window (ignored if not sliding)
-
-    :type params: list (int, float, int)
-
-    :param options: a dictionary consisting of 3 key value pairs:
-
-                    - 'sliding': whether to use sliding approach
-                    - 'step_size': step size for sliding
-                    - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-
-    :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'sliding': True, 'step_size': 10, 'kernel_name': 'friedrichs', 'solver': 'MOSEK'}
-
-    if 'sliding' not in options.keys():
-        options['sliding'] = True
-    if 'step_size' not in options.keys():
-        options['step_size'] = 10
-    if 'kernel_name' not in options.keys():
-        options['kernel_name'] = 'friedrichs'
-    if 'solver' not in options.keys():
-        options['solver'] = 'MOSEK'
-
-    if 'sliding' in options.keys() and options['sliding'] is True:
-        window_size = copy.copy(params[-1])
-        params = params[0:-1]
-
+    if sliding:
         # forward and backward
-        x_hat_forward, _ = __slide_function__(__lineardiff__, x, dt, params, window_size, options['step_size'],
-                                              options['kernel_name'], options['solver'])
-        x_hat_backward, _ = __slide_function__(__lineardiff__, x[::-1], dt, params, window_size, options['step_size'],
-                                               options['kernel_name'], options['solver'])
+        x_hat_forward, _ = _slide_function(_lineardiff, x, dt, [polynomial_order, gamma, solver], window_size, step_size,
+                                              kernel)
+        x_hat_backward, _ = _slide_function(_lineardiff, x[::-1], dt, [polynomial_order, gamma, solver], window_size, step_size,
+                                               kernel)
 
         # weights
         w = np.arange(1, len(x_hat_forward)+1,1)[::-1]
@@ -525,7 +481,7 @@ def lineardiff(x, dt, params, options=None):
 
         return x_hat, dxdt_hat
 
-    return __lineardiff__(x, dt, params, options)
+    return _lineardiff(x, dt, params, options)
 
 ###############################
 # Fourier Spectral derivative #
@@ -549,11 +505,11 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("""`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`,
-            `even_extension`, and `pad_to_zero_dxdt` instead.""")
-        if options is None:
-            even_extension = True
-            pad_to_zero_dxdt = True
+            `even_extension`, and `pad_to_zero_dxdt` instead.""", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
+        if options != None:
+            if 'even_extension' in options: high_freq_cutoff = options['even_extension']
+            if 'pad_to_zero_dxdt' in options: pad_to_zero_dxdt = options['pad_to_zero_dxdt']
     elif high_freq_cutoff == None:
         raise ValueError("`high_freq_cutoff` must be given.")
 

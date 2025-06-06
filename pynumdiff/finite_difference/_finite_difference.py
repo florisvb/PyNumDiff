@@ -1,6 +1,5 @@
 import numpy as np
 from pynumdiff.utils import utility
-from warnings import warn
 
 
 def first_order(x, dt, params=None, options={}, num_iterations=None):
@@ -18,7 +17,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None and 'iterate' in options:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.""")
+        raise DeprecationWarning("""`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.""")
         if isinstance(params, list): params = params[0]
         return _iterate_first_order(x, dt, params)
     elif num_iterations:

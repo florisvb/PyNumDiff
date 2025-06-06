@@ -1,6 +1,5 @@
 import copy, math, logging, scipy
 import numpy as np
-from warnings import warn
 
 from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
@@ -548,7 +547,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("""`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`,
+        raise DeprecationWarning("""`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`,
             `even_extension`, and `pad_to_zero_dxdt` instead.""")
         if options is None:
             even_extension = True

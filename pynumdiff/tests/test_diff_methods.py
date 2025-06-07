@@ -15,7 +15,7 @@ np.random.seed(7) # for repeatability of the test, so we don't get random failur
 noise = 0.05*np.random.randn(*t.shape)
 
 diff_methods_and_params = [
-	#(lineardiff, {'polynomial_order':3, 'gamma':5, 'window_size':10, 'solver':'CVXOPT'}),
+	#(lineardiff, {'order':3, 'gamma':5, 'window_size':10, 'solver':'CVXOPT'}),
 	(polydiff, {'polynomial_order':2, 'window_size':3}),
 	(savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}),
 	(spectraldiff, {'high_freq_cutoff':0.1})

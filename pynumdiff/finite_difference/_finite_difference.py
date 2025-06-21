@@ -68,7 +68,7 @@ def _iterate_first_order(x, dt, num_iterations):
              - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
-    w = np.arange(len(x)) / (len(x) - 1) # set up weights, [0., ... 1.0]
+    w = np.linspace(0, 1, len(x)) # set up weights, [0., ... 1.0]
 
     # forward backward passes
     for _ in range(num_iterations):

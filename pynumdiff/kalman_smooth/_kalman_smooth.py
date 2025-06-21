@@ -1,7 +1,5 @@
-import copy
 import numpy as np
-
-from pynumdiff.linear_model import savgoldiff
+from warnings import warn
 
 ####################
 # Helper functions #
@@ -23,7 +21,8 @@ def _kalman_forward_filter(xhat0, P0, y, A, C, Q, R, u=None, B=None):
         - **P_pre** -- a priori estimates of P
         - **P_post** -- a posteriori estimates of P
     """
-    if u is None: u = np.zeros((B.shape[1], y.shape[0]))
+    if B is None: B = np.zeros((A.shape[0], 1))
+    if u is None: u = np.zeros(B.shape[1])
     xhat = xhat0
     P = P0
 
@@ -70,10 +69,10 @@ def _kalman_backward_smooth(A, xhat_pre, xhat_post, P_pre, P_post):
     return np.stack(xhat_smooth[::-1], axis=0), np.stack(P_smooth[::-1], axis=0) # reverse lists
 
 
-def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None)
+def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None):
     """forward-backward Kalman/Rauch-Tung-Striebel smoother. For params see the helper functions.
     """
-    xhat_pre, xhat_post, P_pre, P_post = _kalman_forward_filter(xhat0, P0, x, A, C, Q, R) # noisy x are the "y" in Kalman-land
+    xhat_pre, xhat_post, P_pre, P_post = _kalman_forward_filter(xhat0, P0, y, A, C, Q, R) # noisy x are the "y" in Kalman-land
     xhat_smooth, _ = _kalman_backward_smooth(A, xhat_pre, xhat_post, P_pre, P_post) # not doing anything with P_smooth
     return xhat_smooth
 
@@ -81,7 +80,7 @@ def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None)
 #########################################
 # Constant 1st, 2nd, and 3rd derivative #
 #########################################
-def _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
+def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
     """Helper for `constant_{velocity,acceleration,jerk}` functions, because there was a lot of
     repeated code.
     """

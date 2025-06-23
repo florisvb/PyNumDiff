@@ -403,16 +403,16 @@ def _lineardiff(x, dt, N, gamma, solver='MOSEK', weights=None):
     return x_hat, dxdt_hat
 
 
-def lineardiff(x, dt, params=None, options=None, polynomial_order=None, gamma=None, window_size=None,
+def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
     sliding=True, step_size=10, kernel='friedrichs', solver='MOSEK'):
     """Slide a smoothing derivative function across a time series with specified window size.
 
     :param np.array[float] x: array of time series to differentiate
     :param float dt: time step size
-    :param list[int, float, int] params: (**deprecated**, prefer :code:`polynomial_order`, :code:`gamma`, and :code:`window_size`)
+    :param list[int, float, int] params: (**deprecated**, prefer :code:`order`, :code:`gamma`, and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, :code:`kernel`, and :code:`solver`
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
-    :param int polynomial_order: order of the polynomial
+    :param int>1 order: order of the polynomial
     :param float gamma: regularization term
     :param int window_size: size of the sliding window (ignored if not sliding)
     :param bool sliding: whether to use sliding approach
@@ -425,22 +425,22 @@ def lineardiff(x, dt, params=None, options=None, polynomial_order=None, gamma=No
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`,
+        warn("""`params` and `options` parameters will be removed in a future version. Use `order`,
             `gamma`, and `window_size` instead.""", DeprecationWarning)
-        polynomial_order, gamma, window_size = params
+        order, gamma, window_size = params
         if options != None:
             if 'sliding' in options: sliding = options['sliding']
             if 'step_size' in options: step_size = options['step_size']
             if 'kernel_name' in options: kernel = options['kernel_name']
             if 'solver' in options: solver = options['solver']
-    elif polynomial_order == None or gamma == None or window_size == None:
-        raise ValueError("`polynomial_order`, `gamma`, and `window_size` must be given.")
+    elif order == None or gamma == None or window_size == None:
+        raise ValueError("`order`, `gamma`, and `window_size` must be given.")
 
     if sliding:
         # forward and backward
-        x_hat_forward, _ = _slide_function(_lineardiff, x, dt, [polynomial_order, gamma, solver], window_size, step_size,
+        x_hat_forward, _ = _slide_function(_lineardiff, x, dt, [order, gamma, solver], window_size, step_size,
                                               kernel)
-        x_hat_backward, _ = _slide_function(_lineardiff, x[::-1], dt, [polynomial_order, gamma, solver], window_size, step_size,
+        x_hat_backward, _ = _slide_function(_lineardiff, x[::-1], dt, [order, gamma, solver], window_size, step_size,
                                                kernel)
 
         # weights

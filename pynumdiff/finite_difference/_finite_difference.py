@@ -1,5 +1,6 @@
 import numpy as np
 from pynumdiff.utils import utility
+from warnings import warn
 
 
 def first_order(x, dt, params=None, options={}, num_iterations=None):

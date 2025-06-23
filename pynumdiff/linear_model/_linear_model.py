@@ -1,5 +1,6 @@
 import copy, math, logging, scipy
 import numpy as np
+from warnings import warn
 
 from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference

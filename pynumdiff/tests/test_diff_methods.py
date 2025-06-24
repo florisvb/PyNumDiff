@@ -19,14 +19,14 @@ noise = 0.05*np.random.randn(*t.shape)
 
 # Analytic (function, derivative) pairs on which to test differentiation methods.
 test_funcs_and_derivs = [
-    (r"$x(t)=1$",           lambda t: np.ones(t.shape), lambda t: np.zeros(t.shape)),   # constant
-    (r"$x(t)=2t+1$",        lambda t: 2*t + 1,          lambda t: 2*np.ones(t.shape)),  # affine
-    (r"$x(t)=t^2-t+1$",     lambda t: t**2 - t + 1,     lambda t: 2*t - 1),             # quadratic
-    (r"$x(t)=\sin(3t)+1/2$", lambda t: np.sin(3*t) + 1/2, lambda t: 3*np.cos(3*t)),     # sinuoidal
-    (r"$x(t)=e^t\sin(5t)$", lambda t: np.exp(t)*np.sin(5*t),                            # growing sinusoidal
-                            lambda t: np.exp(t)*(5*np.cos(5*t) + np.sin(5*t))),
-    (r"$x(t)=\frac{\sin(8t)}{(t+0.1)^{3/2}}$", lambda t: np.sin(8*t)/((t + 0.1)**(3/2)), # steep challenger
-                            lambda t: ((0.8 + 8*t)*np.cos(8*t) - 1.5*np.sin(8*t))/(0.1 + t)**(5/2))]
+    (0, r"$x(t)=1$",            lambda t: np.ones(t.shape), lambda t: np.zeros(t.shape)),   # constant
+    (1, r"$x(t)=2t+1$",         lambda t: 2*t + 1,          lambda t: 2*np.ones(t.shape)),  # affine
+    (2, r"$x(t)=t^2-t+1$",      lambda t: t**2 - t + 1,     lambda t: 2*t - 1),             # quadratic
+    (3, r"$x(t)=\sin(3t)+1/2$", lambda t: np.sin(3*t) + 1/2, lambda t: 3*np.cos(3*t)),     # sinuoidal
+    (4, r"$x(t)=e^t\sin(5t)$",  lambda t: np.exp(t)*np.sin(5*t),                            # growing sinusoidal
+                                lambda t: np.exp(t)*(5*np.cos(5*t) + np.sin(5*t))),
+    (5, r"$x(t)=\frac{\sin(8t)}{(t+0.1)^{3/2}}$", lambda t: np.sin(8*t)/((t + 0.1)**(3/2)), # steep challenger
+                                lambda t: ((0.8 + 8*t)*np.cos(8*t) - 1.5*np.sin(8*t))/(0.1 + t)**(5/2))]
 
 # Call both ways, with kwargs (new) and with params list with default options dict (legacy), to ensure both work
 diff_methods_and_params = [
@@ -81,64 +81,56 @@ error_bounds = {
                    [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
-
 @mark.filterwarnings("ignore::DeprecationWarning") # I want to test the old and new functionality intentionally
 @mark.parametrize("diff_method_and_params", diff_methods_and_params)
-def test_diff_method(diff_method_and_params, request):
+@mark.parametrize("test_func_and_deriv", test_funcs_and_derivs)
+def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # request gives access to context
     diff_method, params = diff_method_and_params # unpack
+    i, latex_name, f, df = test_func_and_deriv
 
     # some methods rely on cvxpy, and we'd like to allow use of pynumdiff without convex optimization
     if diff_method in [lineardiff, velocity]:
         try: import cvxpy
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
-    plot = request.config.getoption("--plot") # Get the plot flag from pytest configuration
-    if plot: fig, axes = pyplot.subplots(len(test_funcs_and_derivs), 2, figsize=(12,7))
+    x = f(t) # sample the function
+    x_noisy = x + noise # add a little noise
+    dxdt = df(t) # true values of the derivative at samples
 
-    # loop over the test functions
-    for i,(latex,f,df) in enumerate(test_funcs_and_derivs):
-        x = f(t) # sample the function
-        x_noisy = x + noise # add a little noise
-        dxdt = df(t) # true values of the derivative at samples
-
-        # differentiate without and with noise
-        x_hat, dxdt_hat = diff_method(x, dt, **params) if isinstance(params, dict) else diff_method(x, dt, params) \
-            if isinstance(params, list) else diff_method(x, dt)
-        x_hat_noisy, dxdt_hat_noisy = diff_method(x_noisy, dt, **params) if isinstance(params, dict) \
-            else diff_method(x_noisy, dt, params) if isinstance(params, list) else diff_method(x_noisy, dt)
+    # differentiate without and with noise
+    x_hat, dxdt_hat = diff_method(x, dt, **params) if isinstance(params, dict) else diff_method(x, dt, params) \
+        if isinstance(params, list) else diff_method(x, dt)
+    x_hat_noisy, dxdt_hat_noisy = diff_method(x_noisy, dt, **params) if isinstance(params, dict) \
+        else diff_method(x_noisy, dt, params) if isinstance(params, list) else diff_method(x_noisy, dt)
+    
+    # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
+    #print("]\n[", end="")
+    for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
+        l2_error = np.linalg.norm(a - b)
+        linf_error = np.max(np.abs(a - b))
         
-        # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-        #print("]\n[", end="")
-        for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
-            l2_error = np.linalg.norm(a - b)
-            linf_error = np.max(np.abs(a - b))
-            
-            #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
-            log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-            assert np.linalg.norm(a - b) < 10**log_l2_bound
-            assert np.max(np.abs(a - b)) < 10**log_linf_bound
-            if np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
-                 print(f"Improvement detected for method {diff_method}")
+        #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
+        assert np.linalg.norm(a - b) < 10**log_l2_bound
+        assert np.max(np.abs(a - b)) < 10**log_linf_bound
+        if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+            print(f"Improvement detected for method {str(diff_method)}")
 
-        if plot:
-            axes[i, 0].plot(t, f(t), label=r"$x(t)$")
-            axes[i, 0].plot(t, x, 'C0+')
-            axes[i, 0].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
-            axes[i, 0].plot(t, dxdt_hat, 'C1+')
-            axes[i, 0].set_ylabel(latex, rotation=0, labelpad=50)
-            if i < len(test_funcs_and_derivs)-1: axes[i, 0].set_xticklabels([])
-            else: axes[i, 0].set_xlabel('t')
-            if i == 0: axes[i, 0].set_title('noiseless')
-            axes[i, 1].plot(t, f(t), label=r"$x(t)$")
-            axes[i, 1].plot(t, x_noisy, 'C0+')
-            axes[i, 1].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
-            axes[i, 1].plot(t, dxdt_hat_noisy, 'C1+')
-            if i < len(test_funcs_and_derivs)-1: axes[i, 1].set_xticklabels([])
-            else: axes[i, 1].set_xlabel('t')
-            axes[i, 1].set_yticklabels([])
-            if i == 0: axes[i, 1].set_title('with noise')
-
-    if plot:
-        axes[-1,-1].legend()
-        pyplot.tight_layout()
-        pyplot.show()
+    if request.config.getoption("--plot"): # Get the plot flag from pytest configuration
+        fig, axes = request.config.plots[diff_method]
+        axes[i, 0].plot(t, f(t), label=r"$x(t)$")
+        axes[i, 0].plot(t, x, 'C0+')
+        axes[i, 0].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
+        axes[i, 0].plot(t, dxdt_hat, 'C1+')
+        axes[i, 0].set_ylabel(latex_name, rotation=0, labelpad=50)
+        if i < len(test_funcs_and_derivs)-1: axes[i, 0].set_xticklabels([])
+        else: axes[i, 0].set_xlabel('t')
+        if i == 0: axes[i, 0].set_title('noiseless')
+        axes[i, 1].plot(t, f(t), label=r"$x(t)$")
+        axes[i, 1].plot(t, x_noisy, 'C0+')
+        axes[i, 1].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
+        axes[i, 1].plot(t, dxdt_hat_noisy, 'C1+')
+        if i < len(test_funcs_and_derivs)-1: axes[i, 1].set_xticklabels([])
+        else: axes[i, 1].set_xlabel('t')
+        axes[i, 1].set_yticklabels([])
+        if i == 0: axes[i, 1].set_title('with noise')

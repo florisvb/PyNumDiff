@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot
 from pytest import mark
 from warnings import warn
-from sys import argv
 
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity

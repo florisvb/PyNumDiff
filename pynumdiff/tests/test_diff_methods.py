@@ -108,18 +108,17 @@ def test_diff_method(diff_method_and_params, request):
             else diff_method(x_noisy, dt, params) if isinstance(params, list) else diff_method(x_noisy, dt)
         
         # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-        print("]\n[", end="")
+        #print("]\n[", end="")
         for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
             l2_error = np.linalg.norm(a - b)
             linf_error = np.max(np.abs(a - b))
             
-            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
-            #print(error_bounds[diff_method])
-            #log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-            # assert np.linalg.norm(a - b) < 10**log_l2_bound
-            # assert np.max(np.abs(a - b)) < 10**log_linf_bound
-            # if np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
-            #     print(f"Improvement detected for method {diff_method}")
+            #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+            log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
+            assert np.linalg.norm(a - b) < 10**log_l2_bound
+            assert np.max(np.abs(a - b)) < 10**log_linf_bound
+            if np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+                 print(f"Improvement detected for method {diff_method}")
 
         if plot:
             axes[i, 0].plot(t, f(t), label=r"$x(t)$")

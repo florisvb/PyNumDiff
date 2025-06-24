@@ -133,9 +133,9 @@
 #                                                       #
 # (1)                                                   #
 # scipy.sparse.linalg.cg seems to require more          #
-# iterations to reach the same result as                #        
+# iterations to reach the same result as                #
 # MATLAB's pcg. (scipy version 1.1.0)                   #
-# A good guess is the length of the data                #         
+# A good guess is the length of the data                #
 #                                                       #
 # (2)                                                   #
 # Drop last entry of derivative (u) for small scale     #

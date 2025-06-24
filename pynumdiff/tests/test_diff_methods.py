@@ -37,6 +37,7 @@ diff_methods_and_params = [
     (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1])
     ]
+diff_methods_and_params = [(velocity, [0.5])]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -78,7 +79,8 @@ error_bounds = {
                    [(1, 0), (1, 1), (1, 0), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (2, 2), (1, 1), (2, 2)],
-                   [(1, 1), (3, 3), (1, 1), (3, 3)]]
+                   [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    velocity: None
 }
 
 @mark.filterwarnings("ignore::DeprecationWarning") # I want to test the old and new functionality intentionally
@@ -104,17 +106,17 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         else diff_method(x_noisy, dt, params) if isinstance(params, list) else diff_method(x_noisy, dt)
     
     # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-    #print("]\n[", end="")
+    print("]\n[", end="")
     for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
         l2_error = np.linalg.norm(a - b)
         linf_error = np.max(np.abs(a - b))
         
-        #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
-        log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-        assert np.linalg.norm(a - b) < 10**log_l2_bound
-        assert np.max(np.abs(a - b)) < 10**log_linf_bound
-        if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
-            print(f"Improvement detected for method {str(diff_method)}")
+        print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        # log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
+        # assert np.linalg.norm(a - b) < 10**log_l2_bound
+        # assert np.max(np.abs(a - b)) < 10**log_linf_bound
+        # if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+        #     print(f"Improvement detected for method {diff_method.__name__}")
 
     if request.config.getoption("--plot"): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method]

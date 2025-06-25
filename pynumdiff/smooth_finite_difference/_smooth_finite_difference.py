@@ -170,14 +170,14 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     return x_hat, dxdt_hat
 
 
-def splinediff(x, dt, params=None, options={}, k=3, s=None, num_iterations=1):
+def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1):
     """Perform spline smoothing on x with scipy.interpolate.UnivariateSpline followed by first order finite difference
 
     :param np.array[float] x: array of time series to differentiate
     :param float dt: time step size
     :param list params: (**deprecated**, prefer :code:`order`, :code:`cutoff_freq`, and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int k: polynomial order of the spline. A kth order spline can be differentiated k times.
+    :param int order: polynomial order of the spline. A kth order spline can be differentiated k times.
     :param float s: positive smoothing factor used to choose the number of knots. Number of knots will be increased
         until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
     :param int num_iterations: how many times to apply smoothing
@@ -187,9 +187,9 @@ def splinediff(x, dt, params=None, options={}, k=3, s=None, num_iterations=1):
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `k`, `s`, and " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and " +
             "`num_iterations` instead.", DeprecationWarning)
-        k, s = params[0:2]
+        order, s = params[0:2]
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
@@ -197,7 +197,7 @@ def splinediff(x, dt, params=None, options={}, k=3, s=None, num_iterations=1):
 
     x_hat = x
     for _ in range(num_iterations):
-        spline = scipy.interpolate.UnivariateSpline(t, x_hat, k=k, s=s)
+        spline = scipy.interpolate.UnivariateSpline(t, x_hat, k=order, s=s)
         x_hat = spline(t)
 
     x_hat, dxdt_hat = finite_difference(x_hat, dt)

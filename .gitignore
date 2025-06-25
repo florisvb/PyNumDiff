@@ -117,3 +117,4 @@ dist
 *.whl
 .vscode
 docs/build
+pynumdiff/_version.py

@@ -102,8 +102,7 @@ def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
     x_hat = x_hat_forward*w + x_hat_backward*(1-w)
     dxdt_hat = dxdt_hat_forward*w + dxdt_hat_backward*(1-w)
 
-    dxdt_hat_corrected = np.mean((dxdt_hat, dxdt_hat_forward), axis=0) # What is this line for?
-    return x_hat, dxdt_hat_corrected
+    return x_hat, dxdt_hat
 
 
 def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):

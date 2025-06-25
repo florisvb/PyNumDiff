@@ -30,9 +30,9 @@ test_funcs_and_derivs = [
 
 # Call both ways, with kwargs (new) and with params list with default options dict (legacy), to ensure both work
 diff_methods_and_params = [
-    (first_order, {}),
-    (iterated_first_order, {'num_iterations':5}),
-    (second_order, {}), # empty dictionary for the case of no parameters
+    (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
+    (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
+    (second_order, {}),
     #(lineardiff, {'order':3, 'gamma':5, 'window_size':10, 'solver':'CVXOPT'}),
     (polydiff, {'polynomial_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),

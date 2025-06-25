@@ -9,7 +9,7 @@ from ..kalman_smooth import * # constant_velocity, constant_acceleration, consta
 from ..smooth_finite_difference import * # mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..finite_difference import first_order, second_order
 # Function aliases for testing cases where parameters change the behavior in a big way
-def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
+iterated_first_order = lambda *args, **kwargs: first_order(*args, **kwargs)
 
 dt = 0.1
 t = np.arange(0, 3, dt) # sample locations
@@ -106,11 +106,10 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
     #print("]\n[", end="")
     for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
-        # l2_error = np.linalg.norm(a - b)
-        # linf_error = np.max(np.abs(a - b))
-        # print(f"({l2_error}, {linf_error})", end=", ")
-        # print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        l2_error = np.linalg.norm(a - b)
+        linf_error = np.max(np.abs(a - b))
         
+        #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error> 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
         log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
         assert np.linalg.norm(a - b) < 10**log_l2_bound
         assert np.max(np.abs(a - b)) < 10**log_linf_bound

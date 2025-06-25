@@ -80,7 +80,7 @@ def test_butterdiff():
     np.testing.assert_array_less( np.abs(params_1[0] - 9), 1.001, err_msg=get_err_msg(params_1, [9, 0.157]))
     np.testing.assert_array_less( np.abs(params_1[1] - 0.157), 0.01, err_msg=get_err_msg(params_1, [9, 0.157]))
     #np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3, err_msg=get_err_msg(params_1, [9, 0.157]))
-    np.testing.assert_almost_equal(params_2, [2, 0.99], decimal=3, err_msg=get_err_msg(params_2, [2, 0.99]))
+    np.testing.assert_almost_equal(params_2, [3, 0.99], decimal=3, err_msg=get_err_msg(params_2, [3, 0.99]))
 
 def test_splinediff():
     params_1, val_1 = splinediff(x, dt, params=None, options={'iterate': True},

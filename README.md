@@ -181,6 +181,8 @@ To run tests locally, type:
 > pytest pynumdiff
 ```
 
+Add the flag `--plot` to see plots of the methods against test functions.
+
 ## License
 
 This project utilizes the [MIT LICENSE](LICENSE.txt).

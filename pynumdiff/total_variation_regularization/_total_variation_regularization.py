@@ -1,8 +1,7 @@
 import logging
 import numpy as np
 
-from pynumdiff.total_variation_regularization import __chartrand_tvregdiff__
-import pynumdiff.smooth_finite_difference
+from pynumdiff.total_variation_regularization import _chartrand_tvregdiff
 from pynumdiff.utils import utility
 
 try:
@@ -10,50 +9,46 @@ try:
 except ImportError:
     pass
 
-# Iterative total variation regularization
-def iterative_velocity(x, dt, params, options=None):
+
+def iterative_velocity(x, dt, params, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):
+    """Use an iterative solver to find the total variation regularized 1st derivative. See
+    _chartrand_tvregdiff.py for details, author info, and license. Methods described in:
+    Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data," ISRN Applied Mathematics,
+    Vol. 2011, Article ID 164564, 2011. Original code at https://sites.google.com/site/dnartrahckcir/home/tvdiff-code
+
+    :param np.array[float] x: array of time series to differentiate
+    :param float dt: time step size
+    :param list params: (**deprecated**, prefer :code:`num_iterations` and :code:`gamma`)
+    :param dict options: (**deprecated**, prefer :code:`cg_maxiter` and :code:`scale`)
+        a dictionary consisting of {'cg_maxiter': (int), 'scale': (str)}
+    :param int num_iterations: number of iterations to run the solver. More iterations results in
+        blockier derivatives, which approach the convex result
+    :param float gamma: regularization parameter
+    :param int cg_maxiter: Max number of iterations to use in :code:`scipy.sparse.linalg.cg`. Default
+        :code:`None` results in maxiter = len(x). This works well in our test examples.
+    :param str scale: This method has two different numerical options. From :code:`_chartrand_tvregdiff.py`:
+        :code:`'large'` or :code:`'small'` (case insensitive).  Default is :code:`'small'`. :code:`'small'`
+        has somewhat better boundary behavior, but becomes unwieldly for data larger than 1000 entries or so.
+        :code:`'large'` has simpler numerics but is more efficient for large-scale problems. :code:`'large'`
+        is more readily modified for higher-order derivatives, since the implicit differentiation matrix is square.
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Use an iterative solver to find the total variation regularized 1st derivative.
-    See __chartrand_tvregdiff__.py for details, author info, and license
-    Methods described in: Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data,"
-    ISRN Applied Mathematics, Vol. 2011, Article ID 164564, 2011.
-    Original code (MATLAB and python):  https://sites.google.com/site/dnartrahckcir/home/tvdiff-code
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, " +
+            "`gamma`, `cg_maxiter`, and `scale` instead.", DeprecationWarning)
+        num_iterations, gamma = params
+        if options != None:
+            if 'cg_maxiter' in options: cg_maxiter = options['cg_maxiter']
+            if 'scale' in options: scale = options['scale']
+    elif num_iterations == None or gamma == None:
+        raise ValueError("`num_iterations` and `gamma` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list consisting of:
-
-                    - iterations: Number of iterations to run the solver. More iterations results in blockier derivatives, which approach the convex result
-                    - gamma: Regularization parameter.
-
-    :type params: list (int, float)
-
-    :param options: a dictionary with 2 key value pairs
-
-                    - 'cg_maxiter': Max number of iterations to use in scipy.sparse.linalg.cg. Default is None, results in maxiter = len(x). This works well in our test examples.
-                    - 'scale': This method has two different numerical options. From __chartrand_tvregdiff__.py: 'large' or 'small' (case insensitive).  Default is 'small'.  'small' has somewhat better boundary behavior, but becomes unwieldly for data larger than 1000 entries or so.  'large' has simpler numerics but is more efficient for large-scale problems. 'large' is more readily modified for higher-order derivatives, since the implicit differentiation matrix is square.
-
-    :type options: dict {'cg_maxiter': (int), 'scale': (string)}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'cg_maxiter': 1000, 'scale': 'small'}
-
-    iterations, gamma = params
-    dxdt_hat = __chartrand_tvregdiff__.TVRegDiff(x, iterations, gamma, dx=dt,
-                                                 maxit=options['cg_maxiter'], scale=options['scale'],
-                                                 ep=1e-6, u0=None, plotflag=False, diagflag=1)
+    dxdt_hat = _chartrand_tvregdiff.TVRegDiff(x, num_iterations, gamma, dx=dt,
+                                                maxit=cg_maxiter, scale=scale,
+                                                ep=1e-6, u0=None, plotflag=False, diagflag=1)
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
     x0 = utility.estimate_initial_condition(x, x_hat)
     x_hat = x_hat + x0
@@ -61,9 +56,8 @@ def iterative_velocity(x, dt, params, options=None):
     return x_hat, dxdt_hat
 
 
-# Generalized total variation regularized derivatives
 def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
-    """
+    """Generalized total variation regularized derivatives
     Use convex optimization (cvxpy) to solve for the Nth total variation regularized derivative.
     Default solver is MOSEK: https://www.mosek.com/
 

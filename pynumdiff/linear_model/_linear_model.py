@@ -6,10 +6,15 @@ from pynumdiff import smooth_finite_difference
 from pynumdiff.finite_difference import first_order as finite_difference
 from pynumdiff.utils import utility
 
+try: import cvxpy
+except ImportError: pass
+
 try:
-    import cvxpy
+    import mosek
+    solver = 'MOSEK' # https://www.mosek.com/
 except ImportError:
-    pass
+    warn("MOSEK not installed, falling back to CVXPY's defaults")
+    solver = None # passing this to solve() allows CVXPY to use whatever it deems best
 
 KERNELS = {'friedrichs': utility._friedrichs_kernel,
            'gaussian': utility._gaussian_kernel}
@@ -299,7 +304,7 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
 
 
 def __solve_for_A_and_C_given_X_and_Xdot__(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
-                                           solver='MOSEK', A_known=None, epsilon=1e-6, rows_of_interest='all'):
+                                           solver=solver, A_known=None, epsilon=1e-6, rows_of_interest='all'):
     """Given state and the derivative, find the system evolution and measurement matrices.
     """
 
@@ -355,7 +360,7 @@ def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
     return x
 
 
-def _lineardiff(x, dt, N, gamma, solver='MOSEK', weights=None):
+def _lineardiff(x, dt, N, gamma, solver=solver, weights=None):
     """Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative
 
     :param np.array[float] x: time series to differentiate
@@ -405,7 +410,7 @@ def _lineardiff(x, dt, N, gamma, solver='MOSEK', weights=None):
 
 
 def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
-    sliding=True, step_size=10, kernel='friedrichs', solver='MOSEK'):
+    sliding=True, step_size=10, kernel='friedrichs', solver=solver):
     """Slide a smoothing derivative function across a time series with specified window size.
 
     :param np.array[float] x: array of time series to differentiate

@@ -4,7 +4,7 @@ from warnings import warn
 from pynumdiff.total_variation_regularization import _chartrand_tvregdiff
 from pynumdiff.utils import utility
 
-try:import cvxpy
+try: import cvxpy
 except ImportError: pass
 
 try:

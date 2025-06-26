@@ -1,13 +1,18 @@
-import logging
 import numpy as np
+from warnings import warn
 
 from pynumdiff.total_variation_regularization import _chartrand_tvregdiff
 from pynumdiff.utils import utility
 
+try:import cvxpy
+except ImportError: pass
+
 try:
-    import cvxpy
+    import mosek
+    solver = 'MOSEK' # https://www.mosek.com/
 except ImportError:
-    pass
+    warn("MOSEK not installed, falling back to CVXPY's defaults")
+    solver = None # passing this to solve() allows CVXPY to use whatever it deems best
 
 
 def iterative_velocity(x, dt, params, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):
@@ -56,62 +61,52 @@ def iterative_velocity(x, dt, params, options=None, num_iterations=None, gamma=N
     return x_hat, dxdt_hat
 
 
-def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
-    """Generalized total variation regularized derivatives
-    Use convex optimization (cvxpy) to solve for the Nth total variation regularized derivative.
-    Default solver is MOSEK: https://www.mosek.com/
+def _total_variation_regularized_derivative(x, dt, order, gamma, solver=solver):
+    """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
+    total variation regularized derivative. Default solver is MOSEK: , which is not
+    always available. Fall back to CVXPY's default.
 
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step
-    :param N: (int) 1, 2, or 3, the Nth derivative to regularize
-    :param gamma: (float) regularization parameter
-    :param solver: (string) Solver to use. Solver options include: 'MOSEK' and 'CVXOPT',
-                            in testing, 'MOSEK' was the most robust.
-    :return: x_hat    : estimated (smoothed) x
-             dxdt_hat : estimated derivative of x
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step
+    :param int order: 1, 2, or 3, the derivative to regularize
+    :param float gamma: regularization parameter
+    :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
+                            In testing, 'MOSEK' was the most robust.
+  
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-
     # Normalize
     mean = np.mean(x)
     std = np.std(x)
     x = (x-mean)/std
 
     # Define the variables for the highest order derivative and the integration constants
-    var = cvxpy.Variable(len(x) + N)
+    deriv_values = cvxpy.Variable(len(x)) # values of the order^th derivative, in which we're penalizing variation
+    integration_constants = cvxpy.Variable(order) # constants of integration that help get us back to x
 
     # Recursively integrate the highest order derivative to get back to the position
-    derivatives = [var[N:]]
-    for i in range(N):
-        d = cvxpy.cumsum(derivatives[-1]) + var[i]
-        derivatives.append(d)
-
-    # Compare the recursively integration position to the noisy position
-    sum_squared_error = cvxpy.sum_squares(derivatives[-1] - x)
-
-    # Total variation regularization on the highest order derivative
-    r = cvxpy.sum(gamma*cvxpy.tv(derivatives[0]))
+    y = deriv_values
+    for i in range(order):
+        y = cvxpy.cumsum(y) + integration_constants[i]
 
     # Set up and solve the optimization problem
-    obj = cvxpy.Minimize(sum_squared_error + r)
-    prob = cvxpy.Problem(obj)
+    prob = cvxpy.Problem(cvxpy.Minimize(
+        # Compare the recursively integrated position to the noisy position, and add TVR penalty
+        cvxpy.sum_squares(y - x) + cvxpy.sum(gamma*cvxpy.tv(deriv_values)) ))
     prob.solve(solver=solver)
 
-    # Recursively calculate the value of each derivative
-    final_derivative = var.value[N:]
-    derivative_values = [final_derivative]
-    for i in range(N):
-        d = np.cumsum(derivative_values[-1]) + var.value[i]
-        derivative_values.append(d)
-    for i, _ in enumerate(derivative_values):
-        derivative_values[i] = derivative_values[i]/(dt**(N-i))
+    # Recursively integrate the final derivative values to get back to the function and derivative values
+    y = deriv_values.value
+    for i in range(order-1): # stop one short to get the first derivative
+        y = np.cumsum(y) + integration_constants.value[i]
+    dxdt_hat = y/dt # y only holds the dx values; to get deriv scale by dt
+    x_hat = np.cumsum(y) + integration_constants.value[order-1] # smoothed data
 
-    # Extract the velocity and smoothed position
-    dxdt_hat = derivative_values[-2]
-    x_hat = derivative_values[-1]
-
-    dxdt_hat = (dxdt_hat[0:-1] + dxdt_hat[1:])/2
+    dxdt_hat = (dxdt_hat[0:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
     ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2]
-    dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f
+    dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f # What is this doing? Could we use a 2nd order FD above natively?
     dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
 
     # fix first point
@@ -121,158 +116,116 @@ def __total_variation_regularized_derivative__(x, dt, N, gamma, solver='MOSEK'):
     return x_hat*std+mean, dxdt_hat*std
 
 
-def velocity(x, dt, params, options=None):
+def velocity(x, dt, params, options=None, gamma=None, solver=solver):
+    """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step size
+    :param params: (**deprecated**, prefer :code:`gamma`)
+    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
+    :param float gamma: the regularization parameter
+    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
+                    In testing, 'MOSEK' was the most robust. Default is to use CVXPY's default.
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
-    Default solver is MOSEK: https://www.mosek.com/
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+            "and `solver` instead.", DeprecationWarning)
+        gamma = params[0] if isinstance(params, list) else params
+        if options != None:
+            if 'solver' in options: solver = options['solver']
+    elif gamma == None:
+        raise ValueError("`gamma` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+    return _total_variation_regularized_derivative(x, dt, 1, gamma, solver=solver)
 
-    :param dt: time step size
-    :type dt: float
 
-    :param params: [gamma], where gamma (float) is the regularization parameter
-                    or if 'iterate' in options: [gamma, num_iterations]
+def acceleration(x, dt, params, options=None, gamma=None, solver=solver):
+    """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
+    
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step size
+    :param params: (**deprecated**, prefer :code:`gamma`)
+    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
+    :param float gamma: the regularization parameter
+    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
+                    In testing, 'MOSEK' was the most robust. Default is to use CVXPY's default.
 
-    :type params: list (float) or float
-
-    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                    in testing, 'MOSEK' was the most robust.
-
-    :type options: dict {'solver': SOLVER}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+            "and `solver` instead.", DeprecationWarning)
+        gamma = params[0] if isinstance(params, list) else params
+        if options != None:
+            if 'solver' in options: solver = options['solver']
+    elif gamma == None:
+        raise ValueError("`gamma` must be given.")
 
-    if options is None:
-        options = {'solver': 'MOSEK'}
-
-    if isinstance(params, list):
-        gamma = params[0]
-    else:
-        gamma = params
-
-    return __total_variation_regularized_derivative__(x, dt, 1, gamma, solver=options['solver'])
+    return _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
 
 
-def acceleration(x, dt, params, options=None):
+def jerk(x, dt, params, options=None, gamma=None, solver=solver):
+    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step size
+    :param params: (**deprecated**, prefer :code:`gamma`)
+    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
+    :param float gamma: the regularization parameter
+    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
+                    In testing, 'MOSEK' was the most robust. Default is to use CVXPY's default.
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
-    Default solver is MOSEK: https://www.mosek.com/
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+            "and `solver` instead.", DeprecationWarning)
+        gamma = params[0] if isinstance(params, list) else params
+        if options != None:
+            if 'solver' in options: solver = options['solver']
+    elif gamma == None:
+        raise ValueError("`gamma` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: [gamma], where gamma (float) is the regularization parameter
-                    or if 'iterate' in options: [gamma, num_iterations]
-
-    :type params: list (float) or float
-
-    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                    in testing, 'MOSEK' was the most robust.
-
-    :type options: dict {'solver': SOLVER}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'solver': 'MOSEK'}
-
-    if isinstance(params, list):
-        gamma = params[0]
-    else:
-        gamma = params
-
-    return __total_variation_regularized_derivative__(x, dt, 2, gamma, solver=options['solver'])
+    return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
 
-def jerk(x, dt, params, options=None):
-    """
-    Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
-    Default solver is MOSEK: https://www.mosek.com/
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: [gamma], where gamma (float) is the regularization parameter
-                    or if 'iterate' in options: [gamma, num_iterations]
-
-    :type params: list (float) or float
-
-    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                    in testing, 'MOSEK' was the most robust.
-
-    :type options: dict {'solver': SOLVER}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'solver': 'MOSEK'}
-
-    if isinstance(params, list):
-        gamma = params[0]
-    else:
-        gamma = params
-
-    return __total_variation_regularized_derivative__(x, dt, 3, gamma, solver=options['solver'])
-
-
-def smooth_acceleration(x, dt, params, options=None):
-    """
-    Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
-    And then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
+def smooth_acceleration(x, dt, params, options=None, gamma=None, window_size=None, solver=solver):
+    """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative,
+    and then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
     The end result is similar to the jerk method, but can be more time-efficient.
 
-    Default solver is MOSEK: https://www.mosek.com/
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step size
+    :param params: (**deprecated**, prefer :code:`gamma` and :code:`window_size`)
+    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
+    :param float gamma: the regularization parameter
+    :param int window_size: window size for gaussian kernel
+    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
+                    In testing, 'MOSEK' was the most robust. Default is to use CVXPY's default.
 
-    :param x: time series to differentiate
-    :type x: np.array of floats, 1xN
-
-    :param dt: time step
-    :type dt: float
-
-    :param params:  list with values [gamma, window_size], where gamma (float) is the regularization parameter, window_size (int) is the window_size to use for the gaussian kernel
-    :type params: list -> [float, int]
-
-    :param options: a dictionary indicating which SOLVER option to use, ie. 'MOSEK' or 'CVXOPT', in testing, 'MOSEK' was the most robust.
-    :type options: dict {'solver': SOLVER}
-
-    :return: a tuple consisting of:
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-    :rtype: tuple -> (np.array, np.array)
-
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    if options is None:
-        options = {'solver': 'MOSEK'}
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+            "and `solver` instead.", DeprecationWarning)
+        gamma, window_size = params
+        if options != None:
+            if 'solver' in options: solver = options['solver']
+    elif gamma == None or window_size == None:
+        raise ValueError("`gamma` and `window_size` must be given.")
 
-    gamma, window_size = params
+    _, dxdt_hat = _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
 
-    x_hat, dxdt_hat = acceleration(x, dt, [gamma], options=options)
     kernel = utility._gaussian_kernel(window_size)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
 
@@ -283,48 +236,35 @@ def smooth_acceleration(x, dt, params, options=None):
     return x_hat, dxdt_hat
 
 
-def jerk_sliding(x, dt, params, options=None):
+def jerk_sliding(x, dt, params, options=None, gamma=None, solver=solver):
+    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: time step size
+    :param params: (**deprecated**, prefer :code:`gamma`)
+    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
+    :param float gamma: the regularization parameter
+    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
+                    In testing, 'MOSEK' was the most robust. Default is to use CVXPY's default.
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
     """
-    Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
-    Default solver is MOSEK: https://www.mosek.com/
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: [gamma], where gamma (float) is the regularization parameter
-                    or if 'iterate' in options: [gamma, num_iterations]
-
-    :type params: list (float) or float
-
-    :param options: {'solver': SOLVER} SOLVER options include: 'MOSEK' and 'CVXOPT',
-                    in testing, 'MOSEK' was the most robust.
-
-    :type options: dict {'solver': SOLVER}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'solver': 'MOSEK'}
-
-    if isinstance(params, list):
-        gamma = params[0]
-    else:
-        gamma = params
+    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+            "and `solver` instead.", DeprecationWarning)
+        gamma = params[0] if isinstance(params, list) else params
+        if options != None:
+            if 'solver' in options: solver = options['solver']
+    elif gamma == None:
+        raise ValueError("`gamma` must be given.")
 
     window_size = 1000
     stride = 200
 
     if len(x) < window_size:
-        return jerk(x, dt, params, options=options)
+        return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
     # slide the jerk
     final_xsmooth = []
@@ -337,8 +277,8 @@ def jerk_sliding(x, dt, params, options=None):
 
     try:
         while not last_loop:
-            xsmooth, xdot_hat = __total_variation_regularized_derivative__(x[first_idx:final_idx], dt, 3,
-                                                                           gamma, solver=options['solver'])
+            xsmooth, xdot_hat = _total_variation_regularized_derivative(x[first_idx:final_idx], dt, 3,
+                                                                           gamma, solver=solver)
 
             xsmooth = np.hstack(([0]*first_idx, xsmooth, [0]*(len(x)-final_idx)))
             final_xsmooth.append(xsmooth)
@@ -379,5 +319,6 @@ def jerk_sliding(x, dt, params, options=None):
         return xsmooth, xdot_hat
 
     except ValueError:
-        print('Solver failed, returning finite difference instead')
-        return pynumdiff.utils.utility.finite_difference(x, dt)
+        warn('Solver failed, returning finite difference instead')
+        from pynumdiff.finite_difference import second_order
+        return second_order(x, dt)

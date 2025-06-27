@@ -1,643 +1,258 @@
-import copy
 import numpy as np
-
-from pynumdiff.linear_model import savgoldiff
+from warnings import warn
 
 ####################
 # Helper functions #
 ####################
-
-
-def __kalman_forward_update__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
+def _kalman_forward_filter(xhat0, P0, y, A, C, Q, R, u=None, B=None):
+    """Run the forward pass of a Kalman filter
+    :param np.array xhat0: initial estimate of state (often 0) one step before the first measurement
+    :param np.array P0: initial guess of state covariance (often identity matrix) before the first measurement
+    :param np.array y: series of measurements, stacked along axis 0. In this case just the raw noisy data (fully observable)
+    :param np.array A: discrete-time state transition matrix
+    :param np.array C: measurement matrix
+    :param np.array Q: discrete-time process noise covariance
+    :param np.array R: measurement noise covariance
+    :param np.array u: optional control input
+    :param np.array B: optional control matrix
+    :return: tuple[np.array, np.array, np.array, np.array] of\n
+        - **xhat_pre** -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
+        - **xhat_post** -- a posteriori estimates of xhat
+        - **P_pre** -- a priori estimates of P
+        - **P_post** -- a posteriori estimates of P
     """
-    :param xhat_fm:
-    :param P_fm:
-    :param y:
-    :param u:
-    :param A:
-    :param B:
-    :param C:
-    :param R:
-    :param Q:
-    :return:
-    """
-    I = np.array(np.eye(A.shape[0]))
-    gammaW = np.array(np.eye(A.shape[0]))
+    if B is None: B = np.zeros((A.shape[0], 1))
+    if u is None: u = np.zeros(B.shape[1])
+    xhat = xhat0
+    P = P0
 
-    K_f = P_fm@C.T@np.linalg.pinv(C@P_fm@C.T + R)
-
-    if y is not None and not np.isnan(y):
-        xhat_fp = xhat_fm + K_f@(y - C@xhat_fm)
-        P_fp = (I - K_f@C)@P_fm
-        xhat_fm = A@xhat_fp + B@u
-        P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
-    else:
-        xhat_fp = xhat_fm
-        P_fp = (I - K_f@C)@P_fm
-        xhat_fm = A@xhat_fp + B@u
-        P_fm = A@P_fp@A.T + gammaW@Q@gammaW.T
-        
-    return xhat_fp, xhat_fm, P_fp, P_fm
-
-
-def __kalman_forward_filter__(xhat_fm, P_fm, y, u, A, B, C, R, Q):
-    """
-    :param xhat_fm:
-    :param P_fm:
-    :param y:
-    :param u:
-    :param A:
-    :param B:
-    :param C:
-    :param R:
-    :param Q:
-    :return:
-    """
-    if u is None:
-        u = np.array(np.zeros([B.shape[1], y.shape[1]]))
-
-    xhat_fp = None
-    P_fp = []
-    P_fm = [P_fm]
-
-    for i in range(y.shape[1]):
-        _xhat_fp, _xhat_fm, _P_fp, _P_fm = __kalman_forward_update__(xhat_fm[:, [-1]], P_fm[-1], y[:, [i]], u[:, [i]],
-                                                                     A, B, C, R, Q)
-        if xhat_fp is None:
-            xhat_fp = _xhat_fp
-        else:
-            xhat_fp = np.hstack((xhat_fp, _xhat_fp))
-        xhat_fm = np.hstack((xhat_fm, _xhat_fm))
-
-        P_fp.append(_P_fp)
-        P_fm.append(_P_fm)
-
-    return xhat_fp, xhat_fm, P_fp, P_fm
-
-
-def __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A):
-    """
-    :param xhat_fp:
-    :param xhat_fm:
-    :param P_fp:
-    :param P_fm:
-    :param A:
-    :return:
-    """
-    N = xhat_fp.shape[1]
-
-    xhat_smooth = copy.copy(xhat_fp)
-    P_smooth = copy.copy(P_fp)
-    for t in range(N-2, -1, -1):
-        L = P_fp[t]@A.T@np.linalg.pinv(P_fm[t])
-        xhat_smooth[:, [t]] = xhat_fp[:, [t]] + L@(xhat_smooth[:, [t+1]] - xhat_fm[:, [t+1]])
-        P_smooth[t] = P_fp[t] - L@(P_smooth[t+1] - P_fm[t+1])
-
-    return xhat_smooth, P_smooth
-
-
-#####################
-# Constant Velocity #
-#####################
-
-
-def __constant_velocity__(x, dt, params, options=None):
-    """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
-
-    :param x: (np.array of floats, 1xN) time series to differentiate
-    :param dt: (float) time step size
-    :param params: (list)  [r, : (float) covariance of the x noise
-                            q] : (float) covariance of the constant velocity model
-    :param options: (dict) {'backward'} : (bool) run smoother backwards in time
-    :return:
-    """
-    if options is None:
-        options = {'backward': False}
-
-    r, q = params
-
-    if len(x.shape) == 2:
-        y = x
-    else:
-        y = np.reshape(x, [1, len(x)])
-
-    A = np.array([[1, dt], [0, 1]])
-    B = np.array([[0], [0]])
-    C = np.array([[1, 0]])
-    R = np.array([[r]])
-    Q = np.array([[1e-16, 0], [0, q]])
-    x0 = np.array([[x[0,0]], [0]])
-    P0 = np.array(100*np.eye(2))
-    u = None
-
+    # _pre variables are a priori predictions based on only past information
+    # _post variables are a posteriori combinations of all information available at the current step
+    xhat_pre = []; xhat_post = []; P_pre = []; P_post = []
     
+    for n in range(y.shape[0]):
+        xhat_ = A @ xhat + B @ u # ending underscores denote an a priori prediction
+        P_ = A @ P @ A.T + Q
+        xhat_pre.append(xhat_) # the [n]th index holds _{n|n-1} info
+        P_pre.append(P_)
 
-    if options['backward']:
-        A = np.linalg.pinv(A)
-        y = y[:, ::-1]
+        xhat = xhat_ # handle missing data
+        P = P_
+        if not np.isnan(y[n]):
+            K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
+            xhat += K @ (y[n] - C @ xhat_)
+            P -= K @ C @ P_
+        xhat_post.append(xhat) # the [n]th index holds _{n|n} info
+        P_post.append(P)
 
-    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
-    xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
-
-    x_hat = np.ravel(xhat_smooth[0, :])
-    dxdt_hat = np.ravel(xhat_smooth[1, :])
-
-    if not options['backward']:
-        return x_hat, dxdt_hat
-
-    return x_hat[::-1], dxdt_hat[::-1]
+    return np.stack(xhat_pre, axis=0), np.stack(xhat_post, axis=0), np.stack(P_pre, axis=0), np.stack(P_post, axis=0)
 
 
-def constant_velocity(x, dt, params, options=None):
+def _kalman_backward_smooth(A, xhat_pre, xhat_post, P_pre, P_post):
+    """Do the additional Rauch-Tung-Striebel smoothing step
+    :param A: discrete-time state transition matrix
+    :param xhat_pre: a priori estimates of xhat
+    :param xhat_post: a posteriori estimates of xhat
+    :param P_pre: a priori estimates of P
+    :param P_post: a posteriori estimates of P
+    :return: tuple[np.array, np.array] of\n
+        - **xhat_smooth** -- RTS smoothed xhat
+        - **P_smooth** -- RTS smoothed P
     """
-    Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.
+    xhat_smooth = [xhat_post[-1]]
+    P_smooth = [P_post[-1]]
+    for n in range(xhat_pre.shape[0]-2, -1, -1):
+        C_RTS = P_post[n] @ A.T @ np.linalg.inv(P_pre[n+1]) # the [n+1]th index holds _{n+1|n} info 
+        xhat_smooth.append(xhat_post[n] + C_RTS @ (xhat_smooth[-1] - xhat_pre[n+1])) # The original authors use C, not to
+        P_smooth.append(P_post[n] + C_RTS @ (P_smooth[-1] - P_pre[n+1]) @ C_RTS.T) # be confused with the measurement matrix
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
+    return np.stack(xhat_smooth[::-1], axis=0), np.stack(P_smooth[::-1], axis=0) # reverse lists
 
 
-    :param options: a dictionary indicating whether to run smoother forwards and backwards
-                    (usually achieves better estimate at end points)
-    :type params: dict {'forwardbackward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-
-    :rtype: tuple -> (np.array, np.array)
+def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None):
+    """forward-backward Kalman/Rauch-Tung-Striebel smoother. For params see the helper functions.
     """
-    if len(x.shape) == 2:
-        pass
-    else:
-        x = np.reshape(x, [1, len(x)])
-
-    if options is None:
-        options = {'forwardbackward': True}
-
-    if options['forwardbackward']:
-        x_hat_f, smooth_dxdt_hat_f = __constant_velocity__(x, dt, params, options={'backward': False})
-        x_hat_b, smooth_dxdt_hat_b = __constant_velocity__(x, dt, params, options={'backward': True})
-
-        w = np.arange(0, len(x_hat_f), 1)
-        w = w/np.max(w)
-
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
-
-        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0)
-
-        return x_hat, smooth_dxdt_hat_corrected
-
-    return __constant_velocity__(x, dt, params, options={'backward': False})
-
-
-#########################
-# Constant Acceleration #
-#########################
-
-
-def __constant_acceleration__(x, dt, params, options=None):
-    """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother backwards in time
-    :type params: dict {'backward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'backward': False}
-
-    r, q = params
-
-    if len(x.shape) == 2:
-        y = x
-    else:
-        y = np.reshape(x, [1, len(x)])
-
-    A = np.array([[1, dt, 0],
-                   [0, 1, dt],
-                   [0, 0,  1]])
-    B = np.array([[0], [0], [0]])
-    C = np.array([[1, 0, 0]])
-    R = np.array([[r]])
-    Q = np.array([[1e-16, 0, 0],
-                   [0, 1e-16, 0],
-                   [0,     0, q]])
-    x0 = np.array([[x[0,0]], [0], [0]])
-    P0 = np.array(10*np.eye(3))
-    u = None
-
-    if options['backward']:
-        A = np.linalg.pinv(A)
-        y = y[:, ::-1]
-
-    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
-    xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
-
-    x_hat = np.ravel(xhat_smooth[0, :])
-    dxdt_hat = np.ravel(xhat_smooth[1, :])
-
-    if not options['backward']:
-        return x_hat, dxdt_hat
-
-    return x_hat[::-1], dxdt_hat[::-1]
-
-
-def constant_acceleration(x, dt, params, options=None):
-    """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother forwards and backwards
-                    (usually achieves better estimate at end points)
-    :type params: dict {'forwardbackward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-    if len(x.shape) == 2:
-        pass
-    else:
-        x = np.reshape(x, [1, len(x)])
-
-    if options is None:
-        options = {'forwardbackward': True}
-
-    if options['forwardbackward']:
-        x_hat_f, smooth_dxdt_hat_f = __constant_acceleration__(x, dt, params, options={'backward': False})
-        x_hat_b, smooth_dxdt_hat_b = __constant_acceleration__(x, dt, params, options={'backward': True})
-
-        w = np.arange(0, len(x_hat_f), 1)
-        w = w/np.max(w)
-
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
-
-        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0)
-
-        return x_hat, smooth_dxdt_hat_corrected
-
-    return __constant_acceleration__(x, dt, params, options={'backward': False})
-
-
-#################
-# Constant Jerk #
-#################
-
-
-def __constant_jerk__(x, dt, params, options=None):
-    """
-    Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother backwards in time
-    :type params: dict {'backward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-
-    if options is None:
-        options = {'backward': False}
-
-    r, q = params
-
-    if len(x.shape) == 2:
-        y = x
-    else:
-        y = np.reshape(x, [1, len(x)])
-
-    A = np.array([[1, dt, 0, 0],
-                   [0, 1, dt, 0],
-                   [0, 0,  1, dt],
-                   [0, 0,  0, 1]])
-    B = np.array([[0], [0], [0], [0]])
-    C = np.array([[1, 0, 0, 0]])
-    R = np.array([[r]])
-    Q = np.array([[1e-16, 0, 0,     0],
-                   [0, 1e-16, 0,     0],
-                   [0,     0, 1e-16, 0],
-                   [0,     0, 0,     q]])
-    x0 = np.array([[x[0,0]], [0], [0], [0]])
-    P0 = np.array(10*np.eye(4))
-    y = np.array(x)
-    u = None
-
-    if options['backward']:
-        A = np.linalg.pinv(A)
-        y = y[:, ::-1]
-
-    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
-    xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
-
-    x_hat = np.ravel(xhat_smooth[0,:])
-    dxdt_hat = np.ravel(xhat_smooth[1,:])
-
-    if not options['backward']:
-        return x_hat, dxdt_hat
-
-    return x_hat[::-1], dxdt_hat[::-1]
-
-
-def constant_jerk(x, dt, params, options=None):
-    """
-    Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
-
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
-
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of two elements:
-
-                    - r: covariance of the x noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother forwards and backwards
-                    (usually achieves better estimate at end points)
-    :type params: dict {'forwardbackward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-    if len(x.shape) == 2:
-        pass
-    else:
-        x = np.reshape(x, [1, len(x)])
-
-    if options is None:
-        options = {'forwardbackward': True}
-
-    if options['forwardbackward']:
-        x_hat_f, smooth_dxdt_hat_f = __constant_jerk__(x, dt, params, options={'backward': False})
-        x_hat_b, smooth_dxdt_hat_b = __constant_jerk__(x, dt, params, options={'backward': True})
-
-        w = np.arange(0, len(x_hat_f), 1)
-        w = w/np.max(w)
-
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
-
-        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0)
-
-        return x_hat, smooth_dxdt_hat_corrected
-
-    return __constant_jerk__(x, dt, params, options={'backward': False})
-
-
-def known_dynamics(x, params, u=None, options=None):
-    """
-    Run a forward RTS Kalman smoother given known dynamics to estimate the derivative.
-
-    :param x: matrix of time series of (noisy) measurements
-    :type x: np.array (float)
-
-    :param params: a list of:
-                    - x0: inital condition, matrix of Nx1, N = number of states
-                    - P0: initial covariance matrix of NxN
-                    - A: dynamics matrix, NxN
-                    - B: control input matrix, NxM, M = number of measurements
-                    - C: measurement dynamics, MxN
-                    - R: covariance matrix for the measurements, MxM
-                    - Q: covariance matrix for the model, NxN
-    :type params: list (matrix)
-
-    :param u: matrix of time series of control inputs
-    :type u: np.array (float)
-
-    :param options: a dictionary indicating whether to run smoother
-    :type params: dict {'smooth': boolean}, optional
-
-    :return: matrix:
-            - xhat_smooth: smoothed estimates of the full state x
-
-    :rtype: tuple -> (np.array, np.array)
-    """
-    if len(x.shape) == 2:
-        y = x
-    else:
-        y = np.reshape(x, [1, len(x)])
-
-    if options is None:
-        options = {'smooth': True}
-
-    x0, P0, A, B, C, R, Q = params
-
-    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
-    xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
-
-    if not options['smooth']:
-        return xhat_fp
-
+    xhat_pre, xhat_post, P_pre, P_post = _kalman_forward_filter(xhat0, P0, y, A, C, Q, R) # noisy x are the "y" in Kalman-land
+    xhat_smooth, _ = _kalman_backward_smooth(A, xhat_pre, xhat_post, P_pre, P_post) # not doing anything with P_smooth
     return xhat_smooth
 
 
-
-###################################################################################################
-# Constant Acceleration with Savitzky-Golay pre-estimate (not worth the parameter tuning trouble) #
-###################################################################################################
-
-
-def __savgol_const_accel__(x, sg_dxdt_hat, dt, params, options=None):
+#########################################
+# Constant 1st, 2nd, and 3rd derivative #
+#########################################
+def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
+    """Helper for `constant_{velocity,acceleration,jerk}` functions, because there was a lot of
+    repeated code.
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative, where initial estimates of the velocity are first estimated using the savitzky-golay filter. 
+    xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0]
+    xhat_smooth = _RTS_smooth(xhat0, P0, x, A, C, Q, R) # noisy x are the "y" in Kalman-land  
+    x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
+    dxdt_hat_forward = xhat_smooth[:, 1]
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+    if not forwardbackward: # bound out here if not doing the same in reverse and then combining
+        return x_hat_forward, dxdt_hat_forward
 
-    :param sg_dxdt_hat: initial velocity estimate
-    :type sg_dxdt_hat: np.array (float)
+    xhat0[0] = x[-1] # starting from the other end of the signal
+    Ainv = np.linalg.inv(A) # dynamics are inverted
+    xhat_smooth = _RTS_smooth(xhat0, P0, x[::-1], Ainv, C, Q, R) # noisy x are the "y" in Kalman-land    
+    x_hat_backward = xhat_smooth[:, 0][::-1] # the result is backwards still, so reverse it
+    dxdt_hat_backward = xhat_smooth[:, 1][::-1]
 
-    :param dt: time step size
-    :type dt: float
+    w = np.linspace(0, 1, len(x))
+    x_hat = x_hat_forward*w + x_hat_backward*(1-w)
+    dxdt_hat = dxdt_hat_forward*w + dxdt_hat_backward*(1-w)
 
-    :param params: a list of two elements:
-                    - r1: covariance of the x noise
-                    - r2: covariance of the vel noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
+    return x_hat, dxdt_hat
 
 
-    :param options: a dictionary indicating whether to run smoother backwards in time
-    :type params: dict {'backward': boolean}, optional
+def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
+    """Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.
 
-    :return: a tuple consisting of:
+    :param np.array[float] x: data series to differentiate
+    :param float dt: time step size
+    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
+    :param options: (**deprecated**, prefer :code:`forwardbackward`)
+        a dictionary consisting of {'forwardbackward': (bool)}
+    param float r: variance of the signal noise
+    param float q: variance of the constant velocity model
+    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
+        (usually achieves better estimate at end points)
 
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
-
-    :rtype: tuple -> (np.array, np.array)
+    :return: tuple[np.array, np.array] of\n
+        - **x_hat** -- estimated (smoothed) x
+        - **dxdt_hat** -- estimated derivative of x
     """
+    if params != None: # boilerplate backwards compatibility code
+        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
+            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        r, q = params
+        if options != None:
+            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
+    elif r == None or q == None:
+        raise ValueError("`q` and `r` must be given.")
 
-    if options is None:
-        options = {'backward': False}
+    A = np.array([[1, dt], [0, 1]]) # states are x, x'. This basically does an Euler update.
+    C = np.array([[1, 0]]) # we measure only y = noisy x
+    R = np.array([[r]])
+    Q = np.array([[1e-16, 0], [0, q]]) # uncertainty is around the velocity
+    P0 = np.array(100*np.eye(2)) # Why is this one magnitude 100 vs the other ones being 10?
 
-    r1, r2, q = params
-    A = np.array([[1, dt, 0],
-                   [0, 1, dt],
-                   [0, 0,  1]])
-    B = np.array([[0], [0], [0]])
-    C = np.array([[1, 0, 0],
-                   [0, 1, 0]])
-    R = np.array([[r1, 0],
-                   [0, r2]])
+    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
+
+
+def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
+    """Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+
+    :param np.array[float] x: data series to differentiate
+    :param float dt: time step size
+    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
+    :param options: (**deprecated**, prefer :code:`forwardbackward`)
+        a dictionary consisting of {'forwardbackward': (bool)}
+    param float r: variance of the signal noise
+    param float q: variance of the constant acceleration model
+    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
+        (usually achieves better estimate at end points)
+
+    :return: tuple[np.array, np.array] of\n
+        - **x_hat** -- estimated (smoothed) x
+        - **dxdt_hat** -- estimated derivative of x
+    """
+    if params != None: # boilerplate backwards compatibility code
+        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
+            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        r, q = params
+        if options != None:
+            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
+    elif r == None or q == None:
+        raise ValueError("`q` and `r` must be given.")
+
+    A = np.array([[1, dt, (dt**2)/2], # states are x, x', x"
+                  [0, 1, dt],
+                  [0, 0,  1]])
+    C = np.array([[1, 0, 0]]) # we measure only y = noisy x
+    R = np.array([[r]])
     Q = np.array([[1e-16, 0, 0],
-                   [0, 1e-16, 0],
-                   [0,     0, q]])
-    x0 = np.array([[x[0]], [sg_dxdt_hat[0]], [0]])
+                  [0, 1e-16, 0],
+                  [0,     0, q]]) # uncertainty is around the acceleration
     P0 = np.array(10*np.eye(3))
-    y = np.array(np.vstack((x, sg_dxdt_hat)))
-    u = None
 
-    if options['backward']:
-        A = np.linalg.pinv(A)
-        y = y[:, ::-1]
-
-    xhat_fp, xhat_fm, P_fp, P_fm = __kalman_forward_filter__(x0, P0, y, u, A, B, C, R, Q)
-    xhat_smooth, _ = __kalman_backward_smooth__(xhat_fp, xhat_fm, P_fp, P_fm, A)
-
-    x_hat = np.ravel(xhat_smooth[0, :])
-    dxdt_hat = np.ravel(xhat_smooth[1, :])
-
-    if not options['backward']:
-        return x_hat, dxdt_hat
-
-    return x_hat[::-1], dxdt_hat[::-1]
+    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
 
-def savgol_const_accel(x, dt, params, options=None):
+def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
+    """Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
+
+    :param np.array[float] x: data series to differentiate
+    :param float dt: time step size
+    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
+    :param options: (**deprecated**, prefer :code:`forwardbackward`)
+        a dictionary consisting of {'forwardbackward': (bool)}
+    param float r: variance of the signal noise
+    param float q: variance of the constant jerk model
+    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
+        (usually achieves better estimate at end points)
+
+    :return: tuple[np.array, np.array] of\n
+        - **x_hat** -- estimated (smoothed) x
+        - **dxdt_hat** -- estimated derivative of x
     """
-    Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative, where initial estimates of the velocity are first estimated using the savitzky-golay filter. 
+    if params != None: # boilerplate backwards compatibility code
+        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
+            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        r, q = params
+        if options != None:
+            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
+    elif r == None or q == None:
+        raise ValueError("`q` and `r` must be given.")
 
-    :param x: array of time series to differentiate
-    :type x: np.array (float)
+    A = np.array([[1, dt, (dt**2)/2, (dt**3)/6], # states are x, x', x", x'"
+                  [0, 1, dt, (dt**2)/2],
+                  [0, 0,  1, dt],
+                  [0, 0,  0, 1]])
+    C = np.array([[1, 0, 0, 0]]) # we measure only y = noisy x
+    R = np.array([[r]])
+    Q = np.array([[1e-16,  0, 0,     0],
+                   [0, 1e-16, 0,     0],
+                   [0,     0, 1e-16, 0],
+                   [0,     0, 0,     q]]) # uncertainty is around the jerk
+    P0 = np.array(10*np.eye(4))
 
-    :param dt: time step size
-    :type dt: float
-
-    :param params: a list of six elements:
-                    - N: for savgoldiff, order of the polynomial
-                    - window_size: for savgoldiff, size of the sliding window, must be odd (if not, 1 is added)
-                    - smoothing_win: for savgoldiff, size of the window used for gaussian smoothing, a good default is window_size, but smaller for high frequnecy data
-                    - r1: covariance of the x noise
-                    - r2: covariance of the vel noise
-                    - q: covariance of the constant velocity model
-
-    :type params: list (float)
-
-
-    :param options: a dictionary indicating whether to run smoother forwards and backwards
-                    (usually achieves better estimate at end points)
-    :type params: dict {'forwardbackward': boolean}, optional
-
-    :return: a tuple consisting of:
-
-            - x_hat: estimated (smoothed) x
-            - dxdt_hat: estimated derivative of x
+    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
 
-    :rtype: tuple -> (np.array, np.array)
-    """
-    if options is None:
-        options = {'forwardbackward': True}
+def known_dynamics(x, params, u=None, options=None, xhat0=None, P0=None, A=None,
+    B=0, C=None, Q=None, R=None, smooth=True):
+    """Run a forward RTS Kalman smoother given known dynamics.
 
-    N, window_size, smoothing_win, r1, r2, q = params
+    :param np.array[float] x: data series of noisy measurements
+    :param list params: (**deprecated**, prefer :code:`xhat0`, :code:`P0`, :code:`A`,
+        :code:`B`, :code:`C`, :code:`R`, and :code:`Q`), a list in the order here (note flip of Q and R)
+    :param np.array[float] u: series of control inputs
+    :param options: (**deprecated**, prefer :code:`smooth`)
+        a dictionary consisting of {'smooth': (bool)}
+    :param np.array xhat0: inital condition, length N = number of states
+    :param np.array P0: initial covariance matrix of NxN
+    :param np.array A: dynamics matrix, NxN
+    :param np.array B: control input matrix, NxM, M = number of measurements
+    :param np.array C: measurement dynamics, MxN
+    :param np.array Q: covariance matrix for the model, NxN
+    :param np.array R: covariance matrix for the measurements, MxM
+    :parma bool smooth: whether to run the RTS smoother step
 
-    _, sg_dxdt_hat = savgoldiff(x, dt, [N, window_size, smoothing_win])
+    :return: np.array **x_hat** -- estimated (smoothed) x
+    """ # Why not also returning derivative here?
+    if params != None:
+        warn("""`params` and `options` parameters will be removed in a future version. Use `xhat0`,
+            `P0`, `A`, `B`, `C`, `Q`, `R`, and `smooth` instead.""", DeprecationWarning)
+        xhat0, P0, A, B, C, R, Q = params
+        if options != None:
+            if 'smooth' in options: smooth = options['smooth']
+    elif None in [xhat0, P0, A, C, R, Q]:
+        raise ValueError("`xhat0`, `P0`, `A`, `C`, `Q`, and `R` must be given.")
 
-    if options['forwardbackward']:
-        x_hat_f, smooth_dxdt_hat_f = __savgol_const_accel__(x, sg_dxdt_hat, dt, [r1, r2, q],
-                                                            options={'backward': False})
-        x_hat_b, smooth_dxdt_hat_b = __savgol_const_accel__(x, sg_dxdt_hat, dt, [r1, r2, q],
-                                                            options={'backward': True})
+    xhat_pre, xhat_post, P_pre, P_post = _kalman_forward_filter(xhat0, P0, x, A, C, Q, R, u, B) # noisy x are the "y" in Kalman-land
+    if not smooth:
+        return xhat_post
 
-        w = np.arange(0, len(x_hat_f), 1)
-        w = w/np.max(w)
-
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
-        smooth_dxdt_hat = smooth_dxdt_hat_f*w + smooth_dxdt_hat_b*(1-w)
-
-        smooth_dxdt_hat_corrected = np.mean((smooth_dxdt_hat, smooth_dxdt_hat_f), axis=0)
-
-        return x_hat, smooth_dxdt_hat_corrected
-
-    return __constant_acceleration__(x, dt, params, options={'backward': False})
+    xhat_smooth, _ = _kalman_backward_smooth(A, xhat_pre, xhat_post, P_pre, P_post)
+    return xhat_smooth # We're not calculating a derivative here. Why not?

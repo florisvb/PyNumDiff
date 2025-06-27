@@ -33,7 +33,7 @@ diff_methods_and_params = [
     (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
     (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
     (second_order, {}),
-    #(lineardiff, {'order':3, 'gamma':5, 'window_size':10, 'solver':'CVXOPT'}),
+    (lineardiff, {'order':3, 'gamma':5, 'window_size':10, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 10], {'solver':'CLARABEL'}),
     (polydiff, {'polynomial_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
@@ -48,7 +48,6 @@ diff_methods_and_params = [
     (constant_jerk, {'r':1e-4, 'q':10}), (constant_jerk, [1e-4, 10]),
     # TODO (known_dynamics), but presently it doesn't calculate a derivative
     ]
-diff_methods_and_params = [(constant_jerk, {'r':1e-4, 'q':10})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -72,7 +71,12 @@ error_bounds = {
                    [(-25, -25), (0, -1), (0, 0), (1, 1)],
                    [(-25, -25), (1, 1), (0, 0), (1, 1)],
                    [(-25, -25), (3, 3), (0, 0), (3, 3)]],
-    #lineardiff: [TBD when #91 is solved],
+    lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
+                 [(0, 0), (1, 1), (0, 0), (1, 1)],
+                 [(1, 0), (2, 1), (1, 0), (2, 1)],
+                 [(1, 0), (1, 1), (1, 0), (1, 1)],
+                 [(1, 1), (2, 2), (1, 1), (2, 2)],
+                 [(1, 1), (3, 3), (1, 1), (3, 3)]],
     polydiff: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],
                [(-14, -14), (-13, -13), (0, -1), (1, 1)],
                [(-14, -14), (-13, -13), (0, -1), (1, 1)],
@@ -173,21 +177,6 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     x_hat_noisy, dxdt_hat_noisy = diff_method(x_noisy, dt, **params) if isinstance(params, dict) \
         else diff_method(x_noisy, dt, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
         else diff_method(x_noisy, dt, params, options)
-    
-    # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-    if request.config.getoption("--bounds"): print("]\n[", end="")
-    for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
-        if request.config.getoption("--bounds"):
-            l2_error = np.linalg.norm(a - b)
-            linf_error = np.max(np.abs(a - b))
-            #print(f"({l2_error},{linf_error})", end=", ")
-            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
-        else:
-            log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-            assert np.linalg.norm(a - b) < 10**log_l2_bound
-            assert np.max(np.abs(a - b)) < 10**log_linf_bound
-            if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
-                print(f"Improvement detected for method {diff_method.__name__}")
 
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
@@ -207,3 +196,18 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         else: axes[i, 1].set_xlabel('t')
         axes[i, 1].set_yticklabels([])
         if i == 0: axes[i, 1].set_title('with noise')
+
+    # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
+    if request.config.getoption("--bounds"): print("]\n[", end="")
+    for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
+        if request.config.getoption("--bounds"):
+            l2_error = np.linalg.norm(a - b)
+            linf_error = np.max(np.abs(a - b))
+            #print(f"({l2_error},{linf_error})", end=", ")
+            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        else:
+            log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
+            assert np.linalg.norm(a - b) < 10**log_l2_bound
+            assert np.max(np.abs(a - b)) < 10**log_linf_bound
+            if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+                print(f"Improvement detected for method {diff_method.__name__}")

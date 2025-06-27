@@ -5,8 +5,8 @@ try:
     from ._linear_model import lineardiff
 except:
     from warnings import warn
-    warn("""Limited Linear Model Support Detected! CVXPY is not installed.
-        Install CVXPY to use lineardiff derivatives. You can still use other methods.""")
+    warn("Limited Linear Model Support Detected! CVXPY is not installed. " +
+        "Install CVXPY to use lineardiff derivatives. You can still use other methods.")
 
 from ._linear_model import savgoldiff, polydiff, spectraldiff
 

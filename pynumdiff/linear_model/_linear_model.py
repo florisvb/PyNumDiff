@@ -112,8 +112,8 @@ def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_s
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`,
-            `window_size`, and `smoothing_win` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `polynomial_order`, " +
+            "`window_size`, and `smoothing_win` instead.", DeprecationWarning)
         polynomial_order, window_size, smoothing_win = params
     elif polynomial_order == None or window_size == None or smoothing_win == None:
         raise ValueError("`polynomial_order`, `window_size`, and `smoothing_win` must be given.")
@@ -192,8 +192,8 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `polynomial_order`
-            and `window_size` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `polynomial_order` " +
+            "and `window_size` instead.", DeprecationWarning)
         polynomial_order, window_size = params
         if options != None:
             if 'sliding' in options: sliding = options['sliding']
@@ -426,8 +426,8 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `order`,
-            `gamma`, and `window_size` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `order`, " +
+            "`gamma`, and `window_size` instead.", DeprecationWarning)
         order, gamma, window_size = params
         if options != None:
             if 'sliding' in options: sliding = options['sliding']
@@ -483,8 +483,8 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("""`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`,
-            `even_extension`, and `pad_to_zero_dxdt` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
+            "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
         if options != None:
             if 'even_extension' in options: even_extension = options['even_extension']

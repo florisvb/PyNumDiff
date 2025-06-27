@@ -18,7 +18,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None and 'iterate' in options:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
         if isinstance(params, list): params = params[0]
         return _iterate_first_order(x, dt, params)
     elif num_iterations:

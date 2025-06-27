@@ -84,7 +84,7 @@ def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
     """Helper for `constant_{velocity,acceleration,jerk}` functions, because there was a lot of
     repeated code.
     """
-    xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0]
+    xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0] # See #110 for why this choice of xhat0
     xhat_smooth = _RTS_smooth(xhat0, P0, x, A, C, Q, R) # noisy x are the "y" in Kalman-land  
     x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
     dxdt_hat_forward = xhat_smooth[:, 1]
@@ -135,7 +135,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     C = np.array([[1, 0]]) # we measure only y = noisy x
     R = np.array([[r]])
     Q = np.array([[1e-16, 0], [0, q]]) # uncertainty is around the velocity
-    P0 = np.array(100*np.eye(2)) # Why is this one magnitude 100 vs the other ones being 10?
+    P0 = np.array(100*np.eye(2)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
@@ -174,7 +174,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     Q = np.array([[1e-16, 0, 0],
                   [0, 1e-16, 0],
                   [0,     0, q]]) # uncertainty is around the acceleration
-    P0 = np.array(10*np.eye(3))
+    P0 = np.array(100*np.eye(3)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
@@ -215,7 +215,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
                    [0, 1e-16, 0,     0],
                    [0,     0, 1e-16, 0],
                    [0,     0, 0,     q]]) # uncertainty is around the jerk
-    P0 = np.array(10*np.eye(4))
+    P0 = np.array(100*np.eye(4)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 

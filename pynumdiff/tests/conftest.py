@@ -3,7 +3,9 @@ import pytest
 from matplotlib import pyplot
 from collections import defaultdict
 
-def pytest_addoption(parser): parser.addoption("--plot", action="store_true", default=False)
+def pytest_addoption(parser):
+    parser.addoption("--plot", action="store_true", default=False) # whether to show plots
+    parser.addoption("--bounds", action="store_true", default=False) # whether to print error bounds
 
 @pytest.fixture(scope="session", autouse=True)
 def store_plots(request):

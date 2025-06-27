@@ -5,7 +5,7 @@ from warnings import warn
 
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity
-from ..kalman_smooth import * # constant_velocity, constant_acceleration, constant_jerk, known_dynamics
+from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk, known_dynamics
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..finite_difference import first_order, second_order
 # Function aliases for testing cases where parameters change the behavior in a big way
@@ -28,7 +28,7 @@ test_funcs_and_derivs = [
     (5, r"$x(t)=\frac{\sin(8t)}{(t+0.1)^{3/2}}$", lambda t: np.sin(8*t)/((t + 0.1)**(3/2)), # steep challenger
                                 lambda t: ((0.8 + 8*t)*np.cos(8*t) - 1.5*np.sin(8*t))/(0.1 + t)**(5/2))]
 
-# Call both ways, with kwargs (new) and with params list with default options dict (legacy), to ensure both work
+# Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
     (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
     (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
@@ -42,8 +42,13 @@ diff_methods_and_params = [
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
     (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
     (butterdiff, {'filter_order':3, 'cutoff_freq':0.074}), (butterdiff, [3, 0.074]),
-    (splinediff, {'order':5, 's':2}), (splinediff, [5, 2])
+    (splinediff, {'order':5, 's':2}), (splinediff, [5, 2]),
+    (constant_velocity, {'r':1e-4, 'q':1e-2}), (constant_velocity, [1e-4, 1e-2]),
+    (constant_acceleration, {'r':1e-4, 'q':1e-1}), (constant_acceleration, [1e-4, 1e-1]),
+    (constant_jerk, {'r':1e-4, 'q':10}), (constant_jerk, [1e-4, 10]),
+    # TODO (known_dynamics), but presently it doesn't calculate a derivative
     ]
+diff_methods_and_params = [(constant_jerk, {'r':1e-4, 'q':10})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -126,7 +131,25 @@ error_bounds = {
                  [(-14, -14), (0, 0), (-1, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
-                 [(1, 0), (3, 3), (1, 0), (3, 3)]]
+                 [(1, 0), (3, 3), (1, 0), (3, 3)]],
+    constant_velocity: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
+                        [(-5, -6), (-4, -4), (0, -1), (0, 0)],
+                        [(-1, -2), (0, 0), (0, 0), (1, 0)],
+                        [(0, -1), (1, 0), (0, -1), (1, 1)],
+                        [(1, 1), (2, 2), (1, 1), (2, 2)],
+                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    constant_acceleration: [[(-25, -25), (-25, -25), (0, 0), (1, 0)],
+                            [(-5, -5), (-3, -3), (0, 0), (1, 0)],
+                            [(-4, -4), (-2, -2), (0, 0), (1, 0)],
+                            [(0, -1), (1, 0), (0, 0), (1, 0)],
+                            [(1, 1), (3, 2), (1, 1), (3, 2)],
+                            [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    constant_jerk: [[(-25, -25), (-25, -25), (0, 0), (1, 0)],
+                    [(-5, -5), (-3, -3), (0, 0), (1, 0)],
+                    [(-4, -4), (-2, -2), (0, 0), (1, 0)],
+                    [(-1, -2), (1, 0), (0, 0), (1, 0)],
+                    [(1, 0), (2, 2), (1, 0), (2, 2)],
+                    [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
@@ -157,18 +180,19 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         else diff_method(x_noisy, dt, params, options)
     
     # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-    #print("]\n[", end="")
+    if request.config.getoption("--bounds"): print("]\n[", end="")
     for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
-        #l2_error = np.linalg.norm(a - b)
-        #linf_error = np.max(np.abs(a - b))
-        #print(f"({l2_error},{linf_error})", end=", ")
-        #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
-        
-        log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-        assert np.linalg.norm(a - b) < 10**log_l2_bound
-        assert np.max(np.abs(a - b)) < 10**log_linf_bound
-        if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
-            print(f"Improvement detected for method {diff_method.__name__}")
+        if request.config.getoption("--bounds"):
+            l2_error = np.linalg.norm(a - b)
+            linf_error = np.max(np.abs(a - b))
+            #print(f"({l2_error},{linf_error})", end=", ")
+            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        else:
+            log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
+            assert np.linalg.norm(a - b) < 10**log_l2_bound
+            assert np.max(np.abs(a - b)) < 10**log_linf_bound
+            if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+                print(f"Improvement detected for method {diff_method.__name__}")
 
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py

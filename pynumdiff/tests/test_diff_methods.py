@@ -48,7 +48,6 @@ diff_methods_and_params = [
     (constant_jerk, {'r':1e-4, 'q':10}), (constant_jerk, [1e-4, 10]),
     # TODO (known_dynamics), but presently it doesn't calculate a derivative
     ]
-diff_methods_and_params = [(constant_jerk, {'r':1e-4, 'q':10})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a

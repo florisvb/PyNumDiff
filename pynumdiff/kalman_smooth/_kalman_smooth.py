@@ -135,7 +135,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     C = np.array([[1, 0]]) # we measure only y = noisy x
     R = np.array([[r]])
     Q = np.array([[1e-16, 0], [0, q]]) # uncertainty is around the velocity
-    P0 = np.array(np.eye(2)) # See #110 for why this choice of P0
+    P0 = np.array(100*np.eye(2)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
@@ -174,7 +174,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     Q = np.array([[1e-16, 0, 0],
                   [0, 1e-16, 0],
                   [0,     0, q]]) # uncertainty is around the acceleration
-    P0 = np.array(np.eye(3)) # See #110 for why this choice of P0
+    P0 = np.array(100*np.eye(3)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 
@@ -215,7 +215,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
                    [0, 1e-16, 0,     0],
                    [0,     0, 1e-16, 0],
                    [0,     0, 0,     q]]) # uncertainty is around the jerk
-    P0 = np.array(np.eye(4)) # See #110 for why this choice of P0
+    P0 = np.array(100*np.eye(4)) # See #110 for why this choice of P0
 
     return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
 

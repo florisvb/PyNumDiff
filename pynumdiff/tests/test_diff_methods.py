@@ -4,8 +4,8 @@ from pytest import mark
 from warnings import warn
 
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity
-from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk, known_dynamics
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..finite_difference import first_order, second_order
 # Function aliases for testing cases where parameters change the behavior in a big way
@@ -47,6 +47,12 @@ diff_methods_and_params = [
     (constant_acceleration, {'r':1e-4, 'q':1e-1}), (constant_acceleration, [1e-4, 1e-1]),
     (constant_jerk, {'r':1e-4, 'q':10}), (constant_jerk, [1e-4, 10]),
     # TODO (known_dynamics), but presently it doesn't calculate a derivative
+    (velocity, {'gamma':0.5}), (velocity, [0.5]),
+    (acceleration, {'gamma':1}), (acceleration, [1]),
+    (jerk, {'gamma':10}), (jerk, [10]),
+    (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
+    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5])
+    # TODO (jerk_sliding), because with the test cases here (len < 1000) it would just be a duplicate of jerk
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
@@ -148,7 +154,37 @@ error_bounds = {
                     [(-4, -4), (-2, -2), (0, 0), (1, 0)],
                     [(-1, -2), (1, 0), (0, 0), (1, 0)],
                     [(1, 0), (2, 2), (1, 0), (2, 2)],
-                    [(1, 1), (3, 3), (1, 1), (3, 3)]]
+                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    velocity: [[(-25, -25), (-18, -19), (0, -1), (1, 0)],
+               [(-12, -12), (-11, -12), (-1, -1), (-1, -2)],
+               [(0, 0), (1, 0), (0, 0), (1, 0)],
+               [(0, -1), (1, 1), (0, 0), (1, 0)],
+               [(1, 1), (2, 2), (1, 1), (2, 2)],
+               [(1, 0), (3, 3), (1, 0), (3, 3)]],
+    acceleration: [[(-25, -25), (-18, -18), (0, -1), (0, 0)],
+                   [(-10, -10), (-9, -9), (-1, -1), (0, -1)],
+                   [(-10, -10), (-9, -10), (-1, -1), (0, -1)],
+                   [(0, -1), (1, 0), (0, -1), (1, 0)],
+                   [(1, 1), (2, 2), (1, 1), (2, 2)],
+                   [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    jerk: [[(-25, -25), (-18, -18), (-1, -1), (0, 0)],
+           [(-9, -10), (-9, -9), (-1, -1), (0, 0)],
+           [(-10, -10), (-9, -10), (-1, -1), (0, 0)],
+           [(0, 0), (1, 1), (0, 0), (1, 1)],
+           [(1, 1), (2, 2), (1, 1), (2, 2)],
+           [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    iterative_velocity: [[(-9, -10), (-25, -25), (0, -1), (0, 0)],
+                         [(0, 0), (0, 0), (0, 0), (1, 0)],
+                         [(0, 0), (1, 0), (1, 0), (1, 0)],
+                         [(1, 0), (1, 1), (1, 0), (1, 1)],
+                         [(2, 1), (2, 2), (2, 1), (2, 2)],
+                         [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    smooth_acceleration: [[(-9, -10), (-18, -18), (0, -1), (0, 0)],
+                          [(-9, -9), (-10, -10), (-1, -1), (-1, -1)],
+                          [(-2, -2), (-1, -1), (-1, -1), (0, -1)],
+                          [(0, 0), (1, 0), (0, -1), (1, 0)],
+                          [(1, 1), (2, 2), (1, 1), (2, 2)],
+                          [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
@@ -162,13 +198,14 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # some methods rely on cvxpy, and we'd like to allow use of pynumdiff without convex optimization
-    if diff_method in [lineardiff, velocity]:
+    if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration]:
         try: import cvxpy
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
-    x = f(t) # sample the function
-    x_noisy = x + noise # add a little noise
-    dxdt = df(t) # true values of the derivative at samples
+    # sample the true function and make noisy samples, and sample true derivative
+    x = f(t)
+    x_noisy = x + noise
+    dxdt = df(t)
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
     x_hat, dxdt_hat = diff_method(x, dt, **params) if isinstance(params, dict) \
@@ -178,6 +215,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         else diff_method(x_noisy, dt, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
         else diff_method(x_noisy, dt, params, options)
 
+    # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
         axes[i, 0].plot(t, f(t), label=r"$x(t)$")
@@ -198,16 +236,20 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         if i == 0: axes[i, 1].set_title('with noise')
 
     # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
-    if request.config.getoption("--bounds"): print("]\n[", end="")
+    if request.config.getoption("--bounds"): print("\n[", end="")
     for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
+        l2_error = np.linalg.norm(a - b)
+        linf_error = np.max(np.abs(a - b))
+
+        # bounds-printing for establishing bounds
         if request.config.getoption("--bounds"):
-            l2_error = np.linalg.norm(a - b)
-            linf_error = np.max(np.abs(a - b))
             #print(f"({l2_error},{linf_error})", end=", ")
             print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+        # bounds checking
         else:
             log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
-            assert np.linalg.norm(a - b) < 10**log_l2_bound
-            assert np.max(np.abs(a - b)) < 10**log_linf_bound
-            if 0 < np.linalg.norm(a - b) < 10**(log_l2_bound - 1) or 0 < np.max(np.abs(a - b)) < 10**(log_linf_bound - 1):
+            assert l2_error < 10**log_l2_bound
+            assert linf_error < 10**log_linf_bound
+            # methods that get super duper close can converge to different very small limits on different runs
+            if 1e-18 < l2_error < 10**(log_l2_bound - 1) or 1e-18 < linf_error < 10**(log_linf_bound - 1):
                 print(f"Improvement detected for method {diff_method.__name__}")

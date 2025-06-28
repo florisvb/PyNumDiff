@@ -8,7 +8,7 @@ try: import cvxpy
 except ImportError: pass
 
 
-def iterative_velocity(x, dt, params, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):
+def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):
     """Use an iterative solver to find the total variation regularized 1st derivative. See
     _chartrand_tvregdiff.py for details, author info, and license. Methods described in:
     Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data," ISRN Applied Mathematics,
@@ -72,6 +72,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     # Normalize
     mean = np.mean(x)
     std = np.std(x)
+    if std == 0: std = 1 # safety guard
     x = (x-mean)/std
 
     # Define the variables for the highest order derivative and the integration constants
@@ -108,7 +109,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     return x_hat*std+mean, dxdt_hat*std
 
 
-def velocity(x, dt, params, options=None, gamma=None, solver=None):
+def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
@@ -135,7 +136,7 @@ def velocity(x, dt, params, options=None, gamma=None, solver=None):
     return _total_variation_regularized_derivative(x, dt, 1, gamma, solver=solver)
 
 
-def acceleration(x, dt, params, options=None, gamma=None, solver=None):
+def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
     
     :param np.array[float] x: data to differentiate
@@ -162,7 +163,7 @@ def acceleration(x, dt, params, options=None, gamma=None, solver=None):
     return _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
 
 
-def jerk(x, dt, params, options=None, gamma=None, solver=None):
+def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
@@ -189,7 +190,7 @@ def jerk(x, dt, params, options=None, gamma=None, solver=None):
     return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
 
-def smooth_acceleration(x, dt, params, options=None, gamma=None, window_size=None, solver=None):
+def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_size=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative,
     and then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
     The end result is similar to the jerk method, but can be more time-efficient.
@@ -228,7 +229,7 @@ def smooth_acceleration(x, dt, params, options=None, gamma=None, window_size=Non
     return x_hat, dxdt_hat
 
 
-def jerk_sliding(x, dt, params, options=None, gamma=None, solver=None):
+def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate

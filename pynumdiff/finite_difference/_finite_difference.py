@@ -6,8 +6,8 @@ from warnings import warn
 def first_order(x, dt, params=None, options={}, num_iterations=None):
     """First-order centered difference method
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[float] or float params: (**deprecated**, prefer :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) a dictionary consisting of {'iterate': (bool)}
     :param int num_iterations: If performing iterated FD to smooth the estimates, give the number of iterations.
@@ -34,8 +34,8 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
 def second_order(x, dt):
     """Second-order centered difference method
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
 
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
@@ -60,8 +60,8 @@ def _x_hat_using_finite_difference(x, dt):
 def _iterate_first_order(x, dt, num_iterations):
     """Iterative first order centered finite difference.
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param int num_iterations: number of iterations
 
     :return: tuple[np.array, np.array] of\n

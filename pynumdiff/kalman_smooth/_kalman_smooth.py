@@ -109,7 +109,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     """Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.
 
     :param np.array[float] x: data series to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
@@ -144,7 +144,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     """Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
 
     :param np.array[float] x: data series to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
@@ -183,7 +183,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     """Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
 
     :param np.array[float] x: data series to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}

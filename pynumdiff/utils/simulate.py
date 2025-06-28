@@ -54,7 +54,7 @@ def sine(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5), ra
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -116,7 +116,7 @@ def triangle(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5)
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -191,7 +191,7 @@ def pop_dyn(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5),
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -252,7 +252,7 @@ def linear_autonomous(timeseries_length=4, noise_type='normal', noise_parameters
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -306,7 +306,7 @@ def pi_control(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -362,7 +362,7 @@ def lorenz_x(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.5)
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -407,7 +407,7 @@ def lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=(0, 0.
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param simdt: a float number representing the the real simulation step size we use to generate the time series,
@@ -498,7 +498,7 @@ def rk4_lorenz_xyz(timeseries_length=4, noise_type='normal', noise_parameters=(0
     :param random_seed: an integer seed used to initialize the random number generator
     :type random_seed: int, optional
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float, optional
 
     :param normalize: whether to roughly normalize the time series

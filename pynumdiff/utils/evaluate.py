@@ -20,7 +20,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
     :param x: array of noisy time series
     :type x: np.array (float)
 
-    :param dt: a float number representing the time step size
+    :param dt: a float number representing the step size
     :type dt: float
 
     :param x_hat: array of smoothed estimation of x

@@ -13,8 +13,8 @@ from pynumdiff.utils import utility
 def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     """Perform median smoothing using scipy.signal.medfilt followed by first order finite difference
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int window_size: filter window size
@@ -46,8 +46,8 @@ def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
 def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     """Perform mean smoothing by convolving mean kernel with x followed by first order finite difference
 
-    :param np.ndarray[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.ndarray[float] x: data to differentiate
+    :param float dt: step size
 
     :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
         :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
@@ -76,8 +76,8 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
 def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     """Perform gaussian smoothing by convolving gaussian kernel with x followed by first order finite difference
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
         :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
@@ -105,8 +105,8 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
 def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     """Perform friedrichs smoothing by convolving friedrichs kernel with x followed by first order finite difference
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
         :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
@@ -134,14 +134,14 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
 def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, num_iterations=1):
     """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by first order finite difference
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`filter_order`, :code:`cutoff_freq`,
         and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int filter_order: order of the filter
-    :param float cutoff_freq: cutoff frequency :math:`\\in [0, 1]`. For a discrete timeseries,
-        the value is normalized to the range 0-1, where 1 is the Nyquist frequency.
+    :param float cutoff_freq: cutoff frequency :math:`\\in [0, 1]`. For a discrete vector, the
+        value is normalized to the range 0-1, where 1 is the Nyquist frequency.
     :param int num_iterations: how many times to apply smoothing
 
     :return: tuple[np.array, np.array] of\n
@@ -173,8 +173,8 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
 def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1):
     """Perform spline smoothing on x with scipy.interpolate.UnivariateSpline followed by first order finite difference
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list params: (**deprecated**, prefer :code:`order`, :code:`cutoff_freq`, and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int order: polynomial order of the spline. A kth order spline can be differentiated k times.

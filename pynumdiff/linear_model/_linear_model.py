@@ -19,7 +19,7 @@ def _slide_function(func, x, dt, args, window_size, step_size, kernel_name):
     """Slide a smoothing derivative function across a timeseries with specified window size.
 
     :param callable func: name of the function to slide
-    :param np.array[float] x: time series to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: time step
     :param dict args: see func for requirements
     :param int window_size: size of the sliding window
@@ -97,8 +97,8 @@ def _slide_function(func, x, dt, args, window_size, step_size, kernel_name):
 def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None, smoothing_win=None):
     """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit, but slightly noisier, and much faster
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list params: (**deprecated**, prefer :code:`polynomial_order`, :code:`window_size`, and :code:`smoothing_win`)
     :param dict options: (**deprecated**)
     :param int polynomial_order: order of the polynomial
@@ -146,7 +146,7 @@ def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_s
 def _polydiff(x, dt, polynomial_order, weights=None):
     """Fit polynomials to the timeseries, and differentiate the polynomials.
 
-    :param np.array[float] x: time series to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: time step
     :param int polynomial_order: order of the polynomial
     :param np.array[float] weights: weights applied to each point in calculating the polynomial fit.
@@ -172,10 +172,10 @@ def _polydiff(x, dt, polynomial_order, weights=None):
 
 def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None,
     sliding=True, step_size=1, kernel='friedrichs'):
-    """Fit polynomials to the time series, and differentiate the polynomials.
+    """Fit polynomials to the data, and differentiate the polynomials.
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`polynomial_order` and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, and :code:`kernel`)
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
@@ -219,7 +219,7 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
 #     """
 #     Fit the timeseries with chebyshev polynomials, and differentiate this model.
 
-#     :param x: (np.array of floats, 1xN) time series to differentiate
+#     :param x: (np.array of floats, 1xN) data to differentiate
 #     :param dt: (float) time step
 #     :param params: (list) [N] : (int) order of the polynomial
 #     :param options:
@@ -253,10 +253,10 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
 #     """
 #     Slide a smoothing derivative function across a times eries with specified window size.
 
-#     :param x: array of time series to differentiate
+#     :param x: data to differentiate
 #     :type x: np.array (float)
 
-#     :param dt: time step size
+#     :param dt: step size
 #     :type dt: float
 
 #     :param params: a list of 2 elements:
@@ -356,7 +356,7 @@ def __integrate_dxdt_hat_matrix__(dxdt_hat, dt):
 def _lineardiff(x, dt, N, gamma, solver=None, weights=None):
     """Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative
 
-    :param np.array[float] x: time series to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: time step
     :param int > 1 N: order (e.g. 2: velocity; 3: acceleration)
     :param float gamma: regularization term
@@ -404,10 +404,10 @@ def _lineardiff(x, dt, N, gamma, solver=None, weights=None):
 
 def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
     sliding=True, step_size=10, kernel='friedrichs', solver=None):
-    """Slide a smoothing derivative function across a time series with specified window size.
+    """Slide a smoothing derivative function across data, with specified window size.
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[int, float, int] params: (**deprecated**, prefer :code:`order`, :code:`gamma`, and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, :code:`kernel`, and :code:`solver`
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
@@ -466,14 +466,14 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
 def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True, pad_to_zero_dxdt=True):
     """Take a derivative in the fourier domain, with high frequency attentuation.
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
     :param dict options: (**deprecated**, prefer :code:`even_extension`
             and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
     :param float high_freq_cutoff: The high frequency cutoff. Frequencies below this threshold will be kept, and above will be zeroed.
-    :param bool even_extension: if True, extend the time series with an even extension so signal starts and ends at the same value.
-    :param bool pad_to_zero_dxdt: if True, extend the time series with extensions that smoothly force the derivative to zero. This
+    :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
+    :param bool pad_to_zero_dxdt: if True, extend the data with extensions that smoothly force the derivative to zero. This
             allows the spectral derivative to fit data which does not start and end with derivatives equal to zero.
 
     :return: tuple[np.array, np.array] of\n

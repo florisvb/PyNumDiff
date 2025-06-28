@@ -14,8 +14,8 @@ def iterative_velocity(x, dt, params, options=None, num_iterations=None, gamma=N
     Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data," ISRN Applied Mathematics,
     Vol. 2011, Article ID 164564, 2011. Original code at https://sites.google.com/site/dnartrahckcir/home/tvdiff-code
 
-    :param np.array[float] x: array of time series to differentiate
-    :param float dt: time step size
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
     :param list params: (**deprecated**, prefer :code:`num_iterations` and :code:`gamma`)
     :param dict options: (**deprecated**, prefer :code:`cg_maxiter` and :code:`scale`)
         a dictionary consisting of {'cg_maxiter': (int), 'scale': (str)}
@@ -59,7 +59,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: time step
+    :param float dt: step size
     :param int order: 1, 2, or 3, the derivative to regularize
     :param float gamma: regularization parameter
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
@@ -112,7 +112,7 @@ def velocity(x, dt, params, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param params: (**deprecated**, prefer :code:`gamma`)
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
@@ -139,7 +139,7 @@ def acceleration(x, dt, params, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
     
     :param np.array[float] x: data to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param params: (**deprecated**, prefer :code:`gamma`)
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
@@ -166,7 +166,7 @@ def jerk(x, dt, params, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param params: (**deprecated**, prefer :code:`gamma`)
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
@@ -195,7 +195,7 @@ def smooth_acceleration(x, dt, params, options=None, gamma=None, window_size=Non
     The end result is similar to the jerk method, but can be more time-efficient.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param params: (**deprecated**, prefer :code:`gamma` and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
@@ -232,7 +232,7 @@ def jerk_sliding(x, dt, params, options=None, gamma=None, solver=None):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: time step size
+    :param float dt: step size
     :param params: (**deprecated**, prefer :code:`gamma`)
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter

@@ -56,7 +56,6 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5])
     # TODO (jerk_sliding), because with the test cases here (len < 1000) it would just be a duplicate of jerk
     ]
-diff_methods_and_params = [(jerk_sliding, {'gamma':5})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a

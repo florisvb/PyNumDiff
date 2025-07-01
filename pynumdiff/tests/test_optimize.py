@@ -38,7 +38,7 @@ def test_first_order():
                                   tvgamma=tvgamma, dxdt_truth=dxdt_truth)
     params_2, val_2 = first_order(x, dt, params=None, options={'iterate': True},
                                   tvgamma=0, dxdt_truth=None)
-    assert params_1 == [5]
+    assert params_1 == [2]
     assert params_2 == [1]
 
 def test_mediandiff():

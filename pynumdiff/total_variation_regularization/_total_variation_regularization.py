@@ -97,7 +97,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     dxdt_hat = y/dt # y only holds the dx values; to get deriv scale by dt
     x_hat = np.cumsum(y) + integration_constants.value[order-1] # smoothed data
 
-    dxdt_hat = (dxdt_hat[0:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
+    dxdt_hat = (dxdt_hat[:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
     ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2]
     dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f # What is this doing? Could we use a 2nd order FD above natively?
     dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
@@ -106,7 +106,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     d = dxdt_hat[2] - dxdt_hat[1]
     dxdt_hat[0] = dxdt_hat[1] - d
 
-    return x_hat*std+mean, dxdt_hat*std
+    return x_hat*std+mean, dxdt_hat*std # derivative is linear, so scale derivative by std
 
 
 def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
@@ -253,8 +253,9 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    if len(x) <= 1000:
+    if len(x) <= 100:
+        warn("len(x) <= 1000, calling standard jerk() without sliding")
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
-    kernel = np.hstack((np.arange(1, 201)/200, np.ones(600), (np.arange(0, 201)/200)[::-1]))
-    return utility.slide_function(jerk_sliding, x, dt, kernel, gamma, stride=200)
+    kernel = np.hstack((np.arange(1, 21)/20, np.ones(60), (np.arange(0, 21)/20)[::-1]))
+    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=20)

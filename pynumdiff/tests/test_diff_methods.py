@@ -14,7 +14,7 @@ def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 dt = 0.1
 t = np.arange(0, 3+dt, dt) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
-ttt = np.linspace(0, 3, 1001) # for testing jerk_sliding, which requires > 1000 points
+ttt = np.linspace(0, 3, 101) # for testing jerk_sliding, which requires > 1001 points
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
 
@@ -205,6 +205,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
     if diff_method == jerk_sliding:
         t = ttt
+        dt = 0.03
         noise = 0.05*np.random.randn(*t.shape)
 
     # sample the true function and make noisy samples, and sample true derivative

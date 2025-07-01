@@ -11,13 +11,12 @@ from ..finite_difference import first_order, second_order
 # Function aliases for testing cases where parameters change the behavior in a big way
 def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
-dt = 0.1
-t = np.arange(0, 3+dt, dt) # sample locations, including the endpoint
+t = np.linspace(0, 3, 31) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
-ttt = np.linspace(0, 3, 101) # for testing jerk_sliding, which requires > 1001 points
+ttt = np.linspace(0, 3, 201) # for testing jerk_sliding, which requires > 1001 points
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
-
+long_noise = 0.05*np.random.randn(*ttt.shape)
 
 # Analytic (function, derivative) pairs on which to test differentiation methods.
 test_funcs_and_derivs = [
@@ -53,8 +52,8 @@ diff_methods_and_params = [
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
-    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5])
-    # TODO (jerk_sliding), because with the test cases here (len < 1000) it would just be a duplicate of jerk
+    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
+    (jerk_sliding, {'gamma':1e2}), (jerk_sliding, [1e2])
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
@@ -186,7 +185,13 @@ error_bounds = {
                           [(-2, -2), (-1, -1), (-1, -1), (0, -1)],
                           [(0, 0), (1, 0), (0, -1), (1, 0)],
                           [(1, 1), (2, 2), (1, 1), (2, 2)],
-                          [(1, 1), (3, 3), (1, 1), (3, 3)]]
+                          [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    jerk_sliding: [[(-14, -15), (-14, -14), (0, -1), (1, 0)],
+                   [(-4, -4), (-3, -3), (0, -1), (1, 0)],
+                   [(-4, -4), (-3, -3), (0, -1), (1, 0)],
+                   [(-3, -4), (-1, -2), (0, -1), (1, 0)],
+                   [(0, 0), (2, 1), (0, 0), (2, 1)],
+                   [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
@@ -203,15 +208,18 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration]:
         try: import cvxpy
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
-    if diff_method == jerk_sliding:
-        t = ttt
-        dt = 0.03
-        noise = 0.05*np.random.randn(*t.shape)
 
     # sample the true function and make noisy samples, and sample true derivative
-    x = f(t)
-    x_noisy = x + noise
-    dxdt = df(t)
+    if diff_method != jerk_sliding:
+        x = f(t)
+        x_noisy = x + noise
+        dxdt = df(t)
+        dt = t[1] - t[0]
+    else: # different density for jerk_sliding
+        x = f(ttt)
+        x_noisy = x + long_noise
+        dxdt = df(ttt)
+        dt = ttt[1] - ttt[0]
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
     x_hat, dxdt_hat = diff_method(x, dt, **params) if isinstance(params, dict) \
@@ -249,8 +257,8 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
 
         # bounds-printing for establishing bounds
         if request.config.getoption("--bounds"):
-            print(f"({l2_error},{linf_error})", end=", ")
-            #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+            #print(f"({l2_error},{linf_error})", end=", ")
+            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
         # bounds checking
         else:
             log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]

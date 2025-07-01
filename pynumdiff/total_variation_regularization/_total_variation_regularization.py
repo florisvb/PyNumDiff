@@ -258,4 +258,4 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
     kernel = np.hstack((np.arange(1, 21)/20, np.ones(60), (np.arange(0, 21)/20)[::-1]))
-    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=20)
+    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=20, solver=solver)

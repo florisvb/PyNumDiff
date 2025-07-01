@@ -219,7 +219,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
 
     _, dxdt_hat = _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
 
-    kernel = utility._gaussian_kernel(window_size)
+    kernel = utility.gaussian_kernel(window_size)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

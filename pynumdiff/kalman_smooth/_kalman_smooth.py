@@ -123,8 +123,8 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
         - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
-        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
-            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+            "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options != None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
@@ -158,8 +158,8 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
         - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
-        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
-            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+            "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options != None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
@@ -197,8 +197,8 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
         - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
-        warn("""`params` and `options` parameters will be removed in a future version. Use `r`,
-            `q`, and `forwardbackward` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+            "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options != None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
@@ -242,8 +242,8 @@ def known_dynamics(x, params, u=None, options=None, xhat0=None, P0=None, A=None,
     :return: np.array **x_hat** -- estimated (smoothed) x
     """ # Why not also returning derivative here?
     if params != None:
-        warn("""`params` and `options` parameters will be removed in a future version. Use `xhat0`,
-            `P0`, `A`, `B`, `C`, `Q`, `R`, and `smooth` instead.""", DeprecationWarning)
+        warn("`params` and `options` parameters will be removed in a future version. Use `xhat0`, " +
+            "`P0`, `A`, `B`, `C`, `Q`, `R`, and `smooth` instead.", DeprecationWarning)
         xhat0, P0, A, B, C, R, Q = params
         if options != None:
             if 'smooth' in options: smooth = options['smooth']

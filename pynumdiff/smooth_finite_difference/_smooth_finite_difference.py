@@ -66,7 +66,7 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
         if 'iterate' in options and options['iterate']:
             num_iterations = params[1]
 
-    kernel = utility._mean_kernel(window_size)
+    kernel = utility.mean_kernel(window_size)
     x_hat = utility.convolutional_smoother(x, kernel, num_iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
@@ -95,7 +95,7 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
         if 'iterate' in options and options['iterate']:
             num_iterations = params[1]
 
-    kernel = utility._gaussian_kernel(window_size)
+    kernel = utility.gaussian_kernel(window_size)
     x_hat = utility.convolutional_smoother(x, kernel, num_iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 
@@ -124,7 +124,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
         if 'iterate' in options and options['iterate']:
             num_iterations = params[1]
 
-    kernel = utility._friedrichs_kernel(window_size)
+    kernel = utility.friedrichs_kernel(window_size)
     x_hat = utility.convolutional_smoother(x, kernel, num_iterations)
     x_hat, dxdt_hat = finite_difference(x_hat, dt)
 

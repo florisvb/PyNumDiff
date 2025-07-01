@@ -36,9 +36,9 @@ def _kalman_forward_filter(xhat0, P0, y, A, C, Q, R, u=None, B=None):
         xhat_pre.append(xhat_) # the [n]th index holds _{n|n-1} info
         P_pre.append(P_)
 
-        xhat = xhat_ # handle missing data
-        P = P_
-        if not np.isnan(y[n]):
+        xhat = xhat_.copy()
+        P = P_.copy()
+        if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
             xhat += K @ (y[n] - C @ xhat_)
             P -= K @ C @ P_
@@ -89,7 +89,7 @@ def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
     x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
     dxdt_hat_forward = xhat_smooth[:, 1]
 
-    if not forwardbackward: # bound out here if not doing the same in reverse and then combining
+    if not forwardbackward: # bounce out here if not doing the same in reverse and then combining
         return x_hat_forward, dxdt_hat_forward
 
     xhat0[0] = x[-1] # starting from the other end of the signal

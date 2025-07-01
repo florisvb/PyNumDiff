@@ -53,7 +53,7 @@ diff_methods_and_params = [
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (jerk_sliding, {'gamma':1e2}), (jerk_sliding, [1e2])
+    (jerk_sliding, {'gamma':1e2, 'solver':'CLARABEL'}), (jerk_sliding, [1e2], {'solver':'CLARABEL'})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the

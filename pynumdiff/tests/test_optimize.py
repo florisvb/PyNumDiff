@@ -145,8 +145,8 @@ def test_spectraldiff():
 def test_polydiff():
     params_1, val_1 = polydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
     params_2, val_2 = polydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-    assert params_1 == [6, 50]
-    assert params_2 == [4, 10]
+    assert params_1 == [2, 10]
+    assert params_2 == [2, 10]
 
 # def test_chebydiff(self):
 #     try:

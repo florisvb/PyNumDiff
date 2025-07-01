@@ -13,7 +13,7 @@ def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
-ttt = np.linspace(0, 3, 201) # for testing jerk_sliding, which requires > 1001 points
+ttt = np.linspace(0, 3, 201) # for testing jerk_sliding, which requires more points
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
 long_noise = 0.05*np.random.randn(*ttt.shape)

@@ -14,7 +14,7 @@ def store_plots(request):
 def pytest_sessionfinish(session, exitstatus):
     if not hasattr(session.config, 'plots'): return
     for method,(fig,axes) in session.config.plots.items():
-        axes[-1,-1].legend()
+        fig.legend(*axes[-1, -1].get_legend_handles_labels(), loc='lower left', ncol=2)
         fig.suptitle(method.__name__)
         fig.tight_layout()
-    pyplot.show()
+        pyplot.show()

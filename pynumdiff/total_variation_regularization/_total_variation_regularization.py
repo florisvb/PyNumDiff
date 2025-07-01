@@ -48,7 +48,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
                                                 maxit=cg_maxiter, scale=scale,
                                                 ep=1e-6, u0=None, plotflag=False, diagflag=1)
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_initial_condition(x, x_hat)
+    x0 = utility.estimate_integration_constant(x, x_hat)
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
@@ -220,7 +220,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_initial_condition(x, x_hat)
+    x0 = utility.estimate_integration_constant(x, x_hat)
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat

@@ -14,9 +14,9 @@ except ImportError: pass
 # Savitzky-Golay filter #
 #########################
 def savgoldiff(x, dt, params=None, options=None, poly_order=None, window_size=None, smoothing_win=None):
-    """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses
+    """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It uses
     scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit,
-    but slightly noisier, and much faster
+    but slightly noisier, and much faster.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -48,7 +48,7 @@ def savgoldiff(x, dt, params=None, options=None, poly_order=None, window_size=No
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_initial_condition(x, x_hat)
+    x0 = utility.estimate_integration_constant(x, x_hat)
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
@@ -199,11 +199,8 @@ def polydiff(x, dt, params=None, options=None, poly_order=None, window_size=None
 # Linear diff #
 ###############
 def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
-                                           solver=None, A_known=None, epsilon=1e-6, rows_of_interest='all'):
+                                           solver=None, A_known=None, epsilon=1e-6):
     """Given state and the derivative, find the system evolution and measurement matrices."""
-    if rows_of_interest == 'all':
-        rows_of_interest = np.arange(0, X.shape[0])
-
     # Set up the variables
     A = cvxpy.Variable((X.shape[0], X.shape[0]))
     C = cvxpy.Variable((X.shape[0], num_integrations))
@@ -219,7 +216,7 @@ def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e
         Csum = Csum + Cn
 
     # Define the objective function
-    error = cvxpy.sum_squares(Xdot[rows_of_interest, :] - ( cvxpy.matmul(A, X) + Csum)[rows_of_interest, :])
+    error = cvxpy.sum_squares(Xdot - ( cvxpy.matmul(A, X) + Csum))
     C_regularization = gammaC*cvxpy.sum(cvxpy.abs(C))
     A_regularization = gammaA*cvxpy.sum(cvxpy.abs(A))
     obj = cvxpy.Minimize(error + C_regularization + A_regularization)
@@ -238,8 +235,7 @@ def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e
     prob = cvxpy.Problem(obj, constraints)
     prob.solve(solver=solver)
 
-    A = np.array(A.value)
-    return A, np.array(C.value)
+    return np.array(A.value), np.array(C.value)
 
 def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
     step_size=10, kernel='friedrichs', solver=None):
@@ -306,7 +302,7 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
         dxdt_hat = np.ravel(Xdot_reconstructed[-1, :])
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-        x_hat = x_hat + utility.estimate_initial_condition(x+mean, x_hat)
+        x_hat = x_hat + utility.estimate_integration_constant(x+mean, x_hat)
 
         return x_hat, dxdt_hat
 
@@ -408,7 +404,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
 
     # Integrate to get x_hat
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_initial_condition(x[padding:original_L+padding], x_hat)
+    x0 = utility.estimate_integration_constant(x[padding:original_L+padding], x_hat)
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat

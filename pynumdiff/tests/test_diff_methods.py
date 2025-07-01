@@ -33,7 +33,7 @@ diff_methods_and_params = [
     (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
     (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
     (second_order, {}),
-    (lineardiff, {'order':3, 'gamma':5, 'window_size':10, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 10], {'solver':'CLARABEL'}),
+    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'polynomial_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
@@ -79,8 +79,8 @@ error_bounds = {
                    [(-25, -25), (3, 3), (0, 0), (3, 3)]],
     lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
+                 [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (2, 1), (1, 0), (2, 1)],
-                 [(1, 0), (1, 1), (1, 0), (1, 1)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     polydiff: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],

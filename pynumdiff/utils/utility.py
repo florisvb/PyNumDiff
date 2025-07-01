@@ -2,15 +2,14 @@ import os, sys, copy, scipy
 import numpy as np
 
 
-def hankel_matrix(x, num_delays, pad=False):  # fixed delay step of 1
-    """
-    :param x: numpy array or matrix
-    :param num_delays: int, number of times to 1-step shift data
-    :param pad:
-    :return: a Hankel Matrix m
+def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
+    """Unused throughout the repo
 
-            e.g.  if
-                    x = [a, b, c, d, e] and num_delays = 3
+    :param np.array[float] x: data
+    :param int num_delays: number of times to 1-step shift data
+    :param bool pad: if True, return width is len(x), else width is len(x) - num_delays + 1
+    :return: a Hankel Matrix m
+            e.g. if x = [a, b, c, d, e] and num_delays = 3
             then with pad = False:
                     m = [['a', 'b', 'c'],
                          ['b', 'c', 'd'],
@@ -20,19 +19,18 @@ def hankel_matrix(x, num_delays, pad=False):  # fixed delay step of 1
                          ['b', 'c', 'd', 'e',  0],
                          ['c', 'd', 'e',  0,   0]]
     """
-    m = copy.copy(x)
+    m = x.copy()
     for d in range(1, num_delays):
-        xi = x[:, d:]
-        xi = np.pad(xi, ((0, 0), (0, x.shape[1]-xi.shape[1])), 'constant', constant_values=0)
+        xi = x[d:]
+        xi = np.pad(xi, (0, len(x)-len(xi)), 'constant', constant_values=0)
         m = np.vstack((m, xi))
     if not pad:
-        return m[:, 0:-1*num_delays]
+        return m[:, 0:-1*num_delays+1]
     return m
 
 
 def matrix_inv(X, max_sigma=1e-16):
-    """
-    Stable (pseudo) matrix inversion using singular value decomposition
+    """Stable (pseudo) matrix inversion using singular value decomposition. Unused throughout the repo.
 
     :param X: matrix to invert
     :type X: np.matrix or np.array
@@ -50,83 +48,70 @@ def matrix_inv(X, max_sigma=1e-16):
 
 
 def total_variation(x):
-    """
-    Calculate the total variation of an array
+    """Calculate the total variation of an array. Used by optimizer.
 
-    :param x: timeseries
-    :type x: np.array
-
-    :return: total variation
-    :rtype: float
-
+    :param np.array[float] x: data
+    :return: float total variation
     """
     if np.isnan(x).any():
         return np.nan
-    x1 = np.ravel(x)[0:-1]
+    x1 = np.ravel(x)[:-1]
     x2 = np.ravel(x)[1:]
     return np.sum(np.abs(x2-x1))/len(x1)  # mostly equivalent to cvxpy.tv(x2-x1).value
 
 
-def peakdet(v, delta, x=None):
-    """
-    Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.
+def peakdet(x, delta, t=None):
+    """Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal
+    value, and was preceded (to the left) by a value lower by delta. Converted from MATLAB script at
+    http://billauer.co.il/peakdet.html Eli Billauer, 3.4.05 (Explicitly not copyrighted). This function
+    is released to the public domain; Any use is allowed.
 
-    Converted from MATLAB script at http://billauer.co.il/peakdet.html
-    % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
-    % This function is released to the public domain; Any use is allowed.
+    :param np.array[float] x: array for which to find peaks and valleys
+    :param float delta: threshold for finding peaks and valleys. A point is considered a maximum peak
+        if it has the maximal value, and was preceded (to the left) by a value lower by delta.
+    :param np.array[float] t: optional domain points where data comes from, to make indices into locations
 
-    :param v: array for which to find peaks and valleys
-    :typpe v: np.array
-
-    :param delta: threshold for finding peaks and valleys. A point is considered a maximum peak if it has the maximal value, and was preceded (to the left) by a value lower by delta.
-    :type delta: float
-
-    :return: tuple of min and max locations and values:
-            - maxtab: array with locations (column 1) and values of maxima (column 2)
-            - mintab: array with locations (column 1) and values of minima (column 2)
-    :rtype: tuple -> (np.array, np.array)
-
+    :return: tuple[np.array, np.array] of\n
+             - **maxtab** -- indices or locations (column 1) and values (column 2) of maxima
+             - **mintab** -- indices or locations (column 1) and values (column 2) of minima
     """
     maxtab = []
     mintab = []
-    if x is None:
-        x = np.arange(len(v))
-    v = np.asarray(v)
-    if len(v) != len(x):
-        sys.exit('Input vectors v and x must have same length')
-    if not np.isscalar(delta):
-        sys.exit('Input argument delta must be a scalar')
-    if delta <= 0:
-        sys.exit('Input argument delta must be positive')
+    if t is None:
+        t = np.arange(len(x))
+    elif len(x) != len(t):
+        raise ValueError('Input vectors x and t must have same length')
+    if not (np.isscalar(delta) and delta > 0):
+        raise ValueError('Input argument delta must be a positive scalar')
 
-    mn, mx = np.Inf, -1*np.Inf
-    mnpos, mxpos = np.NaN, np.NaN
+    mn, mx = np.inf, -1*np.inf
+    mnpos, mxpos = np.nan, np.nan
     lookformax = True
-    for i in np.arange(len(v)):
-        this = v[i]
+    for i in np.arange(len(x)):
+        this = x[i]
         if this > mx:
             mx = this
-            mxpos = x[i]
+            mxpos = t[i]
         if this < mn:
             mn = this
-            mnpos = x[i]
+            mnpos = t[i]
         if lookformax:
             if this < mx-delta:
                 maxtab.append((mxpos, mx))
                 mn = this
-                mnpos = x[i]
-                lookformax = False
+                mnpos = t[i]
+                lookformax = False # now searching for a min
         else:
             if this > mn+delta:
                 mintab.append((mnpos, mn))
                 mx = this
-                mxpos = x[i]
-                lookformax = True
+                mxpos = t[i]
+                lookformax = True # now searching for a max
 
     return np.array(maxtab), np.array(mintab)
 
 
-# Trapazoidal integration, with interpolated final point so that the lengths match.
+# Trapazoidal integration, with 0 first value so that the lengths match. See #88.
 def integrate_dxdt_hat(dxdt_hat, dt):
     """Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures the integral has the same length
 
@@ -154,27 +139,24 @@ def estimate_initial_condition(x, x_hat):
 
 
 # kernels
-def _mean_kernel(window_size):
+def mean_kernel(window_size):
     """A uniform boxcar of total integral 1"""
     return np.ones(window_size)/window_size
 
-
-def _gaussian_kernel(window_size):
+def gaussian_kernel(window_size):
     """A truncated gaussian"""
     sigma = window_size / 6.
     t = np.linspace(-2.7*sigma, 2.7*sigma, window_size)
     ker = 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2)) # gaussian function itself
     return ker / np.sum(ker)
 
-
-def _friedrichs_kernel(window_size):
+def friedrichs_kernel(window_size):
     """A bump function"""
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)
 
-
-def convolutional_smoother(x, kernel, iterations):
+def convolutional_smoother(x, kernel, iterations=1):
     """Perform smoothing by convolving x with a kernel.
 
     :param np.array[float] x: 1D data
@@ -183,7 +165,7 @@ def convolutional_smoother(x, kernel, iterations):
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
     x_hat = np.hstack((x[::-1], x, x[::-1])) # pad
-    w = np.arange(len(x_hat)) / (len(x_hat) - 1) # weights
+    w = np.linspace(0, 1, len(x_hat)) # weights
 
     for _ in range(iterations):
         x_hat_f = np.convolve(x_hat, kernel, 'same')
@@ -192,3 +174,47 @@ def convolutional_smoother(x, kernel, iterations):
         x_hat = x_hat_f*w + x_hat_b*(1-w)
 
     return x_hat[len(x):len(x)*2]
+
+
+def slide_function(func, x, dt, kernel, *args, step_size=1, pass_weights=False, **kwargs):
+    """Slide a smoothing derivative function across a timeseries with specified window size.
+
+    :param callable func: name of the function to slide
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
+    :param np.array[float] kernel: values to weight the sliding window
+    :param list args: passed to func
+    :param int step_size: step size for slide (e.g. 1 means slide by 1 step)
+    :param bool pass_weights: whether weights should be passed to func via update to kwargs
+    :param dict kwargs: passed to func
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
+    if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
+    half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
+
+    weights = np.zeros((int(np.ceil(len(x)/step_size)), len(x)))
+    x_hats = np.zeros(weights.shape)
+    dxdt_hats = np.zeros(weights.shape)
+
+    for i,midpoint in enumerate(range(0, len(x), step_size)): # iterate window midpoints
+        # find where to index data and kernel, taking care at edges
+        window = slice(max(0, midpoint - half_window_size),
+                        min(len(x), midpoint + half_window_size + 1)) # +1 because slicing works [,)
+        kslice = slice(max(0, half_window_size - midpoint),
+                        min(len(kernel), len(kernel) - (midpoint + half_window_size + 1 - len(x))))
+
+        # weights need to be renormalized if running off an edge
+        weights[i, window] = kernel if kslice.stop - kslice.stop == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
+        if pass_weights: kwargs['weights'] = weights[i, window]
+
+        # run the function on the window and save results
+        x_hats[i,window], dxdt_hats[i,window] = func(x[window], dt, *args, **kwargs)
+
+    weights /= weights.sum(axis=0, keepdims=True) # normalize the weights
+    x_hat = np.sum(weights*x_hats, axis=0)
+    dxdt_hat = np.sum(weights*dxdt_hats, axis=0)
+
+    return x_hat, dxdt_hat

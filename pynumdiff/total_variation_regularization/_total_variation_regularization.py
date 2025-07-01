@@ -229,7 +229,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     return x_hat, dxdt_hat
 
 
-def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
+def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, window_size=101):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
@@ -239,6 +239,7 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
     :param float gamma: the regularization parameter
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
+    :param int window_size: how wide to make the kernel
 
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
@@ -250,12 +251,16 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
         gamma = params[0] if isinstance(params, list) else params
         if options != None:
             if 'solver' in options: solver = options['solver']
+            if 'window_size' in options: window_size = options['window_size']
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    if len(x) <= 100:
-        warn("len(x) <= 1000, calling standard jerk() without sliding")
+    if len(x) < window_size:
+        warn("len(x) <= window_size, calling standard jerk() without sliding")
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
-    kernel = np.hstack((np.arange(1, 21)/20, np.ones(60), (np.arange(0, 21)/20)[::-1]))
-    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=20, solver=solver)
+    ramp = window_size//5
+    kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), (np.arange(1, ramp+1)/ramp)[::-1]))
+    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)
+
+

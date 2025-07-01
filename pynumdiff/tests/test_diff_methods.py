@@ -11,12 +11,11 @@ from ..finite_difference import first_order, second_order
 # Function aliases for testing cases where parameters change the behavior in a big way
 def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
+dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
-ttt = np.linspace(0, 3, 201) # for testing jerk_sliding, which requires more points
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
-long_noise = 0.05*np.random.randn(*ttt.shape)
 
 # Analytic (function, derivative) pairs on which to test differentiation methods.
 test_funcs_and_derivs = [
@@ -53,7 +52,7 @@ diff_methods_and_params = [
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (jerk_sliding, {'gamma':1e2, 'solver':'CLARABEL'}), (jerk_sliding, [1e2], {'solver':'CLARABEL'})
+    (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
@@ -186,11 +185,11 @@ error_bounds = {
                           [(0, 0), (1, 0), (0, -1), (1, 0)],
                           [(1, 1), (2, 2), (1, 1), (2, 2)],
                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    jerk_sliding: [[(-13, -14), (-12, -13), (0, -1), (1, 0)],
-                   [(-12, -13), (-12, -12), (0, -1), (0, 0)],
-                   [(-13, -14), (-12, -13), (0, -1), (0, 0)],
-                   [(-1, -2), (0, 0), (0, -1), (1, 0)],
-                   [(0, 0), (2, 1), (0, 0), (2, 1)],
+    jerk_sliding: [[(-15, -15), (-16, -17), (0, -1), (1, 0)],
+                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
+                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
+                   [(-1, -1), (0, 0), (0, -1), (0, 0)],
+                   [(0, 0), (2, 2), (0, 0), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
@@ -210,16 +209,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
     # sample the true function and make noisy samples, and sample true derivative
-    if diff_method != jerk_sliding:
-        x = f(t)
-        x_noisy = x + noise
-        dxdt = df(t)
-        dt = t[1] - t[0]
-    else: # different density for jerk_sliding
-        x = f(ttt)
-        x_noisy = x + long_noise
-        dxdt = df(ttt)
-        dt = ttt[1] - ttt[0]
+    x = f(t)
+    x_noisy = x + noise
+    dxdt = df(t)
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
     x_hat, dxdt_hat = diff_method(x, dt, **params) if isinstance(params, dict) \

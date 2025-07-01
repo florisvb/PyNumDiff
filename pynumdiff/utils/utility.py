@@ -176,7 +176,7 @@ def convolutional_smoother(x, kernel, iterations=1):
     return x_hat[len(x):len(x)*2]
 
 
-def slide_function(func, x, dt, kernel, *args, step_size=1, pass_weights=False, **kwargs):
+def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **kwargs):
     """Slide a smoothing derivative function across a timeseries with specified window size.
 
     :param callable func: name of the function to slide
@@ -184,7 +184,7 @@ def slide_function(func, x, dt, kernel, *args, step_size=1, pass_weights=False, 
     :param float dt: step size
     :param np.array[float] kernel: values to weight the sliding window
     :param list args: passed to func
-    :param int step_size: step size for slide (e.g. 1 means slide by 1 step)
+    :param int stride: step size for slide (e.g. 1 means slide by 1 step)
     :param bool pass_weights: whether weights should be passed to func via update to kwargs
     :param dict kwargs: passed to func
 
@@ -195,11 +195,11 @@ def slide_function(func, x, dt, kernel, *args, step_size=1, pass_weights=False, 
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
 
-    weights = np.zeros((int(np.ceil(len(x)/step_size)), len(x)))
+    weights = np.zeros((int(np.ceil(len(x)/stride)), len(x)))
     x_hats = np.zeros(weights.shape)
     dxdt_hats = np.zeros(weights.shape)
 
-    for i,midpoint in enumerate(range(0, len(x), step_size)): # iterate window midpoints
+    for i,midpoint in enumerate(range(0, len(x), stride)): # iterate window midpoints
         # find where to index data and kernel, taking care at edges
         window = slice(max(0, midpoint - half_window_size),
                         min(len(x), midpoint + half_window_size + 1)) # +1 because slicing works [,)

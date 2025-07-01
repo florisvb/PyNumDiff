@@ -73,7 +73,7 @@ def test_slide_function():
     x = np.arange(100)
     kernel = utility.gaussian_kernel(9)
 
-    x_hat, dxdt_hat = utility.slide_function(identity, x, 0.1, kernel, step_size=2)
+    x_hat, dxdt_hat = utility.slide_function(identity, x, 0.1, kernel, stride=2)
 
     assert np.allclose(x, x_hat)
 

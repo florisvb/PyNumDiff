@@ -105,7 +105,7 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
         return _polydiff(x, dt, polynomial_order)
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-    return utility.slide_function(_polydiff, x, dt, kernel, polynomial_order, step_size=step_size, pass_weights=True)
+    return utility.slide_function(_polydiff, x, dt, kernel, polynomial_order, stride=step_size, pass_weights=True)
 
 
 #############
@@ -312,8 +312,8 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
-    x_hat_forward, _ = utility.slide_function(_lineardiff, x, dt, kernel, order, gamma, step_size=step_size, solver=solver)
-    x_hat_backward, _ = utility.slide_function(_lineardiff, x[::-1], dt, kernel, order, gamma, step_size=step_size, solver=solver)
+    x_hat_forward, _ = utility.slide_function(_lineardiff, x, dt, kernel, order, gamma, stride=step_size, solver=solver)
+    x_hat_backward, _ = utility.slide_function(_lineardiff, x[::-1], dt, kernel, order, gamma, stride=step_size, solver=solver)
 
     # weights
     w = np.arange(1, len(x_hat_forward)+1,1)[::-1]

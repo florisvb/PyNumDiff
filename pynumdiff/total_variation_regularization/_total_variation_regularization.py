@@ -97,7 +97,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     dxdt_hat = y/dt # y only holds the dx values; to get deriv scale by dt
     x_hat = np.cumsum(y) + integration_constants.value[order-1] # smoothed data
 
-    dxdt_hat = (dxdt_hat[0:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
+    dxdt_hat = (dxdt_hat[:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
     ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2]
     dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f # What is this doing? Could we use a 2nd order FD above natively?
     dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
@@ -106,7 +106,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     d = dxdt_hat[2] - dxdt_hat[1]
     dxdt_hat[0] = dxdt_hat[1] - d
 
-    return x_hat*std+mean, dxdt_hat*std
+    return x_hat*std+mean, dxdt_hat*std # derivative is linear, so scale derivative by std
 
 
 def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
@@ -229,7 +229,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     return x_hat, dxdt_hat
 
 
-def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
+def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, window_size=101):
     """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
 
     :param np.array[float] x: data to differentiate
@@ -239,6 +239,7 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
     :param float gamma: the regularization parameter
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
+    :param int window_size: how wide to make the kernel
 
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
@@ -250,68 +251,16 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
         gamma = params[0] if isinstance(params, list) else params
         if options != None:
             if 'solver' in options: solver = options['solver']
+            if 'window_size' in options: window_size = options['window_size']
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    window_size = 1000
-    stride = 200
-
     if len(x) < window_size:
+        warn("len(x) <= window_size, calling standard jerk() without sliding")
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
-    # slide the jerk
-    final_xsmooth = []
-    final_xdot_hat = []
-    first_idx = 0
-    final_idx = first_idx + window_size
-    last_loop = False
+    ramp = window_size//5
+    kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), (np.arange(1, ramp+1)/ramp)[::-1]))
+    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)
 
-    final_weighting = []
 
-    try:
-        while not last_loop:
-            xsmooth, xdot_hat = _total_variation_regularized_derivative(x[first_idx:final_idx], dt, 3,
-                                                                           gamma, solver=solver)
-
-            xsmooth = np.hstack(([0]*first_idx, xsmooth, [0]*(len(x)-final_idx)))
-            final_xsmooth.append(xsmooth)
-
-            xdot_hat = np.hstack(([0]*first_idx, xdot_hat, [0]*(len(x)-final_idx)))
-            final_xdot_hat.append(xdot_hat)
-
-            # blending
-            w = np.hstack(([0]*first_idx,
-                           np.arange(1, 201)/200,
-                           [1]*(final_idx-first_idx-400),
-                           (np.arange(1, 201)/200)[::-1],
-                           [0]*(len(x)-final_idx)))
-            final_weighting.append(w)
-
-            if final_idx >= len(x):
-                last_loop = True
-            else:
-                first_idx += stride
-                final_idx += stride
-                if final_idx > len(x):
-                    final_idx = len(x)
-                    if final_idx - first_idx < 200:
-                        first_idx -= (200 - (final_idx - first_idx))
-
-        # normalize columns
-        weights = np.vstack(final_weighting)
-        for c in range(weights.shape[1]):
-            weights[:, c] /= np.sum(weights[:, c])
-
-        # weighted sums
-        xsmooth = np.vstack(final_xsmooth)
-        xsmooth = np.sum(xsmooth*weights, axis=0)
-
-        xdot_hat = np.vstack(final_xdot_hat)
-        xdot_hat = np.sum(xdot_hat*weights, axis=0)
-
-        return xsmooth, xdot_hat
-
-    except ValueError:
-        warn('Solver failed, returning finite difference instead')
-        from pynumdiff.finite_difference import second_order
-        return second_order(x, dt)

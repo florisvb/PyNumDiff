@@ -4,7 +4,7 @@ from pytest import mark
 from warnings import warn
 
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..finite_difference import first_order, second_order
@@ -12,7 +12,7 @@ from ..finite_difference import first_order, second_order
 def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
 dt = 0.1
-t = np.arange(0, 3+dt, dt) # sample locations, including the endpoint
+t = np.linspace(0, 3, 31) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
@@ -51,8 +51,8 @@ diff_methods_and_params = [
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
-    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5])
-    # TODO (jerk_sliding), because with the test cases here (len < 1000) it would just be a duplicate of jerk
+    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
+    (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
@@ -184,7 +184,13 @@ error_bounds = {
                           [(-2, -2), (-1, -1), (-1, -1), (0, -1)],
                           [(0, 0), (1, 0), (0, -1), (1, 0)],
                           [(1, 1), (2, 2), (1, 1), (2, 2)],
-                          [(1, 1), (3, 3), (1, 1), (3, 3)]]
+                          [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    jerk_sliding: [[(-15, -15), (-16, -17), (0, -1), (1, 0)],
+                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
+                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
+                   [(-1, -1), (0, 0), (0, -1), (0, 0)],
+                   [(0, 0), (2, 2), (0, 0), (2, 2)],
+                   [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test

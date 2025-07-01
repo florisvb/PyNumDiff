@@ -12,6 +12,7 @@ def store_plots(request):
     request.config.plots = defaultdict(lambda: pyplot.subplots(6, 2, figsize=(12,7))) # 6 is len(test_funcs_and_derivs)
 
 def pytest_sessionfinish(session, exitstatus):
+    if not hasattr(session.config, 'plots'): return
     for method,(fig,axes) in session.config.plots.items():
         axes[-1,-1].legend()
         fig.suptitle(method.__name__)

@@ -4,7 +4,7 @@ from pytest import mark
 from warnings import warn
 
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..finite_difference import first_order, second_order
@@ -14,8 +14,10 @@ def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 dt = 0.1
 t = np.arange(0, 3+dt, dt) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
+ttt = np.linspace(0, 3, 1001) # for testing jerk_sliding, which requires > 1000 points
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
+
 
 # Analytic (function, derivative) pairs on which to test differentiation methods.
 test_funcs_and_derivs = [
@@ -54,6 +56,7 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5])
     # TODO (jerk_sliding), because with the test cases here (len < 1000) it would just be a duplicate of jerk
     ]
+diff_methods_and_params = [(jerk_sliding, {'gamma':5})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -201,6 +204,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration]:
         try: import cvxpy
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
+    if diff_method == jerk_sliding:
+        t = ttt
+        noise = 0.05*np.random.randn(*t.shape)
 
     # sample the true function and make noisy samples, and sample true derivative
     x = f(t)
@@ -243,8 +249,8 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
 
         # bounds-printing for establishing bounds
         if request.config.getoption("--bounds"):
-            #print(f"({l2_error},{linf_error})", end=", ")
-            print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
+            print(f"({l2_error},{linf_error})", end=", ")
+            #print(f"({int(np.ceil(np.log10(l2_error))) if l2_error > 0 else -25}, {int(np.ceil(np.log10(linf_error))) if linf_error > 0 else -25})", end=", ")
         # bounds checking
         else:
             log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]

@@ -253,65 +253,8 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    window_size = 1000
-    stride = 200
-
-    if len(x) < window_size:
+    if len(x) <= 1000:
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
-    # slide the jerk
-    final_xsmooth = []
-    final_xdot_hat = []
-    first_idx = 0
-    final_idx = first_idx + window_size
-    last_loop = False
-
-    final_weighting = []
-
-    try:
-        while not last_loop:
-            xsmooth, xdot_hat = _total_variation_regularized_derivative(x[first_idx:final_idx], dt, 3,
-                                                                           gamma, solver=solver)
-
-            xsmooth = np.hstack(([0]*first_idx, xsmooth, [0]*(len(x)-final_idx)))
-            final_xsmooth.append(xsmooth)
-
-            xdot_hat = np.hstack(([0]*first_idx, xdot_hat, [0]*(len(x)-final_idx)))
-            final_xdot_hat.append(xdot_hat)
-
-            # blending
-            w = np.hstack(([0]*first_idx,
-                           np.arange(1, 201)/200,
-                           [1]*(final_idx-first_idx-400),
-                           (np.arange(1, 201)/200)[::-1],
-                           [0]*(len(x)-final_idx)))
-            final_weighting.append(w)
-
-            if final_idx >= len(x):
-                last_loop = True
-            else:
-                first_idx += stride
-                final_idx += stride
-                if final_idx > len(x):
-                    final_idx = len(x)
-                    if final_idx - first_idx < 200:
-                        first_idx -= (200 - (final_idx - first_idx))
-
-        # normalize columns
-        weights = np.vstack(final_weighting)
-        for c in range(weights.shape[1]):
-            weights[:, c] /= np.sum(weights[:, c])
-
-        # weighted sums
-        xsmooth = np.vstack(final_xsmooth)
-        xsmooth = np.sum(xsmooth*weights, axis=0)
-
-        xdot_hat = np.vstack(final_xdot_hat)
-        xdot_hat = np.sum(xdot_hat*weights, axis=0)
-
-        return xsmooth, xdot_hat
-
-    except ValueError:
-        warn('Solver failed, returning finite difference instead')
-        from pynumdiff.finite_difference import second_order
-        return second_order(x, dt)
+    kernel = np.hstack((np.arange(1, 201)/200, np.ones(600), (np.arange(0, 201)/200)[::-1]))
+    return utility.slide_function(jerk_sliding, x, dt, kernel, gamma, stride=200)

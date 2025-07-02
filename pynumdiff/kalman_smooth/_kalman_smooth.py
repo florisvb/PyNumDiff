@@ -36,7 +36,7 @@ def _kalman_forward_filter(xhat0, P0, y, A, C, Q, R, u=None, B=None):
         xhat_pre.append(xhat_) # the [n]th index holds _{n|n-1} info
         P_pre.append(P_)
 
-        xhat = xhat_.copy()
+        xhat = xhat_.copy() # copies very important here. See #122
         P = P_.copy()
         if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)

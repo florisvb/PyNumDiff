@@ -69,7 +69,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
              - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
-    # Normalize
+    # Normalize for numerical consistency with convex solver
     mean = np.mean(x)
     std = np.std(x)
     if std == 0: std = 1 # safety guard
@@ -79,7 +79,8 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     deriv_values = cvxpy.Variable(len(x)) # values of the order^th derivative, in which we're penalizing variation
     integration_constants = cvxpy.Variable(order) # constants of integration that help get us back to x
 
-    # Recursively integrate the highest order derivative to get back to the position
+    # Recursively integrate the highest order derivative to get back to the position. This is a first-
+    # order scheme, but it's very fast and tends to not do markedly worse than 2nd order. See #116
     y = deriv_values
     for i in range(order):
         y = cvxpy.cumsum(y) + integration_constants[i]
@@ -87,7 +88,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     # Set up and solve the optimization problem
     prob = cvxpy.Problem(cvxpy.Minimize(
         # Compare the recursively integrated position to the noisy position, and add TVR penalty
-        cvxpy.sum_squares(y - x) + cvxpy.sum(gamma*cvxpy.tv(deriv_values)) ))
+        cvxpy.sum_squares(y - x) + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
     prob.solve(solver=solver)
 
     # Recursively integrate the final derivative values to get back to the function and derivative values
@@ -97,14 +98,10 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     dxdt_hat = y/dt # y only holds the dx values; to get deriv scale by dt
     x_hat = np.cumsum(y) + integration_constants.value[order-1] # smoothed data
 
-    dxdt_hat = (dxdt_hat[:-1] + dxdt_hat[1:])/2 # take first order FD to smooth a touch
-    ddxdt_hat_f = dxdt_hat[-1] - dxdt_hat[-2]
-    dxdt_hat_f = dxdt_hat[-1] + ddxdt_hat_f # What is this doing? Could we use a 2nd order FD above natively?
-    dxdt_hat = np.hstack((dxdt_hat, dxdt_hat_f))
-
-    # fix first point
-    d = dxdt_hat[2] - dxdt_hat[1]
-    dxdt_hat[0] = dxdt_hat[1] - d
+    # Due to the first-order nature of the derivative, it has a slight lag. Average together every two values
+    # to better center the answer. But this leaves us one-short, so devise a good last value.
+    dxdt_hat = (dxdt_hat[:-1] + dxdt_hat[1:])/2
+    dxdt_hat = np.hstack((dxdt_hat, 2*dxdt_hat[-1] - dxdt_hat[-2])) # last value = penultimate value [-1] + diff between [-1] and [-2]
 
     return x_hat*std+mean, dxdt_hat*std # derivative is linear, so scale derivative by std
 
@@ -262,5 +259,3 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, wind
     ramp = window_size//5
     kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), (np.arange(1, ramp+1)/ramp)[::-1]))
     return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)
-
-

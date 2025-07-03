@@ -1,20 +1,16 @@
-"""
-Metrics and evaluations?
-"""
+"""Some tools to help evaluate and plot performance, used in optimization and in jupyter notebooks"""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 
-# local imports
-from pynumdiff.utils import utility as _utility
-from pynumdiff.finite_difference import first_order as _finite_difference
+from pynumdiff.utils import utility
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments
 def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None,
          show_error=True, markersize=5):
-    """Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and
-    'dxdt_truth (black) vs dxdt_hat (red)'
+    """Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and 'dxdt_truth
+    (black) vs dxdt_hat (red)'
 
     :param np.array[float] x: array of noisy data
     :param float dt: a float number representing the step size
@@ -66,23 +62,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
         print('RMS error in velocity: ', rms_dxdt)
 
 
-def _rms_error(a, e):
-    """Calculate rms error
-
-    :param a: the first array
-    :param e: the second array
-
-    :return: (float) -- the root mean squared error
-    """
-    if np.max(np.abs(a-e)) > 1e16:
-        return 1e16
-    s_error = np.ravel((a - e))**2
-    ms_error = np.mean(s_error)
-    rms_error = np.sqrt(ms_error)
-    return rms_error
-
-
-def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None):
+def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
     """Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.
 
     :param np.array[float] x: data that was differentiated
@@ -92,36 +72,30 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None)
     :param np.array[float] x_truth: true value of x, if known
     :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'` or :code:`None`, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
     :return: tuple[float, float, float] containing\n
             - **rms_rec_x** -- RMS error between the integral of dxdt_hat and x
             - **rms_x** -- RMS error between x_hat and x_truth, returns None if x_truth is None
             - **rms_dxdt** -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """
+    if np.isnan(x_hat).any():
+        return np.nan, np.nan, np.nan
     if padding is None or padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
-    if np.isnan(x_hat).any():
-        return np.nan, np.nan, np.nan
+    s = slice(padding,len(x)-padding) # slice out where the data is
 
-    # RMS dxdt
-    if dxdt_truth is not None:
-        rms_dxdt = _rms_error(dxdt_hat[padding:-padding], dxdt_truth[padding:-padding])
-    else:
-        rms_dxdt = None
+    # RMS of dxdt and x_hat
+    root = np.sqrt(s.stop - s.start)
+    rms_dxdt = np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / root if dxdt_truth else None
+    rms_x = np.linalg.norm(x_hat[s] - x_truth[s]) / root if x_truth else None
 
-    # RMS x
-    if x_truth is not None:
-        rms_x = _rms_error(x_hat[padding:-padding], x_truth[padding:-padding])
-    else:
-        rms_x = None
-
-    # RMS reconstructed x
-    rec_x = _utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = _utility.estimate_initial_condition(x, rec_x)
+    # RMS reconstructed x from integrating dxdt vs given raw x, available even in the absence of ground truth
+    rec_x = utility.integrate_dxdt_hat(dxdt_hat, dt)
+    x0 = utility.estimate_initial_condition(x, rec_x)
     rec_x = rec_x + x0
-    rms_rec_x = _rms_error(rec_x[padding:-padding], x[padding:-padding])
+    rms_rec_x = np.linalg.norm(rec_x[s] - x[s]) / root
 
     return rms_rec_x, rms_x, rms_dxdt
 

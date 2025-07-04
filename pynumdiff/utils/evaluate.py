@@ -1,61 +1,34 @@
-"""
-Metrics and evaluations?
-"""
-import numpy as _np
-import matplotlib.pyplot as _plt
-import scipy.stats as _scipy_stats
+"""Some tools to help evaluate and plot performance, used in optimization and in jupyter notebooks"""
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
 
-# local imports
-from pynumdiff.utils import utility as _utility
-from pynumdiff.finite_difference import first_order as _finite_difference
+from pynumdiff.utils import utility
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments
 def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None,
          show_error=True, markersize=5):
-    """
-    Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and
-    'dxdt_truth (black) vs dxdt_hat (red)'
+    """Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and 'dxdt_truth
+    (black) vs dxdt_hat (red)'
 
-    :param x: array of noisy time series
-    :type x: np.array (float)
-
-    :param dt: a float number representing the step size
-    :type dt: float
-
-    :param x_hat: array of smoothed estimation of x
-    :type x_hat: np.array (float)
-
-    :param dxdt_hat: array of estimated derivative
-    :type dxdt_hat: np.array (float)
-
-    :param x_truth: array of noise-free time series
-    :type x_truth: np.array (float)
-
-    :param dxdt_truth: array of true derivative
-    :type dxdt_truth: np.array (float)
-
-    :param xlim: a list specifying range of x
-    :type xlim: list (2 integers), optional
-
-    :param ax_x: axis of the first plot
-    :type ax_x: :class:`matplotlib.axes`, optional
-
-    :param ax_dxdt: axis of the second plot
-    :type ax_dxdt: :class:`matplotlib.axes`, optional
-
-    :param show_error: whether to show the rmse
-    :type show_error: boolean, optional
-
-    :param markersize: marker size of noisy observations
-    :type markersize: int, optional
+    :param np.array[float] x: array of noisy data
+    :param float dt: a float number representing the step size
+    :param np.array[float] x_hat: array of smoothed estimation of x
+    :param np.array[float] dxdt_hat: array of estimated derivative
+    :param np.array[float] x_truth: array of noise-free time series
+    :param np.array[float] dxdt_truth: array of true derivative
+    :param list[int] xlim: a list specifying range of x
+    :param matplotlib.axes ax_x: axis of the first plot
+    :param matplotlib.axes ax_dxdt: axis of the second plot
+    :param bool show_error: whether to show the rmse
+    :param int markersize: marker size of noisy observations
 
     :return: Display two plots
-    :rtype: None
     """
-    t = _np.arange(0, dt*len(x), dt)
+    t = np.arange(0, dt*len(x), dt)
     if ax_x is None and ax_dxdt is None:
-        fig = _plt.figure(figsize=(20, 6))
+        fig = plt.figure(figsize=(20, 6))
         ax_x = fig.add_subplot(121)
         ax_dxdt = fig.add_subplot(122)
 
@@ -89,125 +62,59 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
         print('RMS error in velocity: ', rms_dxdt)
 
 
-def __rms_error__(a, e):
+def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
+    """Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.
+
+    :param np.array[float] x: data that was differentiated
+    :param float dt: step size
+    :param np.array[float] x_hat: estimated (smoothed) x
+    :param np.array[float] dxdt_hat: estimated xdot
+    :param np.array[float] x_truth: true value of x, if known
+    :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
+    :param int padding: number of snapshots on either side of the array to ignore when calculating
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+
+    :return: tuple[float, float, float] containing\n
+            - **rms_rec_x** -- RMS error between the integral of dxdt_hat and x
+            - **rms_x** -- RMS error between x_hat and x_truth, returns None if x_truth is None
+            - **rms_dxdt** -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """
-    Calculate rms error
-
-    :param a: the first array
-    :param e: the second array
-    :return: a float number representing the rms error
-    """
-    if _np.max(_np.abs(a-e)) > 1e16:
-        return 1e16
-    s_error = _np.ravel((a - e))**2
-    ms_error = _np.mean(s_error)
-    rms_error = _np.sqrt(ms_error)
-    return rms_error
-
-
-def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=None):
-    """
-    Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.
-
-    :param x: time series that was differentiated
-    :type x: np.array
-
-    :param dt: time step in seconds
-    :type dt: float
-
-    :param x_hat: estimated (smoothed) x
-    :type x_hat: np.array
-
-    :param dxdt_hat: estimated xdot
-    :type dxdt_hat: np.array
-
-    :param x_truth: true value of x, if known, optional
-    :type x_truth: np.array like x or None
-
-    :param dxdt_truth: true value of dxdt, if known, optional
-    :type dxdt_truth: np.array like x or None
-
-    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
-    :type padding: int, None, or auto
-
-    :return: a tuple containing the following:
-            - rms_rec_x: RMS error between the integral of dxdt_hat and x
-            - rms_x: RMS error between x_hat and x_truth, returns None if x_truth is None
-            - rms_dxdt: RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
-    :rtype: tuple -> (float, float, float)
-
-    """
+    if np.isnan(x_hat).any():
+        return np.nan, np.nan, np.nan
     if padding is None or padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
-    if _np.isnan(x_hat).any():
-        return _np.nan, _np.nan, _np.nan
+    s = slice(padding,len(x)-padding) # slice out where the data is
 
-    # RMS dxdt
-    if dxdt_truth is not None:
-        rms_dxdt = __rms_error__(dxdt_hat[padding:-padding], dxdt_truth[padding:-padding])
-    else:
-        rms_dxdt = None
+    # RMS of dxdt and x_hat
+    root = np.sqrt(s.stop - s.start)
+    rms_dxdt = np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / root if dxdt_truth is not None else None
+    rms_x = np.linalg.norm(x_hat[s] - x_truth[s]) / root if x_truth is not None else None
 
-    # RMS x
-    if x_truth is not None:
-        rms_x = __rms_error__(x_hat[padding:-padding], x_truth[padding:-padding])
-    else:
-        rms_x = None
-
-    # RMS reconstructed x
-    rec_x = _utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = _utility.estimate_initial_condition(x, rec_x)
+    # RMS reconstructed x from integrating dxdt vs given raw x, available even in the absence of ground truth
+    rec_x = utility.integrate_dxdt_hat(dxdt_hat, dt)
+    x0 = utility.estimate_initial_condition(x, rec_x)
     rec_x = rec_x + x0
-    rms_rec_x = __rms_error__(rec_x[padding:-padding], x[padding:-padding])
+    rms_rec_x = np.linalg.norm(rec_x[s] - x[s]) / root
 
     return rms_rec_x, rms_x, rms_dxdt
 
 
 def error_correlation(dxdt_hat, dxdt_truth, padding=None):
-    """
-    Calculate the error correlation (pearsons correlation coefficient) between the estimated dxdt and true dxdt
+    """Calculate the error correlation (pearsons correlation coefficient) between the estimated
+    dxdt and true dxdt
 
-    :param dxdt_hat: estimated xdot
-    :type dxdt_hat: np.array
+    :param np.array[float] dxdt_hat: estimated xdot
+    :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
+    :param int padding: number of snapshots on either side of the array to ignore when calculating
+        the metric. If auto or None, defaults to 2.5% of the size of x
 
-    :param dxdt_truth: true value of dxdt, if known, optional
-    :type dxdt_truth: np.array like x or None
-
-    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
-    :type padding: int, None, or auto
-
-    :return: r-squared correlation coefficient
-    :rtype: float
-
+    :return: (float) -- r-squared correlation coefficient
     """
     if padding is None or padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
         padding = max(padding, 1)
     errors = (dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])
-    r = _scipy_stats.linregress(dxdt_truth[padding:-padding] -
-                                _np.mean(dxdt_truth[padding:-padding]), errors)
+    r = stats.linregress(dxdt_truth[padding:-padding] -
+                                np.mean(dxdt_truth[padding:-padding]), errors)
     return r.rvalue**2
-
-
-def rmse(dxdt_hat, dxdt_truth, padding=None):
-    """
-    Calculate the Root Mean Squared Error between the estimated dxdt and true dxdt
-
-    :param dxdt_hat: estimated xdot
-    :type dxdt_hat: np.array
-
-    :param dxdt_truth: true value of dxdt, if known, optional
-    :type dxdt_truth: np.array like x or None
-
-    :param padding: number of snapshots on either side of the array to ignore when calculating the metric. If autor or None, defaults to 2.5% of the size of x
-    :type padding: int, None, or auto
-
-    :return: Root Mean Squared Error
-    :rtype: float
-    """
-    if padding is None or padding == 'auto':
-        padding = int(0.025*len(dxdt_hat))
-        padding = max(padding, 1)
-    RMSE = _np.sqrt(_np.mean((dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])**2))
-    return RMSE

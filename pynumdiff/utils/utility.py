@@ -32,14 +32,10 @@ def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
 def matrix_inv(X, max_sigma=1e-16):
     """Stable (pseudo) matrix inversion using singular value decomposition. Unused throughout the repo.
 
-    :param X: matrix to invert
-    :type X: np.matrix or np.array
+    :param np.array X: matrix to invert
+    :param float max_sigma: smallest singular values to take into account. matrix will be truncated prior to inversion based on this value.
 
-    :param max_sigma: smallest singular values to take into account. matrix will be truncated prior to inversion based on this value.
-    :type max_sigma: float
-
-    :return: matrix pseudo inverse
-    :rtype: np.array or np.matrix
+    :return: (np.array) -- pseudo inverse
     """
     U, Sigma, V = np.linalg.svd(X, full_matrices=False)
     Sigma_inv = Sigma**-1
@@ -51,7 +47,8 @@ def total_variation(x):
     """Calculate the total variation of an array. Used by optimizer.
 
     :param np.array[float] x: data
-    :return: float total variation
+
+    :return: (float) -- total variation
     """
     if np.isnan(x).any():
         return np.nan
@@ -162,6 +159,7 @@ def convolutional_smoother(x, kernel, iterations=1):
     :param np.array[float] x: 1D data
     :param np.array[float] kernel: kernel to use in convolution
     :param int iterations: number of iterations, >=1
+    
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
     x_hat = np.hstack((x[::-1], x, x[::-1])) # pad

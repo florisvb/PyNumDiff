@@ -88,8 +88,8 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
 
     # RMS of dxdt and x_hat
     root = np.sqrt(s.stop - s.start)
-    rms_dxdt = np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / root if dxdt_truth else None
-    rms_x = np.linalg.norm(x_hat[s] - x_truth[s]) / root if x_truth else None
+    rms_dxdt = np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / root if dxdt_truth is not None else None
+    rms_x = np.linalg.norm(x_hat[s] - x_truth[s]) / root if x_truth is not None else None
 
     # RMS reconstructed x from integrating dxdt vs given raw x, available even in the absence of ground truth
     rec_x = utility.integrate_dxdt_hat(dxdt_hat, dt)

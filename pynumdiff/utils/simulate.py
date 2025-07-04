@@ -11,7 +11,7 @@ from pynumdiff.finite_difference import first_order as _finite_difference
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments, no-member
-def _add_noise(x, random_seed, noise_type, *noise_parameters):
+def _add_noise(x, random_seed, noise_type, noise_parameters):
     """Add synthetic noise to data
 
     :param np.array[float] x: data
@@ -57,7 +57,7 @@ def sine(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed
         x += magnitude/len(frequencies)*np.sin(t*2*np.pi*f)
         dxdt += magnitude/len(frequencies)*np.cos(t*2*np.pi*f)*2*np.pi*f
     actual_vals = np.array(np.vstack((x, dxdt)))
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
     #
     noisy_measurements = np.array(noisy_x)
     #
@@ -115,7 +115,7 @@ def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_
     x = np.interp(t, reversal_ts, reversal_vals)
     _, dxdt = _finite_difference(x, dt=simdt)
 
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
 
     actual_vals = np.array(np.vstack((x, dxdt)))
     noisy_measurements = np.array(noisy_x)
@@ -161,7 +161,7 @@ def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_s
     x = np.array(x)
     dxdt = np.array(dxdt)
 
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
 
     actual_vals = np.array(np.vstack((x, dxdt)))
     noisy_measurements = np.array(noisy_x)
@@ -206,7 +206,7 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     x *= 2
 
     smooth_x, dxdt = _finite_difference( np.ravel(x), simdt)
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
 
     idx = np.arange(0, len(t), int(dt/simdt))
     return np.ravel(noisy_x)[1:][idx], smooth_x[1:][idx], dxdt[1:][idx], None
@@ -239,7 +239,7 @@ def pi_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
     x = np.ravel(actual_vals[0, :])
     dxdt = np.ravel(actual_vals[1, :])
     
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
 
     actual_vals = np.array(np.vstack((x, dxdt)))
     noisy_measurements = np.array(noisy_x)
@@ -343,9 +343,9 @@ def lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5), rando
     z = xyz[2, 0:-1] / f
     dzdt = xyz_dot[2, :] / f
 
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
-    noisy_y = _add_noise(y, noise_type, noise_parameters, random_seed+1)
-    noisy_z = _add_noise(z, noise_type, noise_parameters, random_seed+2)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
+    noisy_y = _add_noise(y, random_seed+1, noise_type, noise_parameters)
+    noisy_z = _add_noise(z, random_seed+2, noise_type, noise_parameters)
 
     actual_vals = np.array(np.vstack((x, y, z, dxdt, dydt, dzdt)))
     noisy_measurements = np.array(np.vstack((noisy_x, noisy_y, noisy_z)))
@@ -404,9 +404,9 @@ def rk4_lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
         y = vals[1, :]
         z = vals[2, :]
 
-    noisy_x = _add_noise(x, noise_type, noise_parameters, random_seed)
-    noisy_y = _add_noise(y, noise_type, noise_parameters, random_seed+1)
-    noisy_z = _add_noise(z, noise_type, noise_parameters, random_seed+2)
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
+    noisy_y = _add_noise(y, random_seed+1, noise_type, noise_parameters)
+    noisy_z = _add_noise(z, random_seed+2, noise_type, noise_parameters)
 
     _, dxdt = _finite_difference(x, dt)
     _, dydt = _finite_difference(y, dt)

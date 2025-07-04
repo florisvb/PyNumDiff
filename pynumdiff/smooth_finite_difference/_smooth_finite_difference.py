@@ -3,7 +3,7 @@ import scipy.signal
 from warnings import warn
 
 # included code
-from pynumdiff.finite_difference import first_order as finite_difference
+from pynumdiff.finite_difference import second_order as finite_difference
 from pynumdiff.utils import utility
 
 

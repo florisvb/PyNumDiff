@@ -12,18 +12,15 @@ from pynumdiff.optimize.total_variation_regularization import *
 from pynumdiff.optimize.linear_model import *
 from pynumdiff.optimize.kalman_smooth import constant_velocity, constant_acceleration, \
     constant_jerk
-from pynumdiff.utils import simulate
+from pynumdiff.utils.simulate import pi_control
 
 
 # simulation
 noise_type = 'normal'
 noise_parameters = [0, 0.01]
 dt = 0.01
-timeseries_length = 2
-problem = 'pi_control'
-x, x_truth, dxdt_truth, extras = simulate.__dict__[problem](timeseries_length,
-                                                            noise_parameters=noise_parameters,
-                                                            dt=dt)
+duration = 2
+x, x_truth, dxdt_truth, extras = pi_control(duration, noise_parameters=noise_parameters, dt=dt)
 cutoff_frequency = 0.1
 log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
 tvgamma = np.exp(log_gamma)

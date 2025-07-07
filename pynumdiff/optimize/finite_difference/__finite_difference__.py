@@ -2,7 +2,7 @@
 functions for optimizing finite difference
 """
 import pynumdiff.finite_difference
-from pynumdiff.optimize.__optimize__ import __optimize__
+from pynumdiff import optimize
 
 
 def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None,
@@ -30,6 +30,6 @@ def first_order(x, dt, params=None, options={'iterate': True}, dxdt_truth=None,
 
     # optimize
     args = [func, x, dt, params_types, params_low, params_high, options, dxdt_truth, tvgamma, padding, metric]
-    opt_params, opt_val = __optimize__(params, args)
+    opt_params, opt_val = optimize(params, args)
 
     return opt_params, opt_val

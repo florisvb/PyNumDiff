@@ -100,7 +100,7 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
     return rms_rec_x, rms_x, rms_dxdt
 
 
-def error_correlation(dxdt_hat, dxdt_truth, padding=None):
+def error_correlation(dxdt_hat, dxdt_truth, padding=0):
     """Calculate the error correlation (pearsons correlation coefficient) between the estimated
     dxdt and true dxdt
 
@@ -118,3 +118,19 @@ def error_correlation(dxdt_hat, dxdt_truth, padding=None):
     r = stats.linregress(dxdt_truth[padding:-padding] -
                                 np.mean(dxdt_truth[padding:-padding]), errors)
     return r.rvalue**2
+
+
+def total_variation(x, padding=0):
+    """Calculate the total variation of an array. Used by optimizer.
+
+    :param np.array[float] x: data
+
+    :return: (float) -- total variation
+    """
+    if np.isnan(x).any():
+        return np.nan
+    if padding is None or padding == 'auto':
+        padding = int(0.025*len(x))
+        padding = max(padding, 1)
+    
+    return np.sum(np.abs(x[1:]-x[:-1]))/(len(x)-1)  # mostly equivalent to cvxpy.tv(x2-x1).value

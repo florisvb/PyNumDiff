@@ -113,8 +113,8 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant velocity model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant velocity model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
@@ -148,8 +148,8 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant acceleration model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant acceleration model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
@@ -187,8 +187,8 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant jerk model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant jerk model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 

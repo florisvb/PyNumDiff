@@ -10,6 +10,8 @@ from ..utils import evaluate
 from ..finite_difference import first_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
+from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 
 
 # Map from method -> (init_conds, bounds_low_hi)
@@ -59,9 +61,27 @@ method_params_and_bounds = {
                  {'order': (3, 5),
                   's': (1e-2, 1e6),
                   'num_iterations': (1, 10)}),
+    velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
+               {'gamma': (1e-4, 1e7)}),
+    iterative_velocity: ({'num_iterations': [1, 5, 10],
+                          'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
+                          'scale': 'small'},
+                         {'num_iterations': (1, 100), # gets expensive with more iterations
+                          'gamma': (1e-4, 1e7)})
+    smooth_acceleration: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
+                           'window_size': [3, 10, 30, 50, 90, 130]},
+                          {'gamma': (1e-4, 1e7),
+                           'window_size': (1, 1000)})
+    # jerk_sliding:
+    # constant_velocity:
+    # constant_acceleration:
+    # constant_jerk:
 }
 for method in [meandiff, gaussiandiff, friedrichsdiff]:
     method_params_and_bounds[method] = method_params_and_bounds[mediandiff]
+for method in [acceleration, jerk]:
+    method_params_and_bounds[method] = method_params_and_bounds[velocity]
+method_params_and_bounds[jerk_sliding] = method_params_and_bounds[smooth_acceleration]
 
 
 # This function to be at the top level for multiprocessing
@@ -97,7 +117,7 @@ def _objective_function(point, func, x, dt, singleton_params, search_space_types
 
 
 def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse',
-    opt_method='Nelder-Mead', opt_kwargs={'maxiter': 10}):
+    opt_method='Nelder-Mead', maxiter=10):
     """Find the optimal parameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
@@ -115,7 +135,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
                     is not None, see _objective_function
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
-    :param dict opt_kwargs: keyword arguments to pass down to :code:`scipy.minimize`
+    :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
 
     :return: tuple[dict, float] of\n
             - **opt_params** -- best parameter settings for the differentation method
@@ -147,7 +167,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
         search_space_types=search_space_types, dxdt_truth=dxdt_truth, metric=metric, tvgamma=tvgamma,
         padding=padding)
-    _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options=opt_kwargs)
+    _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
 
     with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
         results = pool.map(_minimize, search_space) # returns a bunch of OptimizeResult objects

@@ -134,4 +134,4 @@ def total_variation(x, padding=0):
         padding = max(padding, 1)
     x = x[padding: len(x)-padding]
     
-    return np.sum(np.abs(x[1:]-x[:-1]))/(len(x)-1)  # mostly equivalent to cvxpy.tv(x2-x1).value
+    return np.sum(np.abs(x[1:]-x[:-1]))/len(x) # normalized version of cvxpy.tv(x2-x1).value

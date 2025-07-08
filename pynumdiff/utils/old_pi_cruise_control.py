@@ -50,9 +50,7 @@ def triangle(iterations, dt):
     reversal_vals = np.array(reversal_vals)[idx]
     reversal_ts = t[reversal_idxs]
 
-    x = np.interp(t, reversal_ts, reversal_vals)
-
-    return x
+    return np.interp(t, reversal_ts, reversal_vals)
 
 
 def effective_wheel_radius(v=20):
@@ -164,19 +162,13 @@ def run(duration=4, dt=0.01):
     t = np.arange(0, duration, dt)
     iterations = len(t)
 
-    # hills
-    disturbances = np.array(np.zeros([3, iterations+1]))
+    disturbances = np.array(np.zeros([3, iterations+1])) # disturbance from hills
     h = hills(iterations+1, dt, factor=0.5*duration/2)
     disturbances[2, :] = h[0:disturbances.shape[1]]
 
-    # controls
     controls = np.array([0])
-
-    # initial condition
-    state_vals = np.array([[0], [0], [0]])
-
-    # desired vel
-    v_r = desired_velocity(iterations, factor=0.5*iterations*dt/2)
+    state_vals = np.array([[0], [0], [0]]) # initial condition
+    v_r = desired_velocity(iterations, factor=0.5*iterations*dt/2) # desired, reference velocity
 
     for i in range(1, iterations+1):
         new_state, u = step_forward(state_vals, disturbances[:, 0:i], v_r[0:i], dt)

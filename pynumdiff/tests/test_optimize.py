@@ -1,9 +1,5 @@
-"""
-Unit tests for optimization module
-"""
-# pylint: skip-file
 import numpy as np
-import pytest 
+from pytest import mark, skip
 
 #from pynumdiff.optimize.finite_difference import first_order
 #from pynumdiff.optimize.smooth_finite_difference import mediandiff, meandiff, gaussiandiff, \
@@ -14,7 +10,7 @@ import pytest
 #    constant_jerk
 from pynumdiff.utils.simulate import pi_control
 
-from ..linear_model import spectraldiff, polydiff
+from ..linear_model import spectraldiff, polydiff, savgoldiff
 from ..optimize import optimize
 
 
@@ -28,10 +24,6 @@ x, x_truth, dxdt_truth, extras = pi_control(duration, noise_parameters=noise_par
 cutoff_frequency = 0.1
 log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
 tvgamma = np.exp(log_gamma)
-
-def get_err_msg(actual_params, desired_params):
-    err_msg = 'Actual params were: ' + ', '.join(map(str, actual_params)) + ' instead of: ' + ', '.join(map(str, desired_params))
-    return err_msg
 
 
 # def test_first_order():
@@ -78,10 +70,10 @@ def get_err_msg(actual_params, desired_params):
 #     params_1, val_1 = butterdiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
 #     params_2, val_2 = butterdiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
 
-#     np.testing.assert_array_less( np.abs(params_1[0] - 9), 1.001, err_msg=get_err_msg(params_1, [9, 0.157]))
-#     np.testing.assert_array_less( np.abs(params_1[1] - 0.157), 0.01, err_msg=get_err_msg(params_1, [9, 0.157]))
-#     #np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3, err_msg=get_err_msg(params_1, [9, 0.157]))
-#     np.testing.assert_almost_equal(params_2, [3, 0.99], decimal=3, err_msg=get_err_msg(params_2, [3, 0.99]))
+#     np.testing.assert_array_less( np.abs(params_1[0] - 9), 1.001)
+#     np.testing.assert_array_less( np.abs(params_1[1] - 0.157), 0.01)
+#     #np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3)
+#     np.testing.assert_almost_equal(params_2, [3, 0.99], decimal=3)
 
 # def test_splinediff():
 #     params_1, val_1 = splinediff(x, dt, params=None, options={'iterate': True},
@@ -131,11 +123,11 @@ def get_err_msg(actual_params, desired_params):
 #     np.testing.assert_array_less(param_1_error, 2)
 #     np.testing.assert_array_less(param_2_error, 2)
 
-# def test_savgoldiff():
-#     params_1, val_1 = savgoldiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = savgoldiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [10, 59, 3]
-#     assert params_2 == [9, 3, 3]
+def test_savgoldiff():
+    params_1, val_1 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params_2, val_2 = optimize(savgoldiff, x, dt, tvgamma=0, dxdt_truth=None)
+    assert (params_1['poly_order'], params_1['window_size'], params_1['smoothing_win']) == (10, 57, 3)
+    assert (params_2['poly_order'], params_2['window_size'], params_2['smoothing_win']) == (9, 4, 3)
 
 def test_spectraldiff():
     params_1, val_1 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
@@ -143,11 +135,11 @@ def test_spectraldiff():
     np.testing.assert_almost_equal(params_1['high_freq_cutoff'], 0.0913, decimal=3)
     np.testing.assert_almost_equal(params_2['high_freq_cutoff'], 0.575, decimal=3)
 
-# def test_polydiff():
-    # params_1, val_1 = polydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    # params_2, val_2 = polydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-    # assert params_1 == [2, 10]
-    # assert params_2 == [2, 10]
+def test_polydiff():
+    params_1, val_1 = optimize(polydiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params_2, val_2 = optimize(polydiff, x, dt, tvgamma=0, dxdt_truth=None)
+    assert (params_1['poly_order'], params_1['window_size']) == (6, 50)
+    assert (params_2['poly_order'], params_2['window_size']) == (4, 10)
 
 # def test_chebydiff(self):
 #     try:

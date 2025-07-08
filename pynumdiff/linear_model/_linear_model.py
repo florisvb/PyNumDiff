@@ -13,16 +13,16 @@ except ImportError: pass
 #########################
 # Savitzky-Golay filter #
 #########################
-def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None, smoothing_win=None):
+def savgoldiff(x, dt, params=None, options=None, poly_order=None, window_size=None, smoothing_win=None):
     """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It wses
     scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit,
     but slightly noisier, and much faster
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
-    :param list params: (**deprecated**, prefer :code:`polynomial_order`, :code:`window_size`, and :code:`smoothing_win`)
+    :param list params: (**deprecated**, prefer :code:`poly_order`, :code:`window_size`, and :code:`smoothing_win`)
     :param dict options: (**deprecated**)
-    :param int polynomial_order: order of the polynomial
+    :param int poly_order: order of the polynomial
     :param int window_size: size of the sliding window, must be odd (if not, 1 is added)
     :param int smoothing_win: size of the window used for gaussian smoothing, a good default is
         window_size, but smaller for high frequnecy data
@@ -32,17 +32,17 @@ def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_s
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `polynomial_order`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `poly_order`, " +
             "`window_size`, and `smoothing_win` instead.", DeprecationWarning)
-        polynomial_order, window_size, smoothing_win = params
-    elif polynomial_order == None or window_size == None or smoothing_win == None:
-        raise ValueError("`polynomial_order`, `window_size`, and `smoothing_win` must be given.")
+        poly_order, window_size, smoothing_win = params
+    elif poly_order == None or window_size == None or smoothing_win == None:
+        raise ValueError("`poly_order`, `window_size`, and `smoothing_win` must be given.")
 
-    window_size = np.clip(window_size, polynomial_order + 1, len(x)-1)
+    window_size = np.clip(window_size, poly_order + 1, len(x)-1)
     if not window_size % 2: window_size += 1 # window_size needs to be odd
     smoothing_win = min(smoothing_win, len(x)-1)
 
-    dxdt_hat = scipy.signal.savgol_filter(x, window_size, polynomial_order, deriv=1)/dt
+    dxdt_hat = scipy.signal.savgol_filter(x, window_size, poly_order, deriv=1)/dt
 
     kernel = utility.gaussian_kernel(smoothing_win)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel)
@@ -57,16 +57,16 @@ def savgoldiff(x, dt, params=None, options=None, polynomial_order=None, window_s
 ######################
 # Polynomial fitting #
 ######################
-def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_size=None, step_size=1,
+def polydiff(x, dt, params=None, options=None, poly_order=None, window_size=None, step_size=1,
     kernel='friedrichs'):
     """Fit polynomials to the data, and differentiate the polynomials.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`polynomial_order` and :code:`window_size`)
+    :param list[int] params: (**deprecated**, prefer :code:`poly_order` and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`step_size` and :code:`kernel`)
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
-    :param int polynomial_order: order of the polynomial
+    :param int poly_order: order of the polynomial
     :param int window_size: size of the sliding window, if not given no sliding
     :param int step_size: step size for sliding
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
@@ -76,24 +76,27 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
              - **dxdt_hat** -- estimated derivative of x
     """
     if params != None:
-        warn("`params` and `options` parameters will be removed in a future version. Use `polynomial_order` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `poly_order` " +
             "and `window_size` instead.", DeprecationWarning)
-        polynomial_order = params[0]
+        poly_order = params[0]
         if len(params) > 1: window_size = params[1]
         if options != None:
             if 'sliding' in options and not options['sliding']: window_size = None
             if 'step_size' in options: step_size = options['step_size']
             if 'kernel_name' in options: kernel = options['kernel_name']
-    elif polynomial_order == None or window_size == None:
-        raise ValueError("`polynomial_order` and `window_size` must be given.")
+    elif poly_order == None or window_size == None:
+        raise ValueError("`poly_order` and `window_size` must be given.")
 
-    if window_size < polynomial_order*3:
-        window_size = polynomial_order*3+1
+    if window_size < poly_order*3:
+        window_size = poly_order*3+1
+    if window_size % 2 == 0:
+        window_size += 1
+        warn("Kernel window size should be odd. Added 1 to length.")
 
-    def _polydiff(x, dt, polynomial_order, weights=None):
+    def _polydiff(x, dt, poly_order, weights=None):
         t = np.arange(len(x))*dt
 
-        r = np.polyfit(t, x, polynomial_order, w=weights) # polyfit returns highest order first
+        r = np.polyfit(t, x, poly_order, w=weights) # polyfit returns highest order first
         dr = np.polyder(r) # power rule already implemented for us
 
         dxdt_hat = np.polyval(dr, t) # evaluate the derivative and original polynomials at points t
@@ -102,10 +105,10 @@ def polydiff(x, dt, params=None, options=None, polynomial_order=None, window_siz
         return x_hat, dxdt_hat
 
     if not window_size:
-        return _polydiff(x, dt, polynomial_order)
+        return _polydiff(x, dt, poly_order)
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-    return utility.slide_function(_polydiff, x, dt, kernel, polynomial_order, stride=step_size, pass_weights=True)
+    return utility.slide_function(_polydiff, x, dt, kernel, poly_order, stride=step_size, pass_weights=True)
 
 
 #############

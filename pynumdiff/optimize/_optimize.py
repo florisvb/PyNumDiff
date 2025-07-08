@@ -3,11 +3,12 @@ import scipy.optimize
 import numpy as np
 from itertools import product
 from functools import partial
+from warnings import filterwarnings
 from multiprocessing import Pool
 
 from pynumdiff.utils import evaluate
 
-from ..linear_model import spectraldiff, polydiff
+from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 
 
 # Map from method -> (init_conds, type_low_hi)
@@ -15,14 +16,30 @@ method_params_and_bounds = {
     spectraldiff: ({'even_extension': True,
                    'pad_to_zero_dxdt': True,
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
-                  {'high_freq_cutoff': [1e-5, 1-1e-5]}),
-    polydiff: ({'sliding': True,
-                'step_size': 1,
+                  {'high_freq_cutoff': (1e-5, 1-1e-5)}),
+    polydiff: ({'step_size': 1,
                 'kernel': 'friedrichs',
-                'order': [2, 3, 5, 7],
-                'window_size': [10, 30, 50, 90, 130]},
-               {'order': [1, 8],
-                'window_size': [10, 1000]})
+                'poly_order': [2, 3, 5, 7],
+                'window_size': [11, 31, 51, 91, 131]},
+               {'poly_order': (1, 8),
+                'window_size': (10, 1000)}),
+    savgoldiff: ({'poly_order': [2, 3, 5, 7, 9, 11, 13],
+                  'window_size': [3, 10, 30, 50, 90, 130, 200, 300],
+                  'smoothing_win': [3, 10, 30, 50, 90, 130, 200, 300]},
+                 {'poly_order': (1, 12),
+                  'window_size': (3, 1000),
+                  'smoothing_win': (3, 1000)}),
+    #chebydiff ({order: [3, 5, 7, 9],
+    #           window_size: [10, 30, 50, 90, 130],
+    #           kernel: 'friedrichs'},
+    #           {order: (1, 10),
+    #           window_size: (10, 1000)})
+    lineardiff: ({'kernel': 'gaussian',
+                  'order': 3,
+                  'gamma': [1e-1, 1, 10, 100],
+                  'window_size': [10, 30, 50, 90, 130]},
+                 {'gamma': (1e-3, 1000),
+                  'window_size': (15, 1000)}),
 }
 
 
@@ -110,7 +127,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
         padding=padding)
     _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options=opt_kwargs)
 
-    with Pool() as pool: # The heavy lifting
+    with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
         results = pool.map(_minimize, search_space) # returns a bunch of OptimizeResult objects
 
     opt_idx = np.nanargmin([r.fun for r in results])

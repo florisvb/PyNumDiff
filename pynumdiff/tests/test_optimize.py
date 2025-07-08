@@ -1,5 +1,5 @@
 import numpy as np
-from pytest import mark, skip
+from pytest import skip
 
 from ..finite_difference import first_order as iterated_finite_difference # actually second order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff

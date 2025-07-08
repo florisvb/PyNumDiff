@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot
 from pytest import mark
 from warnings import warn
 

@@ -1,3 +1,4 @@
+"""This is handy for this module https://web.media.mit.edu/~crtaylor/calculator.html"""
 import numpy as np
 from pynumdiff.utils import utility
 from warnings import warn
@@ -25,28 +26,9 @@ def first_order(x, dt, params=None, options={}, num_iterations=None):
         return _iterate_first_order(x, dt, num_iterations)
 
     dxdt_hat = np.diff(x) / dt # Calculate the finite difference
-    dxdt_hat = np.hstack((dxdt_hat[0], dxdt_hat, dxdt_hat[-1])) # Pad the data
-    dxdt_hat = np.mean((dxdt_hat[0:-1], dxdt_hat[1:]), axis=0) # Re-finite dxdt_hat using linear interpolation
+    dxdt_hat = np.hstack((dxdt_hat, dxdt_hat[-1])) # using stencil -1,0, you get expression for previous value
 
     return x, dxdt_hat
-
-
-def second_order(x, dt):
-    """Second-order centered difference method
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
-    """
-    dxdt_hat = (x[2:] - x[0:-2]) / (2 * dt)
-    first_dxdt_hat = (-3 * x[0] + 4 * x[1] - x[2]) / (2 * dt)
-    last_dxdt_hat = (3 * x[-1] - 4 * x[-2] + x[-3]) / (2 * dt)
-    dxdt_hat = np.hstack((first_dxdt_hat, dxdt_hat, last_dxdt_hat))
-    return x, dxdt_hat
-
 
 def _x_hat_using_finite_difference(x, dt):
     """Find a smoothed estimate of the true function by taking FD and then integrating with trapezoids
@@ -55,7 +37,6 @@ def _x_hat_using_finite_difference(x, dt):
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
     x0 = utility.estimate_initial_condition(x, x_hat)
     return x_hat + x0
-
 
 def _iterate_first_order(x, dt, num_iterations):
     """Iterative first order centered finite difference.
@@ -79,3 +60,43 @@ def _iterate_first_order(x, dt, num_iterations):
     x_hat, dxdt_hat = first_order(x, dt)
 
     return x_hat, dxdt_hat
+
+
+def second_order(x, dt):
+    """Second-order centered difference method, with special endpoint formulas.
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
+    dxdt_hat = np.zeros(x.shape)
+    dxdt_hat[1:-1] = x[2:] - x[:-2]
+    dxdt_hat[0] = -3 * x[0] + 4 * x[1] - x[2]
+    dxdt_hat[-1] = 3 * x[-1] - 4 * x[-2] + x[-3]
+    dxdt_hat /= 2*dt
+
+    return x, dxdt_hat
+
+
+def fourth_order(x, dt):
+    """Fourth-order centered difference method, with special endpoint formulas.
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
+    dxdt_hat = np.zeros(x.shape)
+    dxdt_hat[2:-2] = (8*(x[3:-1] - x[1:-3]) - x[4:] + x[:-4])
+    dxdt_hat[0] = -25*x[0] + 48*x[1] - 36*x[2] + 16*x[3] - 3*x[4]
+    dxdt_hat[1] = -3*x[0] - 10*x[1] + 18*x[2] - 6*x[3] + x[4]
+    dxdt_hat[-2] = 3*x[-1] + 10*x[-2] - 18*x[-3] + 6*x[-4] - x[-5]
+    dxdt_hat[-1] = 25*x[-1] - 48*x[-2] + 36*x[-3] - 16*x[-4] + 3*x[-5]
+    dxdt_hat /= 12*dt
+
+    return x, dxdt_hat

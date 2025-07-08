@@ -3,12 +3,12 @@ from matplotlib import pyplot
 from pytest import mark
 from warnings import warn
 
+from ..finite_difference import first_order, second_order, fourth_order
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..finite_difference import first_order, second_order
-# Function aliases for testing cases where parameters change the behavior in a big way
+# Function alias for testing a case where parameters change the behavior in a big way
 def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
 dt = 0.1
@@ -33,7 +33,8 @@ diff_methods_and_params = [
     (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
     (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
     (second_order, {}),
-    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
+    (fourth_order, {}),
+    (lineardiff, {'order':3, 'gamma':5, 'window_size':21, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 21], {'solver':'CLARABEL'}),
     (polydiff, {'polynomial_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
@@ -54,33 +55,40 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
+#diff_methods_and_params = [(gaussiandiff, {'window_size':5})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
 # big ol' table by the method, then the test function, then the pair of quantities we're comparing.
 error_bounds = {
     first_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
-                  [(-25, -25), (-13, -14), (0, 0), (1, 1)],
-                  [(-25, -25), (0, 0), (0, 0), (1, 0)],
+                  [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                   [(-25, -25), (0, 0), (0, 0), (1, 1)],
+                  [(-25, -25), (1, 0), (0, 0), (1, 1)],
                   [(-25, -25), (2, 2), (0, 0), (2, 2)],
                   [(-25, -25), (3, 3), (0, 0), (3, 3)]],
-    iterated_first_order: [[(-8, -9), (-11, -11), (0, -1), (0, 0)],
-                           [(-6, -6), (-6, -7), (0, -1), (0, 0)],
-                           [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                           [(0, 0), (1, 0), (0, 0), (1, 0)],
-                           [(1, 1), (2, 2), (1, 1), (2, 2)],
-                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    iterated_first_order: [[(-8, -9), (-9, -9), (0, 0), (1, 1)],
+                           [(-6, -6), (-6, -7), (0, 0), (1, 1)],
+                           [(1, 0), (1, 0), (1, 1), (1, 1)],
+                           [(1, 0), (1, 1), (1, 0), (1, 1)],
+                           [(2, 2), (3, 2), (2, 2), (3, 2)],
+                           [(2, 2), (3, 3), (2, 2), (3, 3)]],
     second_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (0, -1), (0, 0), (1, 1)],
                    [(-25, -25), (1, 1), (0, 0), (1, 1)],
                    [(-25, -25), (3, 3), (0, 0), (3, 3)]],
-    lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
-                 [(0, 0), (1, 1), (0, 0), (1, 1)],
-                 [(1, 0), (2, 2), (1, 0), (2, 2)],
+    fourth_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
+                   [(-25, -25), (-13, -13), (0, 0), (1, 1)],
+                   [(-25, -25), (-13, -13), (0, 0), (1, 1)],
+                   [(-25, -25), (-2, -2), (0, 0), (1, 1)],
+                   [(-25, -25), (1, 0), (0, 0), (1, 1)],
+                   [(-25, -25), (2, 2), (0, 0), (2, 2)]],
+    lineardiff: [[(-6, -7), (-6, -6), (-1, -1), (0, 0)],
                  [(1, 0), (2, 1), (1, 0), (2, 1)],
+                 [(1, 1), (2, 2), (1, 1), (2, 2)],
+                 [(0, 0), (1, 1), (0, 0), (1, 1)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     polydiff: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],
@@ -108,19 +116,19 @@ error_bounds = {
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     meandiff: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-               [(0, 0), (1, 0), (0, 0), (1, 1)],
+               [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(1, 1), (2, 2), (1, 1), (2, 2)],
                [(1, 1), (3, 3), (1, 1), (3, 3)]],
     gaussiandiff: [[(-14, -15), (-14, -14), (0, -1), (1, 0)],
-                   [(-1, -1), (0, 0), (0, 0), (1, 0)],
+                   [(-1, -1), (1, 0), (0, 0), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
-                   [(0, -1), (1, 0), (0, 0), (1, 1)],
+                   [(0, -1), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (2, 2), (1, 1), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    friedrichsdiff: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                     [(-1, -1), (0, 0), (0, 0), (1, 0)],
+    friedrichsdiff: [[(-25, -25), (-25, -25), (0, -1), (1, 0)],
+                     [(-1, -1), (1, 0), (0, 0), (1, 1)],
                      [(0, 0), (1, 1), (0, 0), (1, 1)],
                      [(0, -1), (1, 1), (0, 0), (1, 1)],
                      [(1, 1), (2, 2), (1, 1), (2, 2)],
@@ -133,7 +141,7 @@ error_bounds = {
                  [(2, 1), (3, 3), (2, 1), (3, 3)]],
     splinediff: [[(-14, -15), (-14, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -14), (-1, -1), (0, 0)],
-                 [(-14, -14), (0, 0), (-1, -1), (0, 0)],
+                 [(-14, -14), (-13, -13), (-1, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (3, 3), (1, 0), (3, 3)]],

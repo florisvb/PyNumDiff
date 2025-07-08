@@ -1,14 +1,13 @@
 import numpy as np
 from pytest import mark, skip
 
-#from pynumdiff.optimize.smooth_finite_difference import mediandiff, meandiff, gaussiandiff, \
-#    friedrichsdiff, butterdiff, splinediff
 #from pynumdiff.optimize.total_variation_regularization import *
 #from pynumdiff.optimize.kalman_smooth import constant_velocity, constant_acceleration, \
 #    constant_jerk
 from pynumdiff.utils.simulate import pi_control
 
 from ..finite_difference import first_order as iterated_finite_difference # actually second order
+from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff
 from ..optimize import optimize
 
@@ -22,71 +21,64 @@ tvgamma = np.exp(log_gamma)
 
 
 def test_finite_difference():
-    params_1, val_1 = optimize(iterated_finite_difference, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params_2, val_2 = optimize(iterated_finite_difference, x, dt, tvgamma=0, dxdt_truth=None)
-    assert params_1['num_iterations'] == 5
-    assert params_2['num_iterations'] == 1
+    params1, val1 = optimize(iterated_finite_difference, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(iterated_finite_difference, x, dt, tvgamma=0, dxdt_truth=None)
+    assert params1['num_iterations'] == 5
+    assert params2['num_iterations'] == 1
 
-# def test_mediandiff():
-#     params_1, val_1 = mediandiff(x, dt, params=None, options={'iterate': False},
-#                                  tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = mediandiff(x, dt, params=None, options={'iterate': False},
-#                                  tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [5]
-#     assert params_2 == [1]
+def test_mediandiff():
+    params1, val1 = optimize(mediandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(mediandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    assert params1['window_size'] == 5
+    assert params2['window_size'] == 1
 
-# def test_meandiff():
-#     params_1, val_1 = meandiff(x, dt, params=None, options={'iterate': False},
-#                                tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = meandiff(x, dt, params=None, options={'iterate': False},
-#                                tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [5]
-#     assert params_2 == [1]
+def test_meandiff():
+    params1, val1 = optimize(meandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(meandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    assert params1['window_size'] == 5
+    assert params2['window_size'] == 1
 
-# def test_gaussiandiff():
-#     params_1, val_1 = gaussiandiff(x, dt, params=None, options={'iterate': False},
-#                                    tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = gaussiandiff(x, dt, params=None, options={'iterate': False},
-#                                    tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [9]
-#     assert params_2 == [1]
+def test_gaussiandiff():
+    params1, val1 = optimize(gaussiandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(gaussiandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    assert params1['window_size'] == 9
+    assert params2['window_size'] == 1
 
-# def test_friedrichsdiff():
-#     params_1, val_1 = friedrichsdiff(x, dt, params=None, options={'iterate': False},
-#                                      tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = friedrichsdiff(x, dt, params=None, options={'iterate': False},
-#                                      tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [9]
-#     assert params_2 == [1]
+def test_friedrichsdiff():
+    params1, val1 = optimize(friedrichsdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(friedrichsdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    assert params1['window_size'] == 9
+    assert params2['window_size'] == 1
 
-# def test_butterdiff():
-#     params_1, val_1 = butterdiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = butterdiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+def test_butterdiff():
+    params1, val1 = optimize(butterdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth, opt_kwargs={'maxiter': 20})
+    params2, val2 = optimize(butterdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None, opt_kwargs={'maxiter': 20})
 
-#     np.testing.assert_array_less( np.abs(params_1[0] - 9), 1.001)
-#     np.testing.assert_array_less( np.abs(params_1[1] - 0.157), 0.01)
-#     #np.testing.assert_almost_equal(params_1, [9, 0.157], decimal=3)
-#     np.testing.assert_almost_equal(params_2, [3, 0.99], decimal=3)
+    assert params1['filter_order'] == 8
+    np.testing.assert_almost_equal(params1['cutoff_freq'], 0.161, decimal=3)
+    assert params2['filter_order'] == 3
+    np.testing.assert_almost_equal(params2['cutoff_freq'], 0.99, decimal=3)
 
-# def test_splinediff():
-#     params_1, val_1 = splinediff(x, dt, params=None, options={'iterate': True},
-#                                  tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = splinediff(x, dt, params=None, options={'iterate': True},
-#                                  tvgamma=0, dxdt_truth=None)
-#     np.testing.assert_almost_equal(params_1, [5, 0.0147, 1], decimal=2)
-#     np.testing.assert_almost_equal(params_2, [5, 0.0147, 1], decimal=2)
+def test_splinediff():
+    params1, val1 = optimize(splinediff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth, opt_kwargs={'maxiter': 20})
+    params2, val2 = optimize(splinediff, x, dt, tvgamma=0, dxdt_truth=None, opt_kwargs={'maxiter': 20})
+    
+    assert (params1['order'], params1['num_iterations']) == (4, 1)
+    np.testing.assert_almost_equal(params1['s'], 0.0146, decimal=3)
+    assert (params2['order'], params2['num_iterations']) == (4, 1)
+    np.testing.assert_almost_equal(params2['s'], 0.01, decimal=3)
 
 # def test_iterative_velocity():
-#     params_1, val_1 = iterative_velocity(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = iterative_velocity(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-#     np.testing.assert_array_less( np.abs(params_1[0] - 2), 1.001)
-#     np.testing.assert_array_less( np.abs(params_2[0] - 2), 1.001)
+#     params1, val1 = iterative_velocity(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+#     params2, val2 = iterative_velocity(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+#     np.testing.assert_array_less( np.abs(params1[0] - 2), 1.001)
+#     np.testing.assert_array_less( np.abs(params2[0] - 2), 1.001)
     
-#     np.testing.assert_almost_equal(params_1[1], 0.0001, decimal=4)
-#     np.testing.assert_almost_equal(params_2[1], 0.0001, decimal=4)
+#     np.testing.assert_almost_equal(params1[1], 0.0001, decimal=4)
+#     np.testing.assert_almost_equal(params2[1], 0.0001, decimal=4)
     
-#     #self.assertListEqual(params_1, [2, 0.0001])
-#     #self.assertListEqual(params_2, [2, 0.0001])
+#     #self.assertListEqual(params1, [2, 0.0001])
+#     #self.assertListEqual(params2, [2, 0.0001])
 
 # def test_velocity():
 #     try:
@@ -94,13 +86,13 @@ def test_finite_difference():
 #     except:
 #         pytest.skip("could not import cvxpy, skipping test_velocity", allow_module_level=True)
 
-#     params_1, val_1 = velocity(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = velocity(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-#     param_1_error = np.abs(params_1[0] - 0.07218)
-#     param_2_error = np.abs(params_2[0] - 0.0001)
+#     params1, val1 = velocity(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+#     params2, val2 = velocity(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+#     param1_error = np.abs(params1[0] - 0.07218)
+#     param2_error = np.abs(params2[0] - 0.0001)
 
-#     np.testing.assert_array_less(param_1_error, 2)
-#     np.testing.assert_array_less(param_2_error, 2)
+#     np.testing.assert_array_less(param1_error, 2)
+#     np.testing.assert_array_less(param2_error, 2)
 
 # def test_acceleration():
 #     try:
@@ -108,31 +100,31 @@ def test_finite_difference():
 #     except:
 #         pytest.skip("could not import cvxpy, skipping test_acceleration", allow_module_level=True)
 
-#     params_1, val_1 = acceleration(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = acceleration(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-#     param_1_error = np.abs(params_1[0] - 0.1447)
-#     param_2_error = np.abs(params_2[0] - 0.0001)
+#     params1, val1 = acceleration(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+#     params2, val2 = acceleration(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+#     param1_error = np.abs(params1[0] - 0.1447)
+#     param2_error = np.abs(params2[0] - 0.0001)
 
-#     np.testing.assert_array_less(param_1_error, 2)
-#     np.testing.assert_array_less(param_2_error, 2)
+#     np.testing.assert_array_less(param1_error, 2)
+#     np.testing.assert_array_less(param2_error, 2)
 
 def test_savgoldiff():
-    params_1, val_1 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params_2, val_2 = optimize(savgoldiff, x, dt, tvgamma=0, dxdt_truth=None)
-    assert (params_1['poly_order'], params_1['window_size'], params_1['smoothing_win']) == (10, 57, 3)
-    assert (params_2['poly_order'], params_2['window_size'], params_2['smoothing_win']) == (9, 4, 3)
+    params1, val1 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(savgoldiff, x, dt, tvgamma=0, dxdt_truth=None)
+    assert (params1['poly_order'], params1['window_size'], params1['smoothing_win']) == (10, 57, 3)
+    assert (params2['poly_order'], params2['window_size'], params2['smoothing_win']) == (9, 4, 3)
 
 def test_spectraldiff():
-    params_1, val_1 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params_2, val_2 = optimize(spectraldiff, x, dt, tvgamma=0)
-    np.testing.assert_almost_equal(params_1['high_freq_cutoff'], 0.0913, decimal=3)
-    np.testing.assert_almost_equal(params_2['high_freq_cutoff'], 0.575, decimal=3)
+    params1, val1 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(spectraldiff, x, dt, tvgamma=0)
+    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.0913, decimal=3)
+    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.575, decimal=3)
 
 def test_polydiff():
-    params_1, val_1 = optimize(polydiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params_2, val_2 = optimize(polydiff, x, dt, tvgamma=0, dxdt_truth=None)
-    assert (params_1['poly_order'], params_1['window_size']) == (6, 50)
-    assert (params_2['poly_order'], params_2['window_size']) == (4, 10)
+    params1, val1 = optimize(polydiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(polydiff, x, dt, tvgamma=0, dxdt_truth=None)
+    assert (params1['poly_order'], params1['window_size']) == (6, 50)
+    assert (params2['poly_order'], params2['window_size']) == (4, 10)
 
 # def test_chebydiff(self):
 #     try:
@@ -140,7 +132,7 @@ def test_polydiff():
 #     except:
 #         pytest.skip("could not import pychebfun, skipping test_chebydiff", allow_module_level=True)
 
-#     params_1, val_1 = chebydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = chebydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
-#     self.assertListEqual(params_1, [9, 108])
-#     self.assertListEqual(params_2, [9, 94])
+#     params1, val1 = chebydiff(x, dt, params=None, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+#     params2, val2 = chebydiff(x, dt, params=None, tvgamma=0, dxdt_truth=None)
+#     self.assertListEqual(params1, [9, 108])
+#     self.assertListEqual(params2, [9, 94])

@@ -6,13 +6,13 @@ from functools import partial
 from warnings import filterwarnings
 from multiprocessing import Pool
 
-from pynumdiff.utils import evaluate
-
+from ..utils import evaluate
 from ..finite_difference import first_order
+from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 
 
-# Map from method -> (init_conds, type_low_hi)
+# Map from method -> (init_conds, bounds_low_hi)
 method_params_and_bounds = {
     spectraldiff: ({'even_extension': True,
                    'pad_to_zero_dxdt': True,
@@ -42,9 +42,26 @@ method_params_and_bounds = {
                  {'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
-                  {'num_iterations': (1, 1000)})
-
+                  {'num_iterations': (1, 1000)}),
+    mediandiff: ({'window_size': [5, 15, 30, 50],
+                  'num_iterations': [1, 5, 10]},
+                {'window_size': (1, 1e6),
+                 'num_iterations': (1, 100)}),
+    butterdiff: ({'filter_order': [1, 2, 3, 4, 5, 6, 7],
+                  'cutoff_freq': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
+                  'num_iterations': [1, 5, 10]},
+                 {'filter_order': (1, 10),
+                  'cutoff_freq': (1e-4, 1-1e-2),
+                  'num_iterations': (1, 1000)}),
+    splinediff: ({'order': [3, 5],
+                  's': [0.5, 0.9, 0.95, 1, 10, 100],
+                  'num_iterations': [1, 5, 10]},
+                 {'order': (3, 5),
+                  's': (1e-2, 1e6),
+                  'num_iterations': (1, 10)}),
 }
+for method in [meandiff, gaussiandiff, friedrichsdiff]:
+    method_params_and_bounds[method] = method_params_and_bounds[mediandiff]
 
 
 # This function to be at the top level for multiprocessing
@@ -64,7 +81,8 @@ def _objective_function(point, func, x, dt, singleton_params, search_space_types
                 int(np.round(v)) if search_space_types[k] == int else
                 v > 0.5) for k,v in zip(search_space_types, point)} # point -> dict
     # add back in the singletons we're not searching over
-    x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params) # estimate x and dxdt
+    try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params) # estimate x and dxdt
+    except np.linalg.LinAlgError: return 1000000000 # some methods can fail numerically
 
     # evaluate estimate
     if dxdt_truth is not None: # then minimize ||dxdt_hat - dxdt_truth||^2
@@ -86,8 +104,8 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     :param np.array[float]: data to differentiate
     :param float dt: step size
     :param dict init_conds: function parameter settings to use as initial starting points in optimization,
-                    structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. If left None,
-                    a default search space of initial values is used.
+                    structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The search space
+                    is the Cartesian product. If left None, a default search space of initial values is used.
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
     :param float tvgamma: regularization value used to select for parameters that yield a smooth derivative.
                     Larger value results in a smoother derivative
@@ -114,12 +132,12 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     # No need to optimize over singletons, just pass them through
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
 
-    # The search space is the cartesian product of all dimensions where multiple options are given
+    # The search space is the Cartesian product of all dimensions where multiple options are given
     search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # for converting back and forth from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go
-    search_space = product(*[np.array(params[k]).astype(float) for k in search_space_types]) # 
+    search_space = product(*[np.array(params[k]).astype(float) for k in search_space_types])
     
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
              (0, 1) if v == bool else

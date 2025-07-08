@@ -81,10 +81,10 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
     """
     if np.isnan(x_hat).any():
         return np.nan, np.nan, np.nan
-    if padding is None or padding == 'auto':
+    if padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
-    s = slice(padding,len(x)-padding) # slice out where the data is
+    s = slice(padding, len(x)-padding) # slice out data we want to measure
 
     # RMS of dxdt and x_hat
     root = np.sqrt(s.stop - s.start)
@@ -111,12 +111,12 @@ def error_correlation(dxdt_hat, dxdt_truth, padding=0):
 
     :return: (float) -- r-squared correlation coefficient
     """
-    if padding is None or padding == 'auto':
+    if padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
         padding = max(padding, 1)
-    errors = (dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])
-    r = stats.linregress(dxdt_truth[padding:-padding] -
-                                np.mean(dxdt_truth[padding:-padding]), errors)
+    s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
+    errors = (dxdt_hat[s] - dxdt_truth[s])
+    r = stats.linregress(dxdt_truth[s] - np.mean(dxdt_truth[s]), errors)
     return r.rvalue**2
 
 
@@ -129,8 +129,9 @@ def total_variation(x, padding=0):
     """
     if np.isnan(x).any():
         return np.nan
-    if padding is None or padding == 'auto':
+    if padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
+    x = x[padding: len(x)-padding]
     
     return np.sum(np.abs(x[1:]-x[:-1]))/(len(x)-1)  # mostly equivalent to cvxpy.tv(x2-x1).value

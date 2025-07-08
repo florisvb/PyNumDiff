@@ -67,21 +67,24 @@ method_params_and_bounds = {
                           'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                           'scale': 'small'},
                          {'num_iterations': (1, 100), # gets expensive with more iterations
-                          'gamma': (1e-4, 1e7)})
+                          'gamma': (1e-4, 1e7)}),
     smooth_acceleration: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
-                           'window_size': (1, 1000)})
-    # jerk_sliding:
-    # constant_velocity:
-    # constant_acceleration:
-    # constant_jerk:
+                           'window_size': (1, 1000)}),
+    constant_velocity: ({'forwardbackward': [True, False],
+                         'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
+                         'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
+                         {'q': (1e-10, 1e10),
+                          'r': (1e-10, 1e10)})
 }
 for method in [meandiff, gaussiandiff, friedrichsdiff]:
     method_params_and_bounds[method] = method_params_and_bounds[mediandiff]
 for method in [acceleration, jerk]:
     method_params_and_bounds[method] = method_params_and_bounds[velocity]
 method_params_and_bounds[jerk_sliding] = method_params_and_bounds[smooth_acceleration]
+for method in [constant_acceleration, constant_jerk]:
+    method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
 
 
 # This function to be at the top level for multiprocessing

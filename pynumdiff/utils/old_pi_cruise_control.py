@@ -101,9 +101,9 @@ def step_forward(state_vals, disturbances, desired_v, dt):
     rho = parameters['rho']
     Cd = parameters['Cd']
     A = parameters['A']
-    v_r = desired_v[0, -1]
+    v_r = desired_v[-1]
     alpha_n = effective_wheel_radius(v)
-    z = np.sum(desired_v[0, :] - state_vals[1, :])*dt
+    z = np.sum(desired_v - state_vals[1, :])*dt
     k_p = parameters['k_p']
     k_i = parameters['k_i']
     u = k_p*(v_r-v) + k_i*z
@@ -118,7 +118,7 @@ def step_forward(state_vals, disturbances, desired_v, dt):
     Fd = alpha_n*u*torque(alpha_n*v)
     vdot = 1/m*(Fd - (Fr + Fa + Fg))
     new_state = np.array([[p + dt*v], [v + vdot*dt], [theta]])
-    return new_state, np.array(u)
+    return new_state, u
 
 
 # disturbance
@@ -145,7 +145,7 @@ def desired_velocity(n, factor):
 
     :return: (np.array) -- desired velocity as function of time
     """
-    return np.matrix([2/factor]*n)
+    return np.array([2/factor]*n)
 
 
 def run(duration=4, dt=0.01):
@@ -156,17 +156,16 @@ def run(duration=4, dt=0.01):
     :param float duration: number of seconds to simulate
     :param float dt: timestep in seconds
 
-    :return: tuple[np.array, np.array, np.array] of arrays of shape (N, M), where M is the
-        number of time steps\n
-            - **state_vals** -- state of the car, i.e. position and velocity as a function of time
-            - **disturbances** -- disturbances from hills that the car is subjected to
-            - **controls** -- control inputs applied by the car
+    :return: tuple[np.array, np.array, np.array] of\n
+            - **state_vals** -- state of the car, i.e. position and velocity as a function of time, shape (N,M)
+            - **disturbances** -- disturbances from hills that the car is subjected to, shape (M,)
+            - **controls** -- control inputs applied by the car, shape (M+1,)
     """
     t = np.arange(0, duration, dt)
     iterations = len(t)
 
     # hills
-    disturbances = np.matrix(np.zeros([3, iterations+1]))
+    disturbances = np.array(np.zeros([3, iterations+1]))
     h = hills(iterations+1, dt, factor=0.5*duration/2)
     disturbances[2, :] = h[0:disturbances.shape[1]]
 
@@ -174,13 +173,13 @@ def run(duration=4, dt=0.01):
     controls = np.array([0])
 
     # initial condition
-    state_vals = np.matrix([[0], [0], [0]])
+    state_vals = np.array([[0], [0], [0]])
 
     # desired vel
     v_r = desired_velocity(iterations, factor=0.5*iterations*dt/2)
 
     for i in range(1, iterations+1):
-        new_state, u = step_forward(state_vals, disturbances[:, 0:i], v_r[:, 0:i], dt)
+        new_state, u = step_forward(state_vals, disturbances[:, 0:i], v_r[0:i], dt)
         state_vals = np.hstack((state_vals, new_state))
         controls = np.hstack((controls, u))
 

@@ -14,7 +14,7 @@ from ..total_variation_regularization import velocity, acceleration, jerk, itera
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 
 
-# Map from method -> (init_conds, bounds_low_hi)
+# Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
     spectraldiff: ({'even_extension': True,
                    'pad_to_zero_dxdt': True,
@@ -87,7 +87,7 @@ for method in [constant_acceleration, constant_jerk]:
     method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
 
 
-# This function to be at the top level for multiprocessing
+# This function has to be at the top level for multiprocessing
 def _objective_function(point, func, x, dt, singleton_params, search_space_types, dxdt_truth, metric,
     tvgamma, padding):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
@@ -119,14 +119,14 @@ def _objective_function(point, func, x, dt, singleton_params, search_space_types
         return rms_rec_x + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
 
 
-def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse',
+def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse',
     opt_method='Nelder-Mead', maxiter=10):
     """Find the optimal parameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
     :param np.array[float]: data to differentiate
     :param float dt: step size
-    :param dict init_conds: function parameter settings to use as initial starting points in optimization,
+    :param dict search_space: function parameter settings to use as initial starting points in optimization,
                     structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The search space
                     is the Cartesian product. If left None, a default search space of initial values is used.
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
@@ -150,7 +150,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
         raise ValueError('`metric` can only be `error_correlation` if `dxdt_truth` is given.')
 
     params, bounds = method_params_and_bounds[func]
-    params.update(init_conds) # for things not given, use defaults
+    params.update(search_space) # for things not given, use defaults
 
     # No need to optimize over singletons, just pass them through
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
@@ -160,7 +160,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go
-    search_space = product(*[np.array(params[k]).astype(float) for k in search_space_types])
+    cartesian_product = product(*[np.array(params[k]).astype(float) for k in search_space_types])
     
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
              (0, 1) if v == bool else
@@ -173,7 +173,7 @@ def optimize(func, x, dt, init_conds={}, dxdt_truth=None, tvgamma=1e-2, padding=
     _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
 
     with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
-        results = pool.map(_minimize, search_space) # returns a bunch of OptimizeResult objects
+        results = pool.map(_minimize, cartesian_product) # returns a bunch of OptimizeResult objects
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x

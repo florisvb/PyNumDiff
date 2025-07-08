@@ -24,32 +24,32 @@ def test_finite_difference():
     assert params2['num_iterations'] == 1
 
 def test_mediandiff():
-    params1, val1 = optimize(mediandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(mediandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(mediandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(mediandiff, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
     assert params1['window_size'] == 5
     assert params2['window_size'] == 1
 
 def test_meandiff():
-    params1, val1 = optimize(meandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(meandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(meandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(meandiff, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
     assert params1['window_size'] == 5
     assert params2['window_size'] == 1
 
 def test_gaussiandiff():
-    params1, val1 = optimize(gaussiandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(gaussiandiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(gaussiandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(gaussiandiff, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
     assert params1['window_size'] == 9
     assert params2['window_size'] == 1
 
 def test_friedrichsdiff():
-    params1, val1 = optimize(friedrichsdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(friedrichsdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(friedrichsdiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(friedrichsdiff, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
     assert params1['window_size'] == 9
     assert params2['window_size'] == 1
 
 def test_butterdiff():
-    params1, val1 = optimize(butterdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth, maxiter=20)
-    params2, val2 = optimize(butterdiff, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None, maxiter=20)
+    params1, val1 = optimize(butterdiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth, maxiter=20)
+    params2, val2 = optimize(butterdiff, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None, maxiter=20)
 
     assert params1['filter_order'] == 8 or params1['filter_order'] == 9
     np.testing.assert_almost_equal(params1['cutoff_freq'], 0.161, decimal=3)
@@ -66,8 +66,8 @@ def test_splinediff():
     np.testing.assert_almost_equal(params2['s'], 0.01, decimal=3)
 
 def test_iterative_velocity():
-    params1, val1 = optimize(iterative_velocity, x, dt, init_conds={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(iterative_velocity, x, dt, init_conds={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, tvgamma=0, dxdt_truth=None)
     
     np.testing.assert_almost_equal(params1['gamma'], 0.0001, decimal=4)
     np.testing.assert_almost_equal(params2['gamma'], 0.0001, decimal=4)

@@ -106,8 +106,8 @@ def test_spectraldiff():
     assert np.isclose(params2['high_freq_cutoff'], 0.575, atol=1e-3) or np.isclose(params2['high_freq_cutoff'], 0.735, atol=1e-3) # this one solves unstably to one or the other
 
 def test_polydiff():
-    params1, val1 = optimize(polydiff, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(polydiff, x, dt, tvgamma=0, dxdt_truth=None)
+    params1, val1 = optimize(polydiff, x, dt, search_space={'step_size':1}, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params2, val2 = optimize(polydiff, x, dt, search_space={'step_size':1}, tvgamma=0, dxdt_truth=None)
     assert (params1['poly_order'], params1['window_size']) == (6, 50)
     assert (params2['poly_order'], params2['window_size']) == (4, 10)
 

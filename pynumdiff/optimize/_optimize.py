@@ -20,11 +20,12 @@ method_params_and_bounds = {
                    'pad_to_zero_dxdt': True,
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
-    polydiff: ({'step_size': 1,
+    polydiff: ({'step_size': [1, 2, 5],
                 'kernel': 'friedrichs',
                 'poly_order': [2, 3, 5, 7],
                 'window_size': [11, 31, 51, 91, 131]},
-               {'poly_order': (1, 8),
+               {'step_size': (1, 100),
+                'poly_order': (1, 8),
                 'window_size': (10, 1000)}),
     savgoldiff: ({'poly_order': [2, 3, 5, 7, 9, 11, 13],
                   'window_size': [3, 10, 30, 50, 90, 130, 200, 300],
@@ -41,7 +42,8 @@ method_params_and_bounds = {
                   'order': 3,
                   'gamma': [1e-1, 1, 10, 100],
                   'window_size': [10, 30, 50, 90, 130]},
-                 {'gamma': (1e-3, 1000),
+                 {'order': (1, 5),
+                  'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
                   {'num_iterations': (1, 1000)}),
@@ -130,8 +132,8 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
                     structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The search space
                     is the Cartesian product. If left None, a default search space of initial values is used.
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
-    :param float tvgamma: regularization value used to select for parameters that yield a smooth derivative.
-                    Larger value results in a smoother derivative
+    :param float tvgamma: Only used if :code:`dxdt_truth` is given. Regularization value used to select for parameters
+                    that yield a smooth derivative. Larger value results in a smoother derivative.
     :param int padding: number of time steps to ignore at the beginning and end of the time series in the
                     optimization. Larger value causes the optimization to emphasize the accuracy of dxdt in the
                     middle of the time series

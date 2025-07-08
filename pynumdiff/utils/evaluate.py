@@ -132,6 +132,6 @@ def total_variation(x, padding=0):
     if padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
-    x = x[padding: len(x)-padding]
+    x = x[padding:len(x)-padding]
     
-    return np.sum(np.abs(x[1:]-x[:-1]))/len(x) # normalized version of cvxpy.tv(x2-x1).value
+    return np.linalg.norm(x[1:]-x[:-1], 1)/len(x) # normalized version of what cvxpy.tv does

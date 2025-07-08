@@ -6,7 +6,6 @@ from scipy.integrate import odeint
 
 # local imports
 from pynumdiff.utils.utility import peakdet
-from pynumdiff.utils import _pi_cruise_control
 from pynumdiff.finite_difference import first_order as _finite_difference
 
 
@@ -235,7 +234,7 @@ def pi_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
     """
     t = np.arange(0, duration, dt)
 
-    actual_vals, extra_measurements, controls = _pi_cruise_control.run(duration, dt)
+    actual_vals, extra_measurements, controls = _pi_cruise_control(duration, dt)
     x = np.ravel(actual_vals[0, :])
     dxdt = np.ravel(actual_vals[1, :])
     
@@ -250,6 +249,66 @@ def pi_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
 
     return noisy_pos, pos, vel, \
            [np.array(extra_measurements), np.array(controls)]
+
+
+def _pi_cruise_control(duration=4, dt=0.01):
+    """Simulate proportional integral control of a car attempting to maintain constant velocity while going
+    up and down hills. This function is used for testing differentiation methods. This is a linear
+    interpretation of something similar to what is described in Astrom and Murray 2008 Chapter 3.
+
+    :param float duration: number of seconds to simulate
+    :param dt: timestep in seconds
+
+    :return: tuple[np.array, np.array, np.array] of arrays of shape (N, M), where M is the
+        number of time steps\n
+            - **state_vals** -- state of the car, i.e. position and velocity as a function of time
+            - **disturbances** -- disturbances from hills that the car is subjected to
+            - **controls** -- control inputs applied by the car
+    """
+    _np = np  # for compatibility with original code
+    t = _np.arange(0, duration+dt, dt)
+
+    # disturbance
+    hills = _np.sin(2*_np.pi*t) + 0.3*_np.sin(4*2*_np.pi*t + 0.5) + 1.2*_np.sin(1.7*2*_np.pi*t + 0.5)
+    hills = 0.01*hills
+
+    # parameters
+    mg = 10000 # mass*gravity
+    fr = 0.9 # friction
+    ki = 5/0.01*dt # integral control
+    kp = 25/0.01*dt # proportional control
+    vd = 0.5 # desired velocity
+
+    A = _np.array([[1, dt, 0, 0, 0],
+                   [0, 1, dt, 0, 0],
+                   [0, -fr, 0, -mg, ki],
+                   [0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 1]])
+
+    B = _np.array([[0, 0],
+                   [0, 0],
+                   [0, kp],
+                   [1, 0],
+                   [0, 1]])
+
+    x0 = _np.array([0, 0, 0, hills[0], 0]).reshape(A.shape[0], 1)
+
+    # run simulation
+    xs = [x0]
+    us = [_np.array([0, 0]).reshape([2,1])]
+    for i in range(1, len(hills)-1):
+        u = _np.array([hills[i], vd - xs[-1][1,0]]).reshape([2,1])
+        xnew = A@xs[-1] + B@u
+        xs.append(xnew)
+        us.append(u)
+
+    xs = _np.hstack(xs)
+    us = _np.hstack(us)
+
+    if len(hills.shape) == 1:
+        hills = _np.reshape(hills, [1, len(hills)])
+
+    return xs, hills, us
 
 
 def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
@@ -271,7 +330,7 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
             - **vel** -- a true derivative information of the time series;
             - None -- dummy output
     """
-    noisy_measurements, actual_vals, _ = lorenz_xyz(duration, noise_type, noise_parameters,
+    noisy_measurements, actual_vals, _ = _lorenz_xyz(duration, noise_type, noise_parameters,
                                                     random_seed, dt, simdt)
 
     noisy_pos = np.ravel(noisy_measurements[0, :])
@@ -281,7 +340,7 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
     return noisy_pos, pos, vel, None
 
 
-def lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
+def _lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
                dt=0.01, simdt=0.0001, x0=(5, 1, 3), normalize=True):
     """Simulation of Lorenz system with Eular method
 
@@ -296,7 +355,7 @@ def lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5), rando
     :param tuple x0: a tuple of initial state of the Lorenz system
     :param bool normalize: whether to roughly normalize the time series
 
-    :return: tuple[np.array, np.array, np.array, None] of\n
+    :return: tuple[np.array, np.array, None] of\n
             - **noisy_measurements** -- noisy time series from Lorenz system;
             - **actual_vals** -- noise-free time series from Lorenz system;
             - None -- dummy output
@@ -354,7 +413,7 @@ def lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5), rando
     return noisy_measurements[:, idx], actual_vals[:, idx], None
 
 
-def rk4_lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
+def _rk4_lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
                    random_seed=1, dt=0.01, normalize=True):
     """
     :param float duration: governs the length of the series, duration/dt
@@ -389,7 +448,7 @@ def rk4_lorenz_xyz(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
         zdot = x*y - beta*z
         return [xdot, ydot, zdot]
 
-    ts = np.linspace(0, timeseries_length, timeseries_length/dt)
+    ts = np.linspace(0, duration, int(duration/dt))
     xyz_0 = [5, 1, 3]
 
     vals, _ = odeint(dxyz_dt, xyz_0, ts, full_output=True)

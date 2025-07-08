@@ -8,6 +8,7 @@ from multiprocessing import Pool
 
 from pynumdiff.utils import evaluate
 
+from ..finite_difference import first_order
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 
 
@@ -40,6 +41,9 @@ method_params_and_bounds = {
                   'window_size': [10, 30, 50, 90, 130]},
                  {'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
+    first_order: ({'num_iterations': [5, 10, 30, 50]},
+                  {'num_iterations': (1, 1000)})
+
 }
 
 

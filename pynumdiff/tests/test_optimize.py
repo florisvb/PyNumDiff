@@ -1,38 +1,31 @@
 import numpy as np
 from pytest import mark, skip
 
-#from pynumdiff.optimize.finite_difference import first_order
 #from pynumdiff.optimize.smooth_finite_difference import mediandiff, meandiff, gaussiandiff, \
 #    friedrichsdiff, butterdiff, splinediff
 #from pynumdiff.optimize.total_variation_regularization import *
-#from pynumdiff.optimize.linear_model import *
 #from pynumdiff.optimize.kalman_smooth import constant_velocity, constant_acceleration, \
 #    constant_jerk
 from pynumdiff.utils.simulate import pi_control
 
+from ..finite_difference import first_order as iterated_finite_difference # actually second order
 from ..linear_model import spectraldiff, polydiff, savgoldiff
 from ..optimize import optimize
 
 
-
 # simulation
-noise_type = 'normal'
-noise_parameters = [0, 0.01]
 dt = 0.01
-duration = 2
-x, x_truth, dxdt_truth, extras = pi_control(duration, noise_parameters=noise_parameters, dt=dt)
+x, x_truth, dxdt_truth, extras = pi_control(duration=2, noise_type='normal', noise_parameters=[0, 0.01], dt=dt)
 cutoff_frequency = 0.1
 log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
 tvgamma = np.exp(log_gamma)
 
 
-# def test_first_order():
-#     params_1, val_1 = first_order(x, dt, params=None, options={'iterate': True},
-#                                   tvgamma=tvgamma, dxdt_truth=dxdt_truth)
-#     params_2, val_2 = first_order(x, dt, params=None, options={'iterate': True},
-#                                   tvgamma=0, dxdt_truth=None)
-#     assert params_1 == [5]
-#     assert params_2 == [1]
+def test_finite_difference():
+    params_1, val_1 = optimize(iterated_finite_difference, x, dt, tvgamma=tvgamma, dxdt_truth=dxdt_truth)
+    params_2, val_2 = optimize(iterated_finite_difference, x, dt, tvgamma=0, dxdt_truth=None)
+    assert params_1['num_iterations'] == 5
+    assert params_2['num_iterations'] == 1
 
 # def test_mediandiff():
 #     params_1, val_1 = mediandiff(x, dt, params=None, options={'iterate': False},

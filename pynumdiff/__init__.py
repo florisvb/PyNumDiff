@@ -9,4 +9,3 @@ from pynumdiff.total_variation_regularization import iterative_velocity, velocit
 from pynumdiff.linear_model import lineardiff, polydiff, spectraldiff, savgoldiff
 from pynumdiff.kalman_smooth import constant_velocity, constant_acceleration, constant_jerk,\
     known_dynamics
-from pynumdiff.optimize import optimize

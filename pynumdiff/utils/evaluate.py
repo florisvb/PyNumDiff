@@ -107,7 +107,7 @@ def error_correlation(dxdt_hat, dxdt_truth, padding=0):
     :param np.array[float] dxdt_hat: estimated xdot
     :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If auto or None, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
     :return: (float) -- r-squared correlation coefficient
     """
@@ -124,6 +124,8 @@ def total_variation(x, padding=0):
     """Calculate the total variation of an array. Used by optimizer.
 
     :param np.array[float] x: data
+    :param int padding: number of snapshots on either side of the array to ignore when calculating
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
     :return: (float) -- total variation
     """

@@ -121,7 +121,7 @@ def _objective_function(point, func, x, dt, singleton_params, search_space_types
         return rms_rec_x + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
 
 
-def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, padding='auto', metric='rmse',
+def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, padding=0, metric='rmse',
     opt_method='Nelder-Mead', maxiter=10):
     """Find the optimal parameters for a given differentiation method.
 

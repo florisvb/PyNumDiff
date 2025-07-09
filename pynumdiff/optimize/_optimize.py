@@ -135,8 +135,8 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     :param float tvgamma: Only used if :code:`dxdt_truth` is given. Regularization value used to select for parameters
                     that yield a smooth derivative. Larger value results in a smoother derivative.
     :param int padding: number of time steps to ignore at the beginning and end of the time series in the
-                    optimization. Larger value causes the optimization to emphasize the accuracy of dxdt in the
-                    middle of the time series
+                    optimization, or :code:`'auto'` to ignore 2.5% at each end. Larger value causes the
+                    optimization to emphasize the accuracy of dxdt in the middle of the time series
     :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
                     is not None, see _objective_function
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse

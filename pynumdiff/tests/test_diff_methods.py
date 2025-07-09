@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot
 from pytest import mark
 from warnings import warn
 
@@ -34,8 +33,8 @@ diff_methods_and_params = [
     (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
     (second_order, {}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
-    (polydiff, {'polynomial_order':2, 'window_size':3}), (polydiff, [2, 3]),
-    (savgoldiff, {'polynomial_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
+    (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
+    (savgoldiff, {'poly_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (meandiff, {'window_size':3, 'num_iterations':2}), (meandiff, [3, 2], {'iterate':True}),

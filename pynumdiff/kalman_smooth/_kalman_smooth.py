@@ -113,8 +113,8 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant velocity model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant velocity model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
@@ -148,8 +148,8 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant acceleration model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant acceleration model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
@@ -187,8 +187,8 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
     :param options: (**deprecated**, prefer :code:`forwardbackward`)
         a dictionary consisting of {'forwardbackward': (bool)}
-    param float r: variance of the signal noise
-    param float q: variance of the constant jerk model
+    :param float r: variance of the signal noise
+    :param float q: variance of the constant jerk model
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
@@ -237,7 +237,7 @@ def known_dynamics(x, params, u=None, options=None, xhat0=None, P0=None, A=None,
     :param np.array C: measurement dynamics, MxN
     :param np.array Q: covariance matrix for the model, NxN
     :param np.array R: covariance matrix for the measurements, MxM
-    :parma bool smooth: whether to run the RTS smoother step
+    :param bool smooth: whether to run the RTS smoother step
 
     :return: np.array **x_hat** -- estimated (smoothed) x
     """ # Why not also returning derivative here?

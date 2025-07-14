@@ -8,16 +8,16 @@ def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
     :param np.array[float] x: data
     :param int num_delays: number of times to 1-step shift data
     :param bool pad: if True, return width is len(x), else width is len(x) - num_delays + 1
-    :return: a Hankel Matrix m
-            e.g. if x = [a, b, c, d, e] and num_delays = 3
-            then with pad = False:
-                    m = [['a', 'b', 'c'],
-                         ['b', 'c', 'd'],
-                         ['c', 'd', 'e']]
-            or pad = True:
-                    m = [['a', 'b', 'c', 'd', 'e'],
-                         ['b', 'c', 'd', 'e',  0],
-                         ['c', 'd', 'e',  0,   0]]
+
+    :return: a Hankel Matrix `m`. For example, if `x = [a, b, c, d, e]` and `num_delays = 3`:\n
+        With `pad = False`::\n
+            m = [[a, b, c],
+                 [b, c, d],
+                 [c, d, e]]\n
+        With `pad = True`::\n
+            m = [[a, b, c, d, e],
+                 [b, c, d, e, 0],
+                 [c, d, e, 0, 0]]
     """
     m = x.copy()
     for d in range(1, num_delays):

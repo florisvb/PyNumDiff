@@ -46,6 +46,11 @@ dev = [
     "cvxpy",
     "Mosek"
 ]
+docs = [
+    "sphinx",
+    "sphinx_rtd_theme",
+    "cvxpy"
+]
 
 [tool.setuptools_scm]
 write_to = "pynumdiff/_version.py"

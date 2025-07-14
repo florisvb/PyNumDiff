@@ -9,8 +9,8 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 </p>
 
 <p align="center">
-    <a href='https://pynumdiff.readthedocs.io/en/master/?badge=master'>
-        <img src='https://readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
+    <a href='https://pynumdiff.readthedocs.io/master/'>
+        <img src='https://app.readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
     <a href="https://zenodo.org/badge/latestdoi/159711175">

@@ -48,7 +48,8 @@ dev = [
 ]
 docs = [
     "sphinx",
-    "sphinx_rtd_theme"
+    "sphinx_rtd_theme",
+    "cvxpy"
 ]
 
 [tool.setuptools_scm]

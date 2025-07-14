@@ -237,7 +237,7 @@ def known_dynamics(x, params, u=None, options=None, xhat0=None, P0=None, A=None,
     :param np.array C: measurement dynamics, MxN
     :param np.array Q: covariance matrix for the model, NxN
     :param np.array R: covariance matrix for the measurements, MxM
-    :parma bool smooth: whether to run the RTS smoother step
+    :param bool smooth: whether to run the RTS smoother step
 
     :return: np.array **x_hat** -- estimated (smoothed) x
     """ # Why not also returning derivative here?

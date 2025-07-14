@@ -7,5 +7,4 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  docs_dir: docs/source
   builder: html # Use the 'sphinx' builder (default for 'make html')

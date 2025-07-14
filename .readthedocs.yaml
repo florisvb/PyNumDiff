@@ -1,7 +1,16 @@
 version: 2
 
+sphinx:
+  configuration: docs/source/conf.py
+
 build:
   os: ubuntu-22.04
-  docs_dir: docs
-  builder: html # Use the 'sphinx' builder (default for 'make html')
+  tools:
+    python: "3.11"
 
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs

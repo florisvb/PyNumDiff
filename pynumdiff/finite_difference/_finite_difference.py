@@ -3,6 +3,7 @@ import numpy as np
 from pynumdiff.utils import utility
 from warnings import warn
 
+
 def _finite_difference(x, dt, num_iterations, order):
     """Helper for all finite difference methods, since their iteration structure is all the same.
     
@@ -95,4 +96,3 @@ def fourth_order(x, dt, num_iterations=1):
              - **dxdt_hat** -- estimated derivative of x
     """
     return _finite_difference(x, dt, num_iterations, 4)
-  

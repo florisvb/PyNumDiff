@@ -43,20 +43,6 @@ def matrix_inv(X, max_sigma=1e-16):
     return V.T.dot(np.diag(Sigma_inv)).dot(U.T)
 
 
-def total_variation(x):
-    """Calculate the total variation of an array. Used by optimizer.
-
-    :param np.array[float] x: data
-
-    :return: (float) -- total variation
-    """
-    if np.isnan(x).any():
-        return np.nan
-    x1 = np.ravel(x)[:-1]
-    x2 = np.ravel(x)[1:]
-    return np.sum(np.abs(x2-x1))/len(x1)  # mostly equivalent to cvxpy.tv(x2-x1).value
-
-
 def peakdet(x, delta, t=None):
     """Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal
     value, and was preceded (to the left) by a value lower by delta. Converted from MATLAB script at

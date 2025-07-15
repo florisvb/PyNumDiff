@@ -81,10 +81,10 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
     """
     if np.isnan(x_hat).any():
         return np.nan, np.nan, np.nan
-    if padding is None or padding == 'auto':
+    if padding == 'auto':
         padding = int(0.025*len(x))
         padding = max(padding, 1)
-    s = slice(padding,len(x)-padding) # slice out where the data is
+    s = slice(padding, len(x)-padding) # slice out data we want to measure
 
     # RMS of dxdt and x_hat
     root = np.sqrt(s.stop - s.start)
@@ -100,21 +100,40 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
     return rms_rec_x, rms_x, rms_dxdt
 
 
-def error_correlation(dxdt_hat, dxdt_truth, padding=None):
+def error_correlation(dxdt_hat, dxdt_truth, padding=0):
     """Calculate the error correlation (pearsons correlation coefficient) between the estimated
     dxdt and true dxdt
 
     :param np.array[float] dxdt_hat: estimated xdot
     :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If auto or None, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
     :return: (float) -- r-squared correlation coefficient
     """
-    if padding is None or padding == 'auto':
+    if padding == 'auto':
         padding = int(0.025*len(dxdt_hat))
         padding = max(padding, 1)
-    errors = (dxdt_hat[padding:-padding] - dxdt_truth[padding:-padding])
-    r = stats.linregress(dxdt_truth[padding:-padding] -
-                                np.mean(dxdt_truth[padding:-padding]), errors)
+    s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
+    errors = (dxdt_hat[s] - dxdt_truth[s])
+    r = stats.linregress(dxdt_truth[s] - np.mean(dxdt_truth[s]), errors)
     return r.rvalue**2
+
+
+def total_variation(x, padding=0):
+    """Calculate the total variation of an array. Used by optimizer.
+
+    :param np.array[float] x: data
+    :param int padding: number of snapshots on either side of the array to ignore when calculating
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+
+    :return: (float) -- total variation
+    """
+    if np.isnan(x).any():
+        return np.nan
+    if padding == 'auto':
+        padding = int(0.025*len(x))
+        padding = max(padding, 1)
+    x = x[padding:len(x)-padding]
+    
+    return np.linalg.norm(x[1:]-x[:-1], 1)/len(x) # normalized version of what cvxpy.tv does

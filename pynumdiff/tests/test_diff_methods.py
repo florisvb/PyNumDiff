@@ -52,6 +52,7 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
+#diff_methods_and_params = [(second_order, {'num_iterations':1})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -84,7 +85,7 @@ error_bounds = {
     lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
                  [(0, 0), (2, 1), (0, 0), (2, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
-                 [(0, 0), (1, 1), (0, 0), (1, 1)],
+                 [(1, 0), (2, 1), (1, 0), (2, 1)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     polydiff: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],

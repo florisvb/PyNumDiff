@@ -4,7 +4,7 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 
 <p align="center">
   <a href="https://pynumdiff.readthedocs.io/master/">
-    <img alt="Python for Numerical Differentiation of noisy time series data" src="https://raw.githubusercontent.com/florisvb/PyNumDiff/main/logo.png" width="300" height="200" />
+    <img alt="Python for Numerical Differentiation of noisy time series data" src="https://raw.githubusercontent.com/florisvb/PyNumDiff/master/logo.png" width="300" height="200" />
   </a>
 </p>
 

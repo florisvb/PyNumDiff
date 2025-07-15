@@ -3,8 +3,8 @@
 Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">
-  <a href="https://pynumdiff.readthedocs.io/en/master/" target="_blank" >
-    <img alt="Python for Numerical Differentiation of noisy time series data" src="docs/source/_static/logo_PyNumDiff.png" width="300" height="200" />
+  <a href="https://pynumdiff.readthedocs.io/master/">
+    <img alt="Python for Numerical Differentiation of noisy time series data" src="https://raw.githubusercontent.com/florisvb/PyNumDiff/master/logo.png" width="300" height="200" />
   </a>
 </p>
 
@@ -67,7 +67,7 @@ For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034
 
 See CITATION.cff file as well as the following references.
 
-#### PyNumDiff python package:
+### PyNumDiff python package:
 
     @article{PyNumDiff2022,
       doi = {10.21105/joss.04078},
@@ -83,7 +83,7 @@ See CITATION.cff file as well as the following references.
     }
 
 
-#### Optimization algorithm:
+### Optimization algorithm:
 
     @article{ParamOptimizationDerivatives2020, 
     doi={10.1109/ACCESS.2020.3034077}

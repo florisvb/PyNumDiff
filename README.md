@@ -115,8 +115,7 @@ Call `pip install pynumdiff[advanced]` to automatically install [CVXPY](https://
 
 ## Usage
 
-**PyNumDiff** uses [Sphinx](http://www.sphinx-doc.org/en/stable/) for code documentation.
-So you can see more details about the API usage [there](https://pynumdiff.readthedocs.io/en/latest/).
+**PyNumDiff** uses [Sphinx](http://www.sphinx-doc.org/en/master/) for code documentation, so read more details about the API usage [there](https://pynumdiff.readthedocs.io/master/).
 
 ### Code snippets
 
@@ -130,12 +129,14 @@ x_hat, dxdt_hat = method(x, dt, param1=val1, param2=val2, ...)
 ```python
 from pynumdiff.optimize import optimize
 
-params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
+params, val = optimize(method, x, dt, search_space={'param1':[vals], 'param2':[vals], ...},
                                             tvgamma=tvgamma, # hyperparameter, defaults to None if dxdt_truth given
                                             dxdt_truth=None) # or give ground truth data, in which case tvgamma unused
 print('Optimal parameters: ', params)
 x_hat, dxdt_hat = method(x, dt, **params)
 ```
+If no `search_space` is given, a default one is used.
+
 * Advanced usage: automated parameter selection through multi-objective optimization using a user-defined cutoff frequency
 ```python
 # cutoff_freq: estimate by (a) counting the number of true peaks per second in the data or (b) look at power spectra and choose cutoff
@@ -159,7 +160,7 @@ We will frequently update simple examples for demo purposes, and here are curren
 
 * Larger values of `tvgamma` produce smoother derivatives
 * The value of `tvgamma` is largely universal across methods, making it easy to compare method results
-* The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like savgoldiff and butterdiff, and probably too slow for sliding methods like sliding DMD and sliding LTI fit. 
+* The optimization is not fast. Run it on subsets of your data if you have a lot of data. It will also be much faster with faster differentiation methods, like `savgoldiff` and `butterdiff`.
 * The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep: `tvgamma=np.exp(-1.6*np.log(cutoff_frequency)-0.71*np.log(dt)-5.1)`
 
 ### Running the tests

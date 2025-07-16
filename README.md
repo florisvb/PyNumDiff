@@ -122,30 +122,30 @@ So you can see more details about the API usage [there](https://pynumdiff.readth
 
 * Basic Usage: you provide the parameters
 ```python
-    from pynumdiff.submodule import method
+from pynumdiff.submodule import method
 
-    x_hat, dxdt_hat = method(x, dt, params, options)     
+x_hat, dxdt_hat = method(x, dt, param1=val1, param2=val2, ...)     
 ```
 * Intermediate usage: automated parameter selection through multi-objective optimization
 ```python
-    from pynumdiff.optimize import optimize
+from pynumdiff.optimize import optimize
 
-    params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
+params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
                                             tvgamma=tvgamma, # hyperparameter, defaults to None if dxdt_truth given
                                             dxdt_truth=None) # or give ground truth data, in which case tvgamma unused
-    print('Optimal parameters: ', params)
-    x_hat, dxdt_hat = method(x, dt, **params)
+print('Optimal parameters: ', params)
+x_hat, dxdt_hat = method(x, dt, **params)
 ```
 * Advanced usage: automated parameter selection through multi-objective optimization using a user-defined cutoff frequency
 ```python
-    # cutoff_freq: estimate by (a) counting the number of true peaks per second in the data or (b) look at power spectra and choose cutoff
-    log_gamma = -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1 # see: https://ieeexplore.ieee.org/abstract/document/9241009
-    tvgamma = np.exp(log_gamma) 
+# cutoff_freq: estimate by (a) counting the number of true peaks per second in the data or (b) look at power spectra and choose cutoff
+log_gamma = -1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1 # see: https://ieeexplore.ieee.org/abstract/document/9241009
+tvgamma = np.exp(log_gamma) 
 
-    params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
+params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
                                             tvgamma=tvgamma)
-    print('Optimal parameters: ', params)
-    x_hat, dxdt_hat = method(x, dt, **params)
+print('Optimal parameters: ', params)
+x_hat, dxdt_hat = method(x, dt, **params)
 ```
 
 ### Notebook examples

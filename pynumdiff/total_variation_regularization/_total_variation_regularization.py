@@ -80,7 +80,8 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     integration_constants = cvxpy.Variable(order) # constants of integration that help get us back to x
 
     # Recursively integrate the highest order derivative to get back to the position. This is a first-
-    # order scheme, but it's very fast and tends to not do markedly worse than 2nd order. See #116
+    # order scheme, but it's very fast and tends to do not markedly worse than 2nd order. See #116
+    # I also tried a trapezoidal integration rule here, and it works no better. See #116 too
     y = deriv_values
     for i in range(order):
         y = cvxpy.cumsum(y) + integration_constants[i]

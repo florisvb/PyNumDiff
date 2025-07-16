@@ -31,7 +31,7 @@ Python methods for numerical differentiation of noisy data, including multi-obje
     - [Prerequisite](#prerequisite)
     - [Installing](#installing)
   - [Usage](#usage)
-    - [Basic usages](#basic-usages)
+    - [Code snippets](#code-snippets)
     - [Notebook examples](#notebook-examples)
     - [Important notes](#important-notes)
     - [Running the tests](#running-the-tests)
@@ -97,7 +97,7 @@ See CITATION.cff file as well as the following references.
 
 ### Prerequisite
 
-PyNumDiff requires common packages like `numpy`, `scipy`, and `matplotlib`. For a full list, you can check the file [pyproject.toml](pyproject.toml)
+PyNumDiff requires common packages like `numpy`, `scipy`, and `matplotlib`. For a full list, you can check the file [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml)
 
 In addition, it also requires certain additional packages for select functions, though these are not required for a successful install of PyNumDiff:
 - Total Variation Regularization methods: [`cvxpy`](http://www.cvxpy.org/install/index.html)
@@ -118,7 +118,7 @@ Call `pip install pynumdiff[advanced]` to automatically install [CVXPY](https://
 **PyNumDiff** uses [Sphinx](http://www.sphinx-doc.org/en/stable/) for code documentation.
 So you can see more details about the API usage [there](https://pynumdiff.readthedocs.io/en/latest/).
 
-### Basic usages
+### Code snippets
 
 * Basic Usage: you provide the parameters
 ```python
@@ -134,7 +134,7 @@ So you can see more details about the API usage [there](https://pynumdiff.readth
                                             tvgamma=tvgamma, # hyperparameter, defaults to None if dxdt_truth given
                                             dxdt_truth=None) # or give ground truth data, in which case tvgamma unused
     print('Optimal parameters: ', params)
-    x_hat, dxdt_hat = method(x, dt, **params)`
+    x_hat, dxdt_hat = method(x, dt, **params)
 ```
 * Advanced usage: automated parameter selection through multi-objective optimization using a user-defined cutoff frequency
 ```python
@@ -145,15 +145,15 @@ So you can see more details about the API usage [there](https://pynumdiff.readth
     params, val = optimize(method, x, dt, search_space={'param1':[options], 'param2':[options], ...},
                                             tvgamma=tvgamma)
     print('Optimal parameters: ', params)
-    x_hat, dxdt_hat = method(x, dt, **params)`
+    x_hat, dxdt_hat = method(x, dt, **params)
 ```
 
 ### Notebook examples
 
 We will frequently update simple examples for demo purposes, and here are currently exisiting ones:
-* Differentiation with different methods: [1_basic_tutorial.ipynb](examples/1_basic_tutorial.ipynb)
-* Parameter Optimization with known ground truth (only for demonstration purpose):  [2a_optimizing_parameters_with_dxdt_known.ipynb](examples/2a_optimizing_parameters_with_dxdt_known.ipynb)
-* Parameter Optimization with unknown ground truth:  [2b_optimizing_parameters_with_dxdt_unknown.ipynb](./examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
+* Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/1_basic_tutorial.ipynb)
+* Parameter Optimization with known ground truth (only for demonstration purpose):  [2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb)
+* Parameter Optimization with unknown ground truth:  [2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
 
 ### Important notes
 
@@ -175,5 +175,5 @@ Add the flag `--plot` to see plots of the methods against test functions. Add th
 
 ## License
 
-This project utilizes the [MIT LICENSE](LICENSE.txt).
+This project utilizes the [MIT LICENSE](https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt).
 100% open-source, feel free to utilize the code however you like. 

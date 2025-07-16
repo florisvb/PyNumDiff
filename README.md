@@ -102,11 +102,6 @@ PyNumDiff requires common packages like `numpy`, `scipy`, and `matplotlib`. For 
 In addition, it also requires certain additional packages for select functions, though these are not required for a successful install of PyNumDiff:
 - Total Variation Regularization methods: [`cvxpy`](http://www.cvxpy.org/install/index.html)
 - `pytest` for unittests
-- `pylint` for PEP8 style check
-
-When using `cvxpy`, our default solver is set to be `MOSEK` (highly recommended), you would need to download their 
-free academic license from their [website](https://www.mosek.com/products/academic-licenses/). Otherwise, you can also 
-use other solvers which are listed [here](https://www.cvxpy.org/tutorial/advanced/index.html).
 
 ### Installing
 
@@ -116,13 +111,7 @@ The code is compatible with >=Python 3.5. It can be installed using pip or direc
 * From source using pip git+: `pip install git+https://github.com/florisvb/PyNumDiff`
 * From local source code using setup.py: Run `pip install .` from inside this directory. See below for example.
 
-For additional solvers, run `pip install pynumdiff[advanced]`.  This includes `cvxpy`,
-which can be tricky when compiling from source.  If an error occurs in installing
-`cvxpy`, see [cvxpy install documentation](https://www.cvxpy.org/install/), install
-`cvxpy` according to those instructions, and try `pip install pynumdiff[advanced]`
-again.
-
-<em>Note: If using the optional MOSEK solver for cvxpy you will also need a [MOSEK license](https://www.mosek.com/products/academic-licenses/), free academic license.</em>
+Call `pip install pynumdiff[advanced]` to automatically install [CVXPY](https://www.cvxpy.org) along with PyNumDiff. <em>Note: Some CVXPY solvers require a license, like ECOS and MOSEK. The latter offers a [free academic license](https://www.mosek.com/products/academic-licenses/).</em>
 
 ## Usage
 

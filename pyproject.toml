@@ -36,8 +36,7 @@ package = "https://pypi.org/project/pynumdiff/"
 
 [project.optional-dependencies]
 advanced = [
-    "cvxpy",
-    "MOSEK",
+    "cvxpy"
 ]
 dev = [
     "pylint",

@@ -33,6 +33,7 @@ def _finite_difference(x, dt, num_iterations, order):
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt=1) # estimate new x_hat by integrating derivative
         # We can skip dividing by dt here and pass dt=1, because the integration multiplies dt back in.
         # No need to find integration constant until the very end, because we just differentiate again.
+        # Note that I also tried integrating with Simpson's rule here, and it seems to do worse.
 
     if order == 1:
         dxdt_hat[:-1] = np.diff(x_hat)

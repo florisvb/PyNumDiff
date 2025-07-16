@@ -19,16 +19,16 @@ def test_integrate_dxdt_hat():
         assert len(x_hat) == len(dxdt)
 
 
-def test_estimate_initial_condition():
+def test_estimate_integration_constant():
     """For known simple functions, make sure the initial condition is as expected"""
     for x,x_hat,c in [([1.0, 2.0, 3.0, 4.0, 5.0], [0.0, 1.0, 2.0, 3.0, 4.0], 1), # Perfect alignment case, xhat shifted by 1
         (np.ones(5)*10, np.ones(5)*5, 5),
         ([0], [1], -1)]:
-        x0 = utility.estimate_initial_condition(x, x_hat)
+        x0 = utility.estimate_integration_constant(x, x_hat)
         assert np.allclose(x0, float(c), rtol=1e-3)
 
     np.random.seed(42) # Noisy case. Seed for reproducibility
-    x0 = utility.estimate_initial_condition([1.0, 2.0, 3.0, 4.0, 5.0],
+    x0 = utility.estimate_integration_constant([1.0, 2.0, 3.0, 4.0, 5.0],
         np.array([0.0, 1.0, 2.0, 3.0, 4.0]) + np.random.normal(0, 0.1, 5))
     assert 0.9 < x0 < 1.1 # The result should be close to 1.0, but not exactly due to noise
 

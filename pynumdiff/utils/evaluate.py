@@ -93,7 +93,7 @@ def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
 
     # RMS reconstructed x from integrating dxdt vs given raw x, available even in the absence of ground truth
     rec_x = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_initial_condition(x, rec_x)
+    x0 = utility.estimate_integration_constant(x, rec_x)
     rec_x = rec_x + x0
     rms_rec_x = np.linalg.norm(rec_x[s] - x[s]) / root
 

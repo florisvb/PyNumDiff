@@ -2,12 +2,12 @@ import numpy as np
 from pytest import mark
 from warnings import warn
 
+from ..finite_difference import first_order, second_order, fourth_order
 from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..finite_difference import first_order, second_order
-# Function aliases for testing cases where parameters change the behavior in a big way
+# Function alias for testing a case where parameters change the behavior in a big way
 def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
 
 dt = 0.1
@@ -29,9 +29,8 @@ test_funcs_and_derivs = [
 
 # Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
-    (first_order, {}), # empty dictionary for the case of no parameters. no params -> no diff in new vs old
-    (iterated_first_order, {'num_iterations':5}), (iterated_first_order, [5], {'iterate':True}),
-    (second_order, {}),
+    (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
+    (iterated_first_order, {'num_iterations':2}), (iterated_first_order, [2], {'iterate':True}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'poly_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
@@ -59,15 +58,15 @@ diff_methods_and_params = [
 # big ol' table by the method, then the test function, then the pair of quantities we're comparing.
 error_bounds = {
     first_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
-                  [(-25, -25), (-13, -14), (0, 0), (1, 1)],
-                  [(-25, -25), (0, 0), (0, 0), (1, 0)],
+                  [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                   [(-25, -25), (0, 0), (0, 0), (1, 1)],
+                  [(-25, -25), (1, 0), (0, 0), (1, 1)],
                   [(-25, -25), (2, 2), (0, 0), (2, 2)],
                   [(-25, -25), (3, 3), (0, 0), (3, 3)]],
-    iterated_first_order: [[(-8, -9), (-11, -11), (0, -1), (0, 0)],
-                           [(-6, -6), (-6, -7), (0, -1), (0, 0)],
-                           [(-1, -1), (0, 0), (0, -1), (0, 0)],
+    iterated_first_order: [[(-9, -10), (-25, -25), (0, -1), (1, 0)],
+                           [(-9, -10), (-13, -14), (0, -1), (1, 0)],
                            [(0, 0), (1, 0), (0, 0), (1, 0)],
+                           [(0, 0), (1, 0), (0, 0), (1, 1)],
                            [(1, 1), (2, 2), (1, 1), (2, 2)],
                            [(1, 1), (3, 3), (1, 1), (3, 3)]],
     second_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
@@ -76,8 +75,14 @@ error_bounds = {
                    [(-25, -25), (0, -1), (0, 0), (1, 1)],
                    [(-25, -25), (1, 1), (0, 0), (1, 1)],
                    [(-25, -25), (3, 3), (0, 0), (3, 3)]],
+    fourth_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
+                   [(-25, -25), (-13, -13), (0, 0), (1, 1)],
+                   [(-25, -25), (-13, -13), (0, 0), (1, 1)],
+                   [(-25, -25), (-2, -2), (0, 0), (1, 1)],
+                   [(-25, -25), (1, 0), (0, 0), (1, 1)],
+                   [(-25, -25), (2, 2), (0, 0), (2, 2)]],
     lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
-                 [(0, 0), (1, 1), (0, 0), (1, 1)],
+                 [(0, 0), (2, 1), (0, 0), (2, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (2, 1), (1, 0), (2, 1)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
@@ -107,19 +112,19 @@ error_bounds = {
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     meandiff: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-               [(0, 0), (1, 0), (0, 0), (1, 1)],
+               [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(0, 0), (1, 1), (0, 0), (1, 1)],
                [(1, 1), (2, 2), (1, 1), (2, 2)],
                [(1, 1), (3, 3), (1, 1), (3, 3)]],
     gaussiandiff: [[(-14, -15), (-14, -14), (0, -1), (1, 0)],
-                   [(-1, -1), (0, 0), (0, 0), (1, 0)],
+                   [(-1, -1), (1, 0), (0, 0), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
-                   [(0, -1), (1, 0), (0, 0), (1, 1)],
+                   [(0, -1), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (2, 2), (1, 1), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    friedrichsdiff: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                     [(-1, -1), (0, 0), (0, 0), (1, 0)],
+    friedrichsdiff: [[(-25, -25), (-25, -25), (0, -1), (1, 0)],
+                     [(-1, -1), (1, 0), (0, 0), (1, 1)],
                      [(0, 0), (1, 1), (0, 0), (1, 1)],
                      [(0, -1), (1, 1), (0, 0), (1, 1)],
                      [(1, 1), (2, 2), (1, 1), (2, 2)],
@@ -132,7 +137,7 @@ error_bounds = {
                  [(2, 1), (3, 3), (2, 1), (3, 3)]],
     splinediff: [[(-14, -15), (-14, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -14), (-1, -1), (0, 0)],
-                 [(-14, -14), (0, 0), (-1, -1), (0, 0)],
+                 [(-14, -14), (-13, -13), (-1, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (3, 3), (1, 0), (3, 3)]],
@@ -223,18 +228,20 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        axes[i, 0].plot(t, f(t), label=r"$x(t)$")
+        axes[i, 0].plot(t, f(t))
         axes[i, 0].plot(t, x, 'C0+')
-        axes[i, 0].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
+        axes[i, 0].plot(t, x_hat, 'C2.', ms=4)
+        axes[i, 0].plot(tt, df(tt))
         axes[i, 0].plot(t, dxdt_hat, 'C1+')
         axes[i, 0].set_ylabel(latex_name, rotation=0, labelpad=50)
         if i < len(test_funcs_and_derivs)-1: axes[i, 0].set_xticklabels([])
         else: axes[i, 0].set_xlabel('t')
         if i == 0: axes[i, 0].set_title('noiseless')
         axes[i, 1].plot(t, f(t), label=r"$x(t)$")
-        axes[i, 1].plot(t, x_noisy, 'C0+')
+        axes[i, 1].plot(t, x_noisy, 'C0+', label=r"$x_n$")
+        axes[i, 1].plot(t, x_hat_noisy, 'C2.', ms=4, label=r"$\hat{x}_n$")
         axes[i, 1].plot(tt, df(tt), label=r"$\frac{dx(t)}{dt}$")
-        axes[i, 1].plot(t, dxdt_hat_noisy, 'C1+')
+        axes[i, 1].plot(t, dxdt_hat_noisy, 'C1+', label=r"$\hat{\frac{dx}{dt}}_n$")
         if i < len(test_funcs_and_derivs)-1: axes[i, 1].set_xticklabels([])
         else: axes[i, 1].set_xlabel('t')
         axes[i, 1].set_yticklabels([])

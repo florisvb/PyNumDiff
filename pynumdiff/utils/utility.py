@@ -96,7 +96,8 @@ def peakdet(x, delta, t=None):
 
 # Trapazoidal integration, with 0 first value so that the lengths match. See #88.
 def integrate_dxdt_hat(dxdt_hat, dt):
-    """Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures the integral has the same length
+    """Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures
+    the integral has the same length
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
     :param float dt: time step in seconds
@@ -107,9 +108,9 @@ def integrate_dxdt_hat(dxdt_hat, dt):
 
 
 # Optimization routine to estimate the integration constant.
-def estimate_initial_condition(x, x_hat):
-    """Integration leaves an unknown integration constant. This function finds a best fit integration constant given x and
-    x_hat (the integral of dxdt_hat) by optimizing :math:`\\min_c ||x - \\hat{x} + c||_2`.
+def estimate_integration_constant(x, x_hat):
+    """Integration leaves an unknown integration constant. This function finds a best fit integration
+    constant given x and x_hat (the integral of dxdt_hat) by optimizing :math:`\\min_c ||x - \\hat{x} + c||_2`.
 
     :param np.array[float] x: timeseries of measurements
     :param np.array[float] x_hat: smoothed estiamte of x, for the purpose of this function this should have been determined

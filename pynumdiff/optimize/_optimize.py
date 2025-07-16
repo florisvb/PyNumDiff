@@ -7,7 +7,7 @@ from warnings import filterwarnings
 from multiprocessing import Pool
 
 from ..utils import evaluate
-from ..finite_difference import first_order
+from ..finite_difference import first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
@@ -80,6 +80,8 @@ method_params_and_bounds = {
                          {'q': (1e-10, 1e10),
                           'r': (1e-10, 1e10)})
 }
+for method in [second_order, fourth_order]:
+    method_params_and_bounds[method] = method_params_and_bounds[first_order]
 for method in [meandiff, gaussiandiff, friedrichsdiff]:
     method_params_and_bounds[method] = method_params_and_bounds[mediandiff]
 for method in [acceleration, jerk]:
@@ -158,7 +160,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
 
     # The search space is the Cartesian product of all dimensions where multiple options are given
-    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # for converting back and forth from point
+    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go
@@ -166,7 +168,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
              (0, 1) if v == bool else
-             None for k,v in search_space_types.items()]
+             None for k,v in search_space_types.items()] # None means no bound on a dimension
 
     # wrap the objective and scipy.optimize.minimize because the objective and options are always the same
     _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,

@@ -160,7 +160,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
 
     # The search space is the Cartesian product of all dimensions where multiple options are given
-    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type for converting to and frompoint
+    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go

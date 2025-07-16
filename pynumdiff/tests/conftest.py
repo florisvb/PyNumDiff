@@ -17,4 +17,4 @@ def pytest_sessionfinish(session, exitstatus):
         fig.legend(*axes[-1, -1].get_legend_handles_labels(), loc='lower left', ncol=2)
         fig.suptitle(method.__name__)
         fig.tight_layout()
-        pyplot.show()
+    pyplot.show()

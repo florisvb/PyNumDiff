@@ -52,7 +52,6 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
-#diff_methods_and_params = [(second_order, {'num_iterations':1})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a

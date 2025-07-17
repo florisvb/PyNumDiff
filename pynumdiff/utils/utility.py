@@ -140,25 +140,23 @@ def friedrichs_kernel(window_size):
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)
 
-def convolutional_smoother(x, kernel, iterations=1):
+def convolutional_smoother(x, kernel, num_iterations=1):
     """Perform smoothing by convolving x with a kernel.
 
     :param np.array[float] x: 1D data
     :param np.array[float] kernel: kernel to use in convolution
-    :param int iterations: number of iterations, >=1
+    :param int num_iterations: number of iterations, >=1
     
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
-    x_hat = np.hstack((x[::-1], x, x[::-1])) # pad
-    w = np.linspace(0, 1, len(x_hat)) # weights
+    pad_width = len(kernel)//2
+    x_hat = x
 
-    for _ in range(iterations):
-        x_hat_f = np.convolve(x_hat, kernel, 'same')
-        x_hat_b = np.convolve(x_hat[::-1], kernel, 'same')[::-1]
-        
-        x_hat = x_hat_f*w + x_hat_b*(1-w)
+    for i in range(num_iterations):
+        x_padded = np.pad(x_hat, pad_width, mode='symmetric') # pad with repetition of the edges
+        x_hat = np.convolve(x_padded, kernel, 'valid')[:len(x)] # 'valid' slices out only full-overlap spots
 
-    return x_hat[len(x):len(x)*2]
+    return x_hat
 
 
 def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **kwargs):

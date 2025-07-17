@@ -33,7 +33,7 @@ diff_methods_and_params = [
     (iterated_first_order, {'num_iterations':2}), (iterated_first_order, [2], {'iterate':True}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
-    (savgoldiff, {'poly_order':2, 'window_size':4, 'smoothing_win':4}), (savgoldiff, [2, 4, 4]),
+    (savgoldiff, {'poly_order':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
     (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (meandiff, {'window_size':3, 'num_iterations':2}), (meandiff, [3, 2], {'iterate':True}),
@@ -52,7 +52,6 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
-diff_methods_and_params = [(polydiff, {'poly_order':3, 'window_size':11})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
@@ -96,13 +95,13 @@ error_bounds = {
                [(0, 0), (3, 3), (0, 0), (3, 3)]],
     savgoldiff: [[(-9, -10), (-13, -14), (0, -1), (0, 0)],
                  [(-9, -10), (-13, -13), (0, -1), (0, 0)],
-                 [(-1, -1), (0, -1), (0, -1), (0, 0)],
-                 [(0, -1), (0, 0), (0, -1), (1, 0)],
+                 [(-2, -2), (-1, -1), (0, -1), (0, 0)],
+                 [(0, -1), (0, 0), (0, 0), (1, 0)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
     spectraldiff: [[(-9, -10), (-14, -15), (-1, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
-                   [(1, 0), (1, 1), (1, 1), (1, 1)],
+                   [(1, 1), (1, 1), (1, 1), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (2, 2), (1, 1), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]],

@@ -33,6 +33,16 @@ def test_estimate_integration_constant():
     assert 0.9 < x0 < 1.1 # The result should be close to 1.0, but not exactly due to noise
 
 
+def test_convolutional_smoother():
+    """Ensure the convolutional smoother isn't introducing edge effects"""
+    x = np.ones(10)
+    kernel_odd = np.ones(3)/3
+    kernel_even = np.ones(4)/4
+
+    assert np.allclose(utility.convolutional_smoother(x, kernel_odd, num_iterations=3), np.ones(len(x)))
+    assert np.allclose(utility.convolutional_smoother(x, kernel_even, num_iterations=3), np.ones(len(x)))
+
+
 def test_hankel_matrix():
     """Ensure Hankel matrix comes back as defined"""
     assert np.allclose(utility.hankel_matrix([1, 2, 3, 4, 5], 3), [[1, 2, 3],[2, 3, 4],[3, 4, 5]])

@@ -141,7 +141,7 @@ def friedrichs_kernel(window_size):
     return ker / np.sum(ker)
 
 def convolutional_smoother(x, kernel, iterations=1):
-    """Perform smoothing by convolving x with a kernel.
+    """Perform smoothing by convolving x with a kernel forward and backward and then combining
 
     :param np.array[float] x: 1D data
     :param np.array[float] kernel: kernel to use in convolution

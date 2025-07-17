@@ -111,90 +111,6 @@ def polydiff(x, dt, params=None, options=None, poly_order=None, window_size=None
     return utility.slide_function(_polydiff, x, dt, kernel, poly_order, stride=step_size, pass_weights=True)
 
 
-#############
-# Chebychev #
-# Removed - Not Useful and requires old package
-#############
-# def __chebydiff__(x, dt, params, options=None):
-#     """
-#     Fit the timeseries with chebyshev polynomials, and differentiate this model.
-
-#     :param x: (np.array of floats, 1xN) data to differentiate
-#     :param dt: (float) time step
-#     :param params: (list) [N] : (int) order of the polynomial
-#     :param options:
-#     :return: x_hat    : estimated (smoothed) x
-#              dxdt_hat : estimated derivative of x
-#     """
-
-#     if isinstance(params, list):
-#         n = params[0]
-#     else:
-#         n = params
-
-#     mean = np.mean(x)
-#     x = x - mean
-
-#     def f(y):
-#         t = np.linspace(-1, 1, len(x))
-#         return np.interp(y, t, x)
-
-#     # Chebychev polynomial
-#     poly = pychebfun.chebfun(f, N=n, domain=[-1, 1])
-#     ts = np.linspace(poly.domain()[0], poly.domain()[-1], len(x))
-
-#     x_hat = poly(ts) + mean
-#     dxdt_hat = poly.differentiate()(ts)*(2/len(x))/dt
-
-#     return x_hat, dxdt_hat
-
-# def chebydiff(x, dt, params, options=None):
-#     """
-#     Slide a smoothing derivative function across a times eries with specified window size.
-
-#     :param x: data to differentiate
-#     :type x: np.array (float)
-
-#     :param dt: step size
-#     :type dt: float
-
-#     :param params: a list of 2 elements:
-
-#                     - N: order of the polynomial
-#                     - window_size: size of the sliding window (ignored if not sliding)
-
-#     :type params: list (int)
-
-#     :param options: a dictionary consisting of 3 key value pairs:
-
-#                     - 'sliding': whether to use sliding approach
-#                     - 'step_size': step size for sliding
-#                     - 'kernel_name': kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-
-#     :type options: dict {'sliding': (bool), 'step_size': (int), 'kernel_name': (string)}, optional
-
-#     :return: a tuple consisting of:
-
-#             - x_hat: estimated (smoothed) x
-#             - dxdt_hat: estimated derivative of x
-
-#     :rtype: tuple -> (np.array, np.array)
-#     """
-
-#     if options is None:
-#         options = {'sliding': True, 'step_size': 1, 'kernel_name': 'friedrichs'}
-
-#     if 'sliding' in options.keys() and options['sliding']:
-#         window_size = copy.copy(params[-1])
-#         if window_size < params[0]*2:
-#             window_size = params[0]*2+1
-#             params[1] = window_size
-#         return __slide_function__(__chebydiff__, x, dt, params, window_size,
-#                                   options['step_size'], options['kernel_name'])
-
-#     return __chebydiff__(x, dt, params)
-
-
 ###############
 # Linear diff #
 ###############
@@ -408,3 +324,40 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
+
+
+#############
+# Chebychev #
+#############
+def chebydiff(x, dt, poly_order, window_size=None, step_size=1, kernel='friedrichs'):
+    """Fit Chebyshev polynomials to the data, and differentiate those
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
+    :param int poly_order: keep polynomials up to this order
+    :param int window_size: size of the sliding window, if not given no sliding
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
+    if window_size % 2 == 0:
+        window_size += 1
+        warn("Kernel window size should be odd. Added 1 to length.")
+
+    def _chebdiff(x, dt, poly_order, weights=None):
+        t = np.arange(len(x))*dt
+
+        r = np.polynomial.chebyshev.chebfit(t, x, poly_order, w=weights) # chebfit returns lowest order first
+        dr = np.polynomial.chebyshev.chebder(r) # series derivative rule already implemented for us
+
+        dxdt_hat = np.polynomial.chebyshev.chebval(t, dr) # evaluate the derivative and original polynomials at points t
+        x_hat = np.polynomial.chebyshev.chebval(t, r) # smoothed x
+
+        return x_hat, dxdt_hat
+
+    if not window_size:
+        return _chebdiff(x, dt, poly_order)
+
+    kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
+    return utility.slide_function(_chebdiff, x, dt, kernel, poly_order, stride=step_size, pass_weights=True)

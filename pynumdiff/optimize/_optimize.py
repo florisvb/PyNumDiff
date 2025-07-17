@@ -9,15 +9,15 @@ from multiprocessing import Pool
 from ..utils import evaluate
 from ..finite_difference import first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
+from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff, chebydiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
-    spectraldiff: ({'even_extension': True,
-                   'pad_to_zero_dxdt': True,
+    spectraldiff: ({'even_extension': [True, False],
+                   'pad_to_zero_dxdt': [True, False],
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
     polydiff: ({'step_size': [1, 2, 5],
@@ -33,11 +33,6 @@ method_params_and_bounds = {
                  {'poly_order': (1, 12),
                   'window_size': (3, 1000),
                   'smoothing_win': (3, 1000)}),
-    #chebydiff ({order: [3, 5, 7, 9],
-    #           window_size: [10, 30, 50, 90, 130],
-    #           kernel: 'friedrichs'},
-    #           {order: (1, 10),
-    #           window_size: (10, 1000)})
     lineardiff: ({'kernel': 'gaussian',
                   'order': 3,
                   'gamma': [1e-1, 1, 10, 100],
@@ -80,6 +75,7 @@ method_params_and_bounds = {
                          {'q': (1e-10, 1e10),
                           'r': (1e-10, 1e10)})
 }
+method_params_and_bounds[chebydiff] = method_params_and_bounds[polydiff]
 for method in [second_order, fourth_order]:
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
 for method in [meandiff, gaussiandiff, friedrichsdiff]:

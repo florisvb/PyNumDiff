@@ -3,7 +3,7 @@ from pytest import mark
 from warnings import warn
 
 from ..finite_difference import first_order, second_order, fourth_order
-from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
+from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff, chebydiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
@@ -52,6 +52,7 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
+diff_methods_and_params = [(polydiff, {'poly_order':3, 'window_size':11})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a

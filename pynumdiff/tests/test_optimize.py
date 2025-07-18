@@ -101,17 +101,11 @@ def test_savgoldiff():
 def test_spectraldiff():
     params1, val1 = optimize(spectraldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, padding='auto')
-    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.0913, decimal=3)
-    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.21, decimal=2)
+    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.105, decimal=3)
+    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.10, decimal=2)
 
 def test_polydiff():
     params1, val1 = optimize(polydiff, x, dt, search_space={'step_size':1}, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(polydiff, x, dt, search_space={'step_size':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
     assert (params1['poly_order'], params1['window_size']) == (6, 50)
     assert (params2['poly_order'], params2['window_size']) == (4, 10)
-
-# def test_chebydiff(self):
-#     params1, val1 = optimize(chebydiff, x, dt, dxdt_truth=dxdt_truth)
-#     params2, val2 = optimize(chebydiff, x, dt, tvgamma=tvgamma, dxdt_truth=None)
-#     assert params1 == [9, 108]
-#     assert params2 == [9, 94]

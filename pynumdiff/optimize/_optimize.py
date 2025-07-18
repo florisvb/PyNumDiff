@@ -9,7 +9,7 @@ from multiprocessing import Pool
 from ..utils import evaluate
 from ..finite_difference import first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff, chebydiff
+from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 
@@ -75,7 +75,6 @@ method_params_and_bounds = {
                          {'q': (1e-10, 1e10),
                           'r': (1e-10, 1e10)})
 }
-method_params_and_bounds[chebydiff] = method_params_and_bounds[polydiff]
 for method in [second_order, fourth_order]:
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
 for method in [meandiff, gaussiandiff, friedrichsdiff]:

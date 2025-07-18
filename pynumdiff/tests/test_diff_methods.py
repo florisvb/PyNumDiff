@@ -3,7 +3,7 @@ from pytest import mark
 from warnings import warn
 
 from ..finite_difference import first_order, second_order, fourth_order
-from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff, chebydiff
+from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff

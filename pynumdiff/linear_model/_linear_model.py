@@ -261,10 +261,11 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
     :param dict options: (**deprecated**, prefer :code:`even_extension`
             and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
-    :param float high_freq_cutoff: The high frequency cutoff. Frequencies below this threshold will be kept, and above will be zeroed.
+    :param float high_freq_cutoff: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
+            and 0.5. Frequencies below this threshold will be kept, and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
-    :param bool pad_to_zero_dxdt: if True, extend the data with extensions that smoothly force the derivative to zero. This
-            allows the spectral derivative to fit data which does not start and end with derivatives equal to zero.
+    :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
+            zero before taking FFT.
 
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
@@ -280,16 +281,17 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     elif high_freq_cutoff == None:
         raise ValueError("`high_freq_cutoff` must be given.")
 
-    original_L = len(x)
+    L = len(x)
 
     # make derivative go to zero at ends (optional)
     if pad_to_zero_dxdt:
         padding = 100
-        pre = x[0]*np.ones(padding)
+        pre = x[0]*np.ones(padding) # extend the edges
         post = x[-1]*np.ones(padding)
         x = np.hstack((pre, x, post))
-        x_hat, _ = smooth_finite_difference.meandiff(x, dt, window_size=int(padding/2))
-        x_hat[padding:-padding] = x[padding:-padding]
+        kernel = utility.mean_kernel(padding//2)
+        x_hat = utility.convolutional_smoother(x, kernel) # smooth the edges in
+        x_hat[padding:-padding] = x[padding:-padding] # replace middle with original signal
         x = x_hat
     else:
         padding = 0
@@ -299,65 +301,24 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
         x = np.hstack((x, x[::-1]))
 
     # If odd, make N even, and pad x
-    L = len(x)
-    if L % 2 != 0:
-        N = L + 1
-        x = np.hstack((x, x[-1] + dt*(x[-1]-x[-1])))
-    else:
-        N = L
+    N = len(x)
 
     # Define the frequency range.
-    k = np.asarray(list(range(0, int(N/2))) + [0] + list(range(int(-N/2) + 1,0)))
-    k = k*2*np.pi/(dt*N)
+    k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
+    if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
+    omega = k*2*np.pi/(dt*N) # turn wavenumbers into frequencies in radians/s
 
     # Frequency based smoothing: remove signals with a frequency higher than high_freq_cutoff
-    discrete_high_freq_cutoff = int(high_freq_cutoff*N)
-    k[discrete_high_freq_cutoff:N-discrete_high_freq_cutoff] = 0
+    discrete_cutoff = int(high_freq_cutoff*N)
+    omega[discrete_cutoff:N-discrete_cutoff] = 0
 
     # Derivative = 90 deg phase shift
-    dxdt_hat = np.real(np.fft.ifft(1.0j * k * np.fft.fft(x)))
-    dxdt_hat = dxdt_hat[padding:original_L+padding]
+    dxdt_hat = np.real(np.fft.ifft(1.0j * omega * np.fft.fft(x)))
+    dxdt_hat = dxdt_hat[padding:L+padding]
 
     # Integrate to get x_hat
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_integration_constant(x[padding:original_L+padding], x_hat)
+    x0 = utility.estimate_integration_constant(x[padding:L+padding], x_hat)
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
-
-
-#############
-# Chebychev #
-#############
-def chebydiff(x, dt, poly_order, window_size=None, step_size=1, kernel='friedrichs'):
-    """Fit Chebyshev polynomials to the data, and differentiate those
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param int poly_order: keep polynomials up to this order
-    :param int window_size: size of the sliding window, if not given no sliding
-
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
-    """
-    if window_size % 2 == 0:
-        window_size += 1
-        warn("Kernel window size should be odd. Added 1 to length.")
-
-    def _chebdiff(x, dt, poly_order, weights=None):
-        t = np.arange(len(x))*dt
-
-        r = np.polynomial.chebyshev.chebfit(t, x, poly_order, w=weights) # chebfit returns lowest order first
-        dr = np.polynomial.chebyshev.chebder(r) # series derivative rule already implemented for us
-
-        dxdt_hat = np.polynomial.chebyshev.chebval(t, dr) # evaluate the derivative and original polynomials at points t
-        x_hat = np.polynomial.chebyshev.chebval(t, r) # smoothed x
-
-        return x_hat, dxdt_hat
-
-    if not window_size:
-        return _chebdiff(x, dt, poly_order)
-
-    kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-    return utility.slide_function(_chebdiff, x, dt, kernel, poly_order, stride=step_size, pass_weights=True)

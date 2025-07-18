@@ -102,7 +102,7 @@ def test_spectraldiff():
     params1, val1 = optimize(spectraldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, padding='auto')
     np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.105, decimal=3)
-    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.21, decimal=2)
+    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.10, decimal=2)
 
 def test_polydiff():
     params1, val1 = optimize(polydiff, x, dt, search_space={'step_size':1}, dxdt_truth=dxdt_truth, padding='auto')

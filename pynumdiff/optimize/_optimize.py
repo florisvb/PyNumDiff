@@ -5,6 +5,7 @@ from itertools import product
 from functools import partial
 from warnings import filterwarnings, warn
 from multiprocessing import Pool
+from tqdm import tqdm
 
 from ..utils import evaluate
 from ..finite_difference import first_order, second_order, fourth_order
@@ -68,7 +69,7 @@ method_params_and_bounds = {
     smooth_acceleration: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
-                           'window_size': (1, 1000)}),
+                           'window_size': (3, 1000)}),
     constant_velocity: ({'forwardbackward': [True, False],
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
@@ -185,14 +186,22 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     return opt_params, results[opt_idx].fun
 
 
-def find_best_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
+def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
     a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
     using default search spaces defined at the top of the :code:`pynumdiff/optimize/_optimize.py` file.
-    (Excluded: :code:`first_order` because iterating causes drift, :code:`lineardiff` and :code:`iterative_velocity`
-    because they take too long and tend not to do best, and all :code:`cvxpy`-based methods if it is not installed)
-    This routine will take some time to run.
+    This routine will take a few minutes to run.
     
+    Excluded:
+        - ``first_order``, because iterating causes drift
+        - ``lineardiff``, ``iterative_velocity``, and ``jerk_sliding``, because they either take too long,
+          can be fragile, or tend not to do best
+        - all ``cvxpy``-based methods if it is not installed
+        - ``velocity`` because it tends to not be best but dominates the optimization process by directly
+          optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
+          \\hat{\\dot{x}}}(\\Phi)) + \\mu, \\mathbf{y} \\Big) + \\gamma \\Big({TV}\\big(\\mathbf{\\hat{
+          \\dot{x}}}(\\Phi)\\big)\\Big)`
+
     :param np.array[float] x: data to differentiate
     :param float dt: step size, because most methods are not designed to work with variable step sizes
     :param np.array[float] dxdt_truth: if known, you can pass true derivative values; otherwise you must use
@@ -207,6 +216,7 @@ def find_best_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             - **method** -- a reference to the function handle of the differentiation method that worked best
             - **opt_params** -- optimal parameter settings for the differentation method
     """
+    tvgamma = None
     if dxdt_truth is None: # parameter checking
         if cutoff_frequency is None:
             raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
@@ -216,12 +226,12 @@ def find_best_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
         splinediff, spectraldiff, polydiff, savgoldiff, constant_velocity, constant_acceleration, constant_jerk]
     try: # optionally skip some methods
         import cvxpy
-        methods += [velocity, acceleration, jerk, smooth_acceleration, jerk_sliding]
+        methods += [acceleration, jerk, smooth_acceleration]
     except ImportError:
-        warn("CVXPY not installed, skipping velocity, acceleration, jerk, smooth_acceleration, and jerk_sliding")
+        warn("CVXPY not installed, skipping velocity, acceleration, jerk, and smooth_acceleration")
 
-    best_value = float('-inf') # core loop
-    for func in methods:
+    best_value = float('inf') # core loop
+    for func in tqdm(methods):
         p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma)
         if v < best_value:
             method = func

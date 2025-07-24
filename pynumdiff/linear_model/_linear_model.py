@@ -38,7 +38,9 @@ def savgoldiff(x, dt, params=None, options=None, poly_order=None, window_size=No
         raise ValueError("`poly_order`, `window_size`, and `smoothing_win` must be given.")
 
     window_size = np.clip(window_size, poly_order + 1, len(x)-1)
-    if window_size % 2 == 0: window_size += 1 # window_size needs to be odd
+    if window_size % 2 == 0:
+        window_size += 1 # window_size needs to be odd
+        warn("Kernel window size should be odd. Added 1 to length.")
     smoothing_win = min(smoothing_win, len(x)-1)
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, poly_order, deriv=1)/dt

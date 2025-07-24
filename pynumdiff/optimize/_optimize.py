@@ -228,7 +228,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
         import cvxpy
         methods += [acceleration, jerk, smooth_acceleration]
     except ImportError:
-        warn("CVXPY not installed, skipping velocity, acceleration, jerk, and smooth_acceleration")
+        warn("CVXPY not installed, skipping acceleration, jerk, and smooth_acceleration")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):

@@ -49,7 +49,8 @@ docs = [
     "sphinx",
     "sphinx_rtd_theme",
     "myst-parser",
-    "cvxpy"
+    "cvxpy", # necessary to document modules which import this
+    "tqdm" # optimize module imports this
 ]
 
 [tool.setuptools_scm]

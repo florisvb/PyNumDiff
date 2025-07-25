@@ -185,7 +185,7 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
     for i,midpoint in enumerate(range(0, len(x), stride)): # iterate window midpoints
         # find where to index data and kernel, taking care at edges
         window = slice(max(0, midpoint - half_window_size),
-                        min(len(x), midpoint + half_window_size + 1)) # +1 because slicing works [,)
+                        min(len(x), midpoint + half_window_size + 1)) # +1 because slicing is exclusive of end
         kslice = slice(max(0, half_window_size - midpoint),
                         min(len(kernel), len(kernel) - (midpoint + half_window_size + 1 - len(x))))
 

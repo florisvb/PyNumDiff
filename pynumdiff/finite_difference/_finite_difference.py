@@ -27,8 +27,10 @@ def _finite_difference(x, dt, num_iterations, order):
             dxdt_hat[-1] = x_hat[-1] - x_hat[-2] # use first-order endpoint formulas so as not to amplify noise. See #104
         elif order == 4:
             dxdt_hat[2:-2] = (8*(x_hat[3:-1] - x_hat[1:-3]) - x_hat[4:] + x_hat[:-4])/12 # fourth-order center-difference
-            dxdt_hat[:2] = np.diff(x_hat[:3])
-            dxdt_hat[-2:] = np.diff(x_hat[-3:])
+            dxdt_hat[1] = (x_hat[2] - x_hat[0])/2
+            dxdt_hat[-2] = (x_hat[-1] - x_hat[-3])/2 # use second-order formula for next-to-endpoints so as not to amplify noise
+            dxdt_hat[0] = x_hat[1] - x_hat[0]
+            dxdt_hat[-1] = x_hat[-1] - x_hat[-2] # use first-order endpoint formulas so as not to amplify noise. See #104
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt=1) # estimate new x_hat by integrating derivative
         # We can skip dividing by dt here and pass dt=1, because the integration multiplies dt back in.

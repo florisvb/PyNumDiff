@@ -3,8 +3,9 @@ import scipy.optimize
 import numpy as np
 from itertools import product
 from functools import partial
-from warnings import filterwarnings
+from warnings import filterwarnings, warn
 from multiprocessing import Pool
+from tqdm import tqdm
 
 from ..utils import evaluate
 from ..finite_difference import first_order, second_order, fourth_order
@@ -68,7 +69,7 @@ method_params_and_bounds = {
     smooth_acceleration: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
-                           'window_size': (1, 1000)}),
+                           'window_size': (3, 1000)}),
     constant_velocity: ({'forwardbackward': [True, False],
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
@@ -86,7 +87,7 @@ for method in [constant_acceleration, constant_jerk]:
     method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
 
 
-# This function has to be at the top level for multiprocessing
+# This function has to be at the top level for multiprocessing but is only used by optimize.
 def _objective_function(point, func, x, dt, singleton_params, search_space_types, dxdt_truth, metric,
     tvgamma, padding):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
@@ -123,7 +124,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     """Find the optimal parameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
-    :param np.array[float]: data to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: step size
     :param dict search_space: function parameter settings to use as initial starting points in optimization,
                     structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The search space
@@ -155,7 +156,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
 
     # The search space is the Cartesian product of all dimensions where multiple options are given
-    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type for converting to and from point
+    search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go
@@ -183,3 +184,58 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     opt_params.update(singleton_params)
 
     return opt_params, results[opt_idx].fun
+
+
+def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
+    """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
+    a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
+    using default search spaces defined at the top of the :code:`pynumdiff/optimize/_optimize.py` file.
+    This routine will take a few minutes to run.
+    
+    Excluded:
+        - ``first_order``, because iterating causes drift
+        - ``lineardiff``, ``iterative_velocity``, and ``jerk_sliding``, because they either take too long,
+          can be fragile, or tend not to do best
+        - all ``cvxpy``-based methods if it is not installed
+        - ``velocity`` because it tends to not be best but dominates the optimization process by directly
+          optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
+          \\hat{\\dot{x}}}(\\Phi)) + \\mu, \\mathbf{y} \\Big) + \\gamma \\Big({TV}\\big(\\mathbf{\\hat{
+          \\dot{x}}}(\\Phi)\\big)\\Big)`
+
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size, because most methods are not designed to work with variable step sizes
+    :param np.array[float] dxdt_truth: if known, you can pass true derivative values; otherwise you must use
+            :code: `cutoff_frequency`
+    :param float cutoff_frequency: in Hz, the highest dominant frequency of interest in the signal,
+            used to find parameter :math:`\\gamma` for regularization of the optimization process
+            in the absence of ground truth. See https://ieeexplore.ieee.org/document/9241009.
+            Estimate by (a) counting real number of peaks per second in the data, (b) looking at
+            power spectrum and choosing a cutoff, or (c) making an educated guess.
+
+    :return: tuple[callable, dict, np.array, np.array] of\n
+            - **method** -- a reference to the function handle of the differentiation method that worked best
+            - **opt_params** -- optimal parameter settings for the differentation method
+    """
+    tvgamma = None
+    if dxdt_truth is None: # parameter checking
+        if cutoff_frequency is None:
+            raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
+        tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
+
+    methods = [second_order, fourth_order, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
+        splinediff, spectraldiff, polydiff, savgoldiff, constant_velocity, constant_acceleration, constant_jerk]
+    try: # optionally skip some methods
+        import cvxpy
+        methods += [acceleration, jerk, smooth_acceleration]
+    except ImportError:
+        warn("CVXPY not installed, skipping acceleration, jerk, and smooth_acceleration")
+
+    best_value = float('inf') # core loop
+    for func in tqdm(methods):
+        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma)
+        if v < best_value:
+            method = func
+            best_value = v
+            opt_params = p
+
+    return method, opt_params

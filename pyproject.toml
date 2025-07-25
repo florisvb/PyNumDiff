@@ -36,14 +36,14 @@ package = "https://pypi.org/project/pynumdiff/"
 
 [project.optional-dependencies]
 advanced = [
-    "cvxpy"
+    "cvxpy",
+    "tqdm"
 ]
 dev = [
     "pylint",
     "pytest",
     "cvxopt",
-    "cvxpy",
-    "Mosek"
+    "cvxpy"
 ]
 docs = [
     "sphinx",

@@ -253,10 +253,13 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, wind
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    if len(x) < window_size:
-        warn("len(x) <= window_size, calling standard jerk() without sliding")
+    if len(x) < window_size or window_size < 15:
+        warn("len(x) should be > window_size >= 15, calling standard jerk() without sliding")
         return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
 
+    if window_size % 2 == 0:
+        window_size += 1 # has to be odd
+        warn("Kernel window size should be odd. Added 1 to length.")
     ramp = window_size//5
-    kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), (np.arange(1, ramp+1)/ramp)[::-1]))
+    kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), np.arange(ramp, 0, -1)/ramp))
     return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)

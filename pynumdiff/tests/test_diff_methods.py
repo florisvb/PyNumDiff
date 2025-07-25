@@ -56,6 +56,8 @@ diff_methods_and_params = [
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a
 # big ol' table by the method, then the test function, then the pair of quantities we're comparing.
+# The tuples are order of magnitude of (L2,Linf) distances for pairs
+# (x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy).
 error_bounds = {
     first_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
                   [(-25, -25), (-13, -13), (0, 0), (1, 1)],

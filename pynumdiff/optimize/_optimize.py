@@ -212,7 +212,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             Estimate by (a) counting real number of peaks per second in the data, (b) looking at
             power spectrum and choosing a cutoff, or (c) making an educated guess.
 
-    :return: tuple[callable, dict, np.array, np.array] of\n
+    :return: tuple[callable, dict] of\n
             - **method** -- a reference to the function handle of the differentiation method that worked best
             - **opt_params** -- optimal parameter settings for the differentation method
     """

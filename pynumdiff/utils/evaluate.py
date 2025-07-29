@@ -7,8 +7,7 @@ from pynumdiff.utils import utility
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments
-def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_dxdt=None,
-         show_error=True, markersize=5):
+def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True, markersize=5):
     """Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and 'dxdt_truth
     (black) vs dxdt_hat (red)'
 
@@ -19,43 +18,41 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, ax_x=None, ax_d
     :param np.array[float] x_truth: array of noise-free time series
     :param np.array[float] dxdt_truth: array of true derivative
     :param list[int] xlim: a list specifying range of x
-    :param matplotlib.axes ax_x: axis of the first plot
-    :param matplotlib.axes ax_dxdt: axis of the second plot
     :param bool show_error: whether to show the rmse
     :param int markersize: marker size of noisy observations
 
     :return: Display two plots
     """
     t = np.arange(0, dt*len(x), dt)
-    if ax_x is None and ax_dxdt is None:
-        fig = plt.figure(figsize=(20, 6))
-        ax_x = fig.add_subplot(121)
-        ax_dxdt = fig.add_subplot(122)
-
     if xlim is None:
         xlim = [t[0], t[-1]]
 
-    if ax_x is not None:
-        if x_hat is not None:
-            ax_x.plot(t, x_hat, color='red')
-        ax_x.plot(t, x_truth, '--', color='black')
-        ax_x.plot(t, x, '.', color='blue', zorder=-100, markersize=markersize)
-        ax_x.set_ylabel('Position', fontsize=20)
-        ax_x.set_xlabel('Time', fontsize=20)
-        ax_x.set_xlim(xlim[0], xlim[-1])
-        ax_x.tick_params(axis='x', labelsize=15)
-        ax_x.tick_params(axis='y', labelsize=15)
-        ax_x.set_rasterization_zorder(0)
+    fig = plt.figure(figsize=(18, 6))
+    ax_x = fig.add_subplot(121)
+    ax_dxdt = fig.add_subplot(122)
+    
+    ax_x.plot(t, x_truth, '--', color='black', linewidth=3, label=r"true $x$")
+    ax_x.plot(t, x, '.', color='blue', zorder=-100, markersize=markersize, label=r"noisy data")
+    ax_x.plot(t, x_hat, color='red', label=r"estimated $\hat{x}$")
+    ax_x.set_ylabel('Position', fontsize=18)
+    ax_x.set_xlabel('Time', fontsize=18)
+    ax_x.set_xlim(xlim[0], xlim[-1])
+    ax_x.tick_params(axis='x', labelsize=15)
+    ax_x.tick_params(axis='y', labelsize=15)
+    ax_x.legend(loc='lower right', fontsize=12)
+    ax_x.set_rasterization_zorder(0)
 
-    if ax_dxdt is not None:
-        ax_dxdt.plot(t, dxdt_hat, color='red')
-        ax_dxdt.plot(t, dxdt_truth, '--', color='black', linewidth=3)
-        ax_dxdt.set_ylabel('Velocity', fontsize=20)
-        ax_dxdt.set_xlabel('Time', fontsize=20)
-        ax_dxdt.set_xlim(xlim[0], xlim[-1])
-        ax_dxdt.tick_params(axis='x', labelsize=15)
-        ax_dxdt.tick_params(axis='y', labelsize=15)
-        ax_dxdt.set_rasterization_zorder(0)
+    ax_dxdt.plot(t, dxdt_truth, '--', color='black', linewidth=3, label=r"true  $\frac{dx}{dt}$")
+    ax_dxdt.plot(t, dxdt_hat, color='red', label=r"est. $\hat{\frac{dx}{dt}}$")
+    ax_dxdt.set_ylabel('Velocity', fontsize=18)
+    ax_dxdt.set_xlabel('Time', fontsize=18)
+    ax_dxdt.set_xlim(xlim[0], xlim[-1])
+    ax_dxdt.tick_params(axis='x', labelsize=15)
+    ax_dxdt.tick_params(axis='y', labelsize=15)
+    ax_dxdt.legend(loc='lower right', fontsize=12)
+    ax_dxdt.set_rasterization_zorder(0)
+
+    fig.tight_layout()
 
     if show_error:
         _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)

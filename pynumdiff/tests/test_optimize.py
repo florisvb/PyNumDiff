@@ -11,7 +11,7 @@ from ..utils.simulate import pi_cruise_control
 
 # simulation
 dt = 0.01
-x, x_truth, dxdt_truth, extras = pi_cruise_control(duration=2, noise_type='normal', noise_parameters=[0, 0.01], dt=dt)
+x, x_truth, dxdt_truth = pi_cruise_control(duration=2, noise_type='normal', noise_parameters=[0, 0.01], dt=dt)
 cutoff_frequency = 10 # in Hz
 log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
 tvgamma = np.exp(log_gamma)

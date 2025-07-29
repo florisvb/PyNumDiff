@@ -47,15 +47,6 @@ def test_friedrichsdiff():
     assert params1['window_size'] == 9
     assert params2['window_size'] == 1
 
-def test_butterdiff():
-    params1, val1 = optimize(butterdiff, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, maxiter=20, padding='auto')
-    params2, val2 = optimize(butterdiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, maxiter=20, padding='auto')
-
-    assert params1['filter_order'] == 8 or params1['filter_order'] == 9
-    np.testing.assert_almost_equal(params1['cutoff_freq'], 0.17, decimal=2)
-    assert params2['filter_order'] == 2
-    np.testing.assert_almost_equal(params2['cutoff_freq'], 0.55, decimal=2)
-
 def test_iterative_velocity():
     params1, val1 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')

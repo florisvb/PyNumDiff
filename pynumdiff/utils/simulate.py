@@ -211,9 +211,13 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     return np.ravel(noisy_x)[1:][idx], smooth_x[1:][idx], dxdt[1:][idx], None
 
 
-def pi_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
+def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
                random_seed=1, dt=0.01):
-    """Create a toy example of linear proportional integral controller with nonlinear control inputs
+    """Create a toy example of linear proportional integral controller with nonlinear control inputs.
+    Simulate proportional integral control of a car attempting to maintain constant velocity while going
+    up and down hills. We assume the car has arbitrary power and can achieve whatever acceleration it wants;
+    its mass only factors in via -mg pulling it downhill. This is a linear interpretation of something
+    similar to what is described in Astrom and Murray 2008 Chapter 3.
 
     :param float duration: governs the length of the series, duration/dt
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
@@ -232,83 +236,54 @@ def pi_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
             - **vel** -- a true derivative information of the time series;
             - **[measurements, controls]** -- a list of extra measurements and controls
     """
-    t = np.arange(0, duration, dt)
-
-    actual_vals, extra_measurements, controls = _pi_cruise_control(duration, dt)
-    x = np.ravel(actual_vals[0, :])
-    dxdt = np.ravel(actual_vals[1, :])
-    
-    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
-
-    actual_vals = np.array(np.vstack((x, dxdt)))
-    noisy_measurements = np.array(noisy_x)
-
-    noisy_pos = np.ravel(noisy_measurements)
-    pos = np.ravel(actual_vals[0, :])
-    vel = np.ravel(actual_vals[1, :])
-
-    return noisy_pos, pos, vel, \
-           [np.array(extra_measurements), np.array(controls)]
-
-
-def _pi_cruise_control(duration=4, dt=0.01):
-    """Simulate proportional integral control of a car attempting to maintain constant velocity while going
-    up and down hills. This function is used for testing differentiation methods. This is a linear
-    interpretation of something similar to what is described in Astrom and Murray 2008 Chapter 3.
-
-    :param float duration: number of seconds to simulate
-    :param dt: timestep in seconds
-
-    :return: tuple[np.array, np.array, np.array] of arrays of shape (N, M), where M is the
-        number of time steps\n
-            - **state_vals** -- state of the car, i.e. position and velocity as a function of time
-            - **disturbances** -- disturbances from hills that the car is subjected to
-            - **controls** -- control inputs applied by the car
-    """
-    _np = np  # for compatibility with original code
-    t = _np.arange(0, duration+dt, dt)
-
     # disturbance
-    hills = _np.sin(2*_np.pi*t) + 0.3*_np.sin(4*2*_np.pi*t + 0.5) + 1.2*_np.sin(1.7*2*_np.pi*t + 0.5)
-    hills = 0.01*hills
+    t = np.arange(0, duration, dt)
+    slope = 0.01*(np.sin(2*np.pi*t) + 0.3*np.sin(4*2*np.pi*t + 0.5) + 1.2*np.sin(1.7*2*np.pi*t + 0.5))
 
     # parameters
     mg = 10000 # mass*gravity
     fr = 0.9 # friction
-    ki = 5/0.01*dt # integral control
-    kp = 25/0.01*dt # proportional control
+    ki = 0.05 # integral control
+    kp = 0.25 # proportional control
     vd = 0.5 # desired velocity
 
-    A = _np.array([[1, dt, 0, 0, 0],
-                   [0, 1, dt, 0, 0],
-                   [0, -fr, 0, -mg, ki],
-                   [0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 1]])
+    # Here state is [pos, vel, accel, cumulative pos error]
+    A = np.array([[1,  dt, (dt**2)/2, 0], # Taylor expand out to accel
+                  [0,   1,    dt,     0],
+                  [0, -fr,     0,    ki/(dt**2)], # (pos error) / dt^2 puts it in units of accel
+                  [0,   0,     0,     1]])
 
-    B = _np.array([[0, 0],
-                   [0, 0],
-                   [0, kp],
-                   [1, 0],
-                   [0, 1]])
-
-    x0 = _np.array([0, 0, 0, hills[0], 0]).reshape(A.shape[0], 1)
+    # Here inputs are [slope, vel_desired - vel_estimated]
+    B = np.array([[0,   0],
+                  [0,   0],
+                  [-mg, kp/dt], # (vel error) / dt puts it in units of accel
+                  [0,   dt]])
 
     # run simulation
-    xs = [x0]
-    us = [_np.array([0, 0]).reshape([2,1])]
-    for i in range(1, len(hills)-1):
-        u = _np.array([hills[i], vd - xs[-1][1,0]]).reshape([2,1])
-        xnew = A@xs[-1] + B@u
-        xs.append(xnew)
-        us.append(u)
+    states = [np.array([0, 0, 0, 0])] # x0 is all zeros
+    controls = []
+    for i in range(len(slope)):
+        u = np.array([slope[i], vd - states[-1][1]]) # current vel is in 1st position of last state
+        xnew = A @ states[-1] + B @ u
+        states.append(xnew)
+        controls.append(u)
 
-    xs = _np.hstack(xs)
-    us = _np.hstack(us)
+    states = np.vstack(states).T
+    controls = np.vstack(controls).T
 
-    if len(hills.shape) == 1:
-        hills = _np.reshape(hills, [1, len(hills)])
+    x = np.ravel(states[0, :])
+    dxdt = np.ravel(states[1, :])
+    
+    noisy_x = _add_noise(x, random_seed, noise_type, noise_parameters)
 
-    return xs, hills, us
+    states = np.array(np.vstack((x, dxdt)))
+    noisy_measurements = np.array(noisy_x)
+
+    noisy_pos = np.ravel(noisy_measurements)
+    pos = np.ravel(states[0, :])
+    vel = np.ravel(states[1, :])
+
+    return noisy_pos, pos, vel, [slope, controls]
 
 
 def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),

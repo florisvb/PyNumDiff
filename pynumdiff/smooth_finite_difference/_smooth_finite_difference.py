@@ -200,6 +200,7 @@ def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1
         spline = scipy.interpolate.UnivariateSpline(t, x_hat, k=order, s=s)
         x_hat = spline(t)
 
-    x_hat, dxdt_hat = finite_difference(x_hat, dt)
+    dspline = spline.derivative()
+    dxdt_hat = dspline(t)
 
     return x_hat, dxdt_hat

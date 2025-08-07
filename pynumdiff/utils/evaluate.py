@@ -5,7 +5,6 @@ from scipy import stats
 
 from pynumdiff.utils import utility
 
-
 # pylint: disable-msg=too-many-locals, too-many-arguments
 def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True, markersize=5):
     """Make comparison plots of 'x (blue) vs x_truth (black) vs x_hat (red)' and 'dxdt_truth
@@ -27,36 +26,54 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     if xlim is None:
         xlim = [t[0], t[-1]]
 
-    fig = plt.figure(figsize=(18, 6))
-    ax_x = fig.add_subplot(121)
-    ax_dxdt = fig.add_subplot(122)
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6))
     
-    ax_x.plot(t, x_truth, '--', color='black', linewidth=3, label=r"true $x$")
-    ax_x.plot(t, x, '.', color='blue', zorder=-100, markersize=markersize, label=r"noisy data")
-    ax_x.plot(t, x_hat, color='red', label=r"estimated $\hat{x}$")
-    ax_x.set_ylabel('Position', fontsize=18)
-    ax_x.set_xlabel('Time', fontsize=18)
-    ax_x.set_xlim(xlim[0], xlim[-1])
-    ax_x.tick_params(axis='x', labelsize=15)
-    ax_x.tick_params(axis='y', labelsize=15)
-    ax_x.legend(loc='lower right', fontsize=12)
-    ax_x.set_rasterization_zorder(0)
+    axes[0].plot(t, x_truth, '--', color='black', linewidth=3, label=r"true $x$")
+    axes[0].plot(t, x, '.', color='blue', zorder=-100, markersize=markersize, label=r"noisy data")
+    axes[0].plot(t, x_hat, color='red', label=r"estimated $\hat{x}$")
+    axes[0].set_ylabel('Position', fontsize=18)
+    axes[0].set_xlabel('Time', fontsize=18)
+    axes[0].set_xlim(xlim[0], xlim[-1])
+    axes[0].tick_params(axis='x', labelsize=15)
+    axes[0].tick_params(axis='y', labelsize=15)
+    axes[0].legend(loc='lower right', fontsize=12)
+    axes[0].set_rasterization_zorder(0)
 
-    ax_dxdt.plot(t, dxdt_truth, '--', color='black', linewidth=3, label=r"true  $\frac{dx}{dt}$")
-    ax_dxdt.plot(t, dxdt_hat, color='red', label=r"est. $\hat{\frac{dx}{dt}}$")
-    ax_dxdt.set_ylabel('Velocity', fontsize=18)
-    ax_dxdt.set_xlabel('Time', fontsize=18)
-    ax_dxdt.set_xlim(xlim[0], xlim[-1])
-    ax_dxdt.tick_params(axis='x', labelsize=15)
-    ax_dxdt.tick_params(axis='y', labelsize=15)
-    ax_dxdt.legend(loc='lower right', fontsize=12)
-    ax_dxdt.set_rasterization_zorder(0)
+    axes[1].plot(t, dxdt_truth, '--', color='black', linewidth=3, label=r"true  $\frac{dx}{dt}$")
+    axes[1].plot(t, dxdt_hat, color='red', label=r"est. $\hat{\frac{dx}{dt}}$")
+    axes[1].set_ylabel('Velocity', fontsize=18)
+    axes[1].set_xlabel('Time', fontsize=18)
+    axes[1].set_xlim(xlim[0], xlim[-1])
+    axes[1].tick_params(axis='x', labelsize=15)
+    axes[1].tick_params(axis='y', labelsize=15)
+    axes[1].legend(loc='lower right', fontsize=12)
+    axes[1].set_rasterization_zorder(0)
 
     fig.tight_layout()
 
     if show_error:
         _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
+        R_sqr = error_correlation(dxdt_hat, dxdt_truth)
         print('RMS error in velocity: ', rms_dxdt)
+        print('Error correlation: ', R_sqr)
+
+
+def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_hat3, title3):
+    """This is intended to show method performances with different choices of parameter"""
+    t = np.arange(0, dt*len(dxdt_truth), dt)
+    fig, axes = plt.subplots(1, 3, figsize=(22,6))
+
+    for i,(dxdt_hat,title) in enumerate(zip([dxdt_hat1, dxdt_hat2, dxdt_hat3], [title1, title2, title3])):
+        axes[i].plot(t, dxdt_truth, '--', color='black', linewidth=3, label=r"true  $\frac{dx}{dt}$")
+        axes[i].plot(t, dxdt_hat, color='red', label=r"est. $\hat{\frac{dx}{dt}}$")
+        if i==0: axes[i].set_ylabel('Velocity', fontsize=18)
+        axes[i].set_xlabel('Time', fontsize=18)
+        axes[i].tick_params(axis='x', labelsize=15)
+        axes[i].tick_params(axis='y', labelsize=15)
+        axes[i].set_title(title, fontsize=18)
+        if i==2: axes[i].legend(loc='lower right', fontsize=12)
+
+    fig.tight_layout()
 
 
 def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):

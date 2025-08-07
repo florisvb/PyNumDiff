@@ -160,7 +160,8 @@ def convolutional_smoother(x, kernel, num_iterations=1):
 
 
 def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **kwargs):
-    """Slide a smoothing derivative function across a timeseries with specified window size.
+    """Slide a smoothing derivative function across a timeseries with specified window size, and
+    combine the results according to kernel weights.
 
     :param callable func: name of the function to slide
     :param np.array[float] x: data to differentiate

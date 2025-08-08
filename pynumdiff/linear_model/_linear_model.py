@@ -263,7 +263,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :param dict options: (**deprecated**, prefer :code:`even_extension`
             and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
     :param float high_freq_cutoff: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
-            and 0.5. Frequencies below this threshold will be kept, and above will be zeroed.
+            and 1. Frequencies below this threshold will be kept, and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
             zero before taking FFT.
@@ -310,7 +310,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     omega = k*2*np.pi/(dt*N) # turn wavenumbers into frequencies in radians/s
 
     # Frequency based smoothing: remove signals with a frequency higher than high_freq_cutoff
-    discrete_cutoff = int(high_freq_cutoff*N)
+    discrete_cutoff = int(high_freq_cutoff*N/2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
     omega[discrete_cutoff:N-discrete_cutoff] = 0
 
     # Derivative = 90 deg phase shift

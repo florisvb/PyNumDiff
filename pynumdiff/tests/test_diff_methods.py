@@ -34,7 +34,7 @@ diff_methods_and_params = [
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'poly_order':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
-    (spectraldiff, {'high_freq_cutoff':0.1}), (spectraldiff, [0.1]),
+    (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (meandiff, {'window_size':3, 'num_iterations':2}), (meandiff, [3, 2], {'iterate':True}),
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),

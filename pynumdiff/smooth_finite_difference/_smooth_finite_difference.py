@@ -11,7 +11,7 @@ from pynumdiff.utils import utility
 # Smoothing finite differences #
 ################################
 def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform median smoothing using scipy.signal.medfilt followed by first order finite difference
+    """Perform median smoothing using scipy.signal.medfilt followed by second order finite difference
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -44,7 +44,7 @@ def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
 
 
 def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform mean smoothing by convolving mean kernel with x followed by first order finite difference
+    """Perform mean smoothing by convolving mean kernel with x followed by second order finite difference
 
     :param np.ndarray[float] x: data to differentiate
     :param float dt: step size
@@ -74,7 +74,7 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
 
 
 def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform gaussian smoothing by convolving gaussian kernel with x followed by first order finite difference
+    """Perform gaussian smoothing by convolving gaussian kernel with x followed by second order finite difference
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -103,7 +103,7 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
 
 
 def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform friedrichs smoothing by convolving friedrichs kernel with x followed by first order finite difference
+    """Perform friedrichs smoothing by convolving friedrichs kernel with x followed by second order finite difference
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -132,7 +132,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
 
 
 def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, num_iterations=1):
-    """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by first order finite difference
+    """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by second order finite difference
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -171,7 +171,8 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
 
 
 def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1):
-    """Perform spline smoothing on x with scipy.interpolate.UnivariateSpline followed by first order finite difference
+    """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
+    scipy.interpolate.UnivariateSpline.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size

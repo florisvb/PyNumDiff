@@ -17,7 +17,7 @@ from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceler
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
-    spectraldiff: ({'even_extension': [True, False],
+    spectraldiff: ({'even_extension': [True, False], # give boolean or numerical params in a list to scipy.optimize over them
                    'pad_to_zero_dxdt': [True, False],
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
@@ -98,8 +98,8 @@ for method in [constant_acceleration, constant_jerk]:
 
 
 # This function has to be at the top level for multiprocessing but is only used by optimize.
-def _objective_function(point, func, x, dt, singleton_params, search_space_types, dxdt_truth, metric,
-    tvgamma, padding):
+def _objective_function(point, func, x, dt, singleton_params, categorical_params, search_space_types,
+    dxdt_truth, metric, tvgamma, padding):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
     This is mildly complicated, because "point" controls the settings of a differentiation function, but
     the method may have numerical and non-numerical parameters, and all such parameters are now passed by
@@ -114,18 +114,18 @@ def _objective_function(point, func, x, dt, singleton_params, search_space_types
                 int(np.round(v)) if search_space_types[k] == int else
                 v > 0.5) for k,v in zip(search_space_types, point)} # point -> dict
     # add back in the singletons we're not searching over
-    try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params) # estimate x and dxdt
+    try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # estimate x and dxdt
     except np.linalg.LinAlgError: return 1000000000 # some methods can fail numerically
 
     # evaluate estimate
     if dxdt_truth is not None: # then minimize ||dxdt_hat - dxdt_truth||^2
         if metric == 'rmse':
-            rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, dxdt_truth=dxdt_truth, padding=padding)
+            rms_rec_x, rms_x, rms_dxdt = evaluate.rmse(x, dt, x_hat, dxdt_hat, dxdt_truth=dxdt_truth, padding=padding)
             return rms_dxdt
         elif metric == 'error_correlation':
             return evaluate.error_correlation(dxdt_hat, dxdt_truth, padding=padding)
     else: # then minimize [ || integral(dxdt_hat) - x||^2 + gamma*TV(dxdt_hat) ]
-        rms_rec_x, rms_x, rms_dxdt = evaluate.metrics(x, dt, x_hat, dxdt_hat, dxdt_truth=None, padding=padding)
+        rms_rec_x, rms_x, rms_dxdt = evaluate.rmse(x, dt, x_hat, dxdt_hat, dxdt_truth=None, padding=padding)
         return rms_rec_x + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
 
 
@@ -163,29 +163,32 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     params.update(search_space) # for things not given, use defaults
 
     # No need to optimize over singletons, just pass them through
-    singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
+    singleton_params = {k:v for k,v in params.items() if not isinstance(v, (list, tuple))}
 
-
+    # To handle categoricals, find their combination, and then pass each set individually
+    categorical_params = {k for k,v in params.items() if isinstance(v, tuple)}
+    categorical_combos = [dict(zip(categorical_params, combo)) for combo in product(*[params[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
     # The Nelder-Mead's search space is the Cartesian product of all dimensions where multiple options are given in a list
     search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
-        raise ValueError("Optimization over categorical strings currently not supported")
+        raise ValueError("To optimize over categorical strings, put them in a tuple, not a list.")
     # If excluding string type, I can just cast ints and bools to floats, and we're good to go
-    cartesian_product = product(*[np.array(params[k]).astype(float) for k in search_space_types])
-    
+    starting_points = list(product(*[np.array(params[k]).astype(float) for k in search_space_types]))
+    # The numerical space should have bounds
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
-             (0, 1) if v == bool else
-             None for k,v in search_space_types.items()] # None means no bound on a dimension
+            (0, 1) if v == bool else
+            None for k,v in search_space_types.items()] # None means no bound on a dimension
 
-    # wrap the objective and scipy.optimize.minimize because the objective and options are always the same
-    _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
-        search_space_types=search_space_types, dxdt_truth=dxdt_truth, metric=metric, tvgamma=tvgamma,
-        padding=padding)
-    _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-
+    results = []
     with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
-        results = pool.map(_minimize, cartesian_product) # returns a bunch of OptimizeResult objects
+        for categorical_combo in categorical_combos:
+            # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same
+            _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
+                categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
+                metric=metric, tvgamma=tvgamma, padding=padding)
+            _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
+            results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x
@@ -194,6 +197,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
                     int(np.round(v)) if search_space_types[k] == int else
                     v > 0.5) for k,v in zip(search_space_types, opt_point)}
     opt_params.update(singleton_params)
+    opt_params.update(categorical_combos[opt_idx//len(starting_points)]) # there are |starting_points| results for each combo
 
     return opt_params, results[opt_idx].fun
 

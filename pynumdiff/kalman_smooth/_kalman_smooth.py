@@ -81,7 +81,8 @@ def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None):
 # Constant 1st, 2nd, and 3rd derivative #
 #########################################
 def rts_const_deriv(x, dt, order, qr_ratio, forwardbackward):
-    """Perform Rauch-Tung-Striebel smoothing with a constant derivative model.
+    """Perform Rauch-Tung-Striebel smoothing with a constant derivative model. Other constant derivative
+    methods in this module call this function.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size

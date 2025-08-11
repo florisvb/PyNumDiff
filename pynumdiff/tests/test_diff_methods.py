@@ -31,8 +31,7 @@ test_funcs_and_derivs = [
 # Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
     (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
-    (iterated_second_order, {'num_iterations':5}), (iterated_second_order, [5], {'iterate':True}),
-    (iterated_fourth_order, {'num_iterations':10}),
+    (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'poly_order':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
@@ -54,7 +53,6 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15})
     ]
-diff_methods_and_params = [(iterated_fourth_order, {'num_iterations':10})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations. So index a

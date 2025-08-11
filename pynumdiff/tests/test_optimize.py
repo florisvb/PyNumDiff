@@ -89,5 +89,5 @@ def test_spectraldiff():
 def test_polydiff():
     params1, val1 = optimize(polydiff, x, dt, search_space={'step_size':1}, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(polydiff, x, dt, search_space={'step_size':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
-    assert (params1['poly_order'], params1['window_size']) == (6, 50)
-    assert (params2['poly_order'], params2['window_size']) == (4, 10)
+    assert (params1['poly_order'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
+    assert (params2['poly_order'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')

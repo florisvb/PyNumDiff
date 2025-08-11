@@ -56,7 +56,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
 
 def tvr(x, dt, order, gamma, solver=None):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
-    total variation regularized derivative. Other convex-solver-based method in this module call this function.
+    total variation regularized derivative. Other convex-solver-based methods in this module call this function.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size

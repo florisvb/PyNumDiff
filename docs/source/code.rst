@@ -5,10 +5,9 @@ API documentation
    :maxdepth: 1
 
    finite_difference
-   kalman_smooth
-   linear_model
    smooth_finite_difference
    total_variation_regularization
+   kalman_smooth
+   linear_model
    optimize
    utils
-

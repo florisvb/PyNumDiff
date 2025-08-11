@@ -78,8 +78,10 @@ method_params_and_bounds = {
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
     rts_const_deriv: ({'forwardbackward': [True, False],
-                       'qr_ratio': [-16, -12, -9, -6, -3, 0, 3, 6, 9, 12, 16]},
-                      {'qr_ratio': [1e-20, 1e20]}),
+                       'order': [1, 3],
+                       'qr_ratio': [1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 1, 1e3, 1e6, 1e9, 1e12, 1e16]},
+                      {'order': (1, 3),
+                       'qr_ratio': [1e-20, 1e20]}),
     constant_velocity: ({'forwardbackward': [True, False],
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
@@ -169,7 +171,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     categorical_params = {k for k,v in params.items() if isinstance(v, tuple)}
     categorical_combos = [dict(zip(categorical_params, combo)) for combo in product(*[params[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
-    # The Nelder-Mead's search space is the Cartesian product of all dimensions where multiple options are given in a list
+    # The Nelder-Mead's search space is the dimensions where multiple numerical (float or castable to float) options are given in a list
     search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("To optimize over categorical strings, put them in a tuple, not a list.")

@@ -8,7 +8,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 
 from ..utils import evaluate
-from ..finite_difference import first_order, second_order, fourth_order
+from ..finite_difference import finite_difference, first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
@@ -22,7 +22,7 @@ method_params_and_bounds = {
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
     polydiff: ({'step_size': [1, 2, 5],
-                'kernel': 'friedrichs',
+                'kernel': ('friedrichs', 'gaussian'), # use a tuple of multiple options for categoricals
                 'poly_order': [2, 3, 5, 7],
                 'window_size': [11, 31, 51, 91, 131]},
                {'step_size': (1, 100),
@@ -41,6 +41,9 @@ method_params_and_bounds = {
                  {'order': (1, 5),
                   'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
+    finite_difference: ({'num_iterations': [5, 10, 30, 50],
+                         'order': (2, 4)}, # order is categorical here, because can't be 3
+                        {'num_iterations': (1, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
                   {'num_iterations': (1, 1000)}),
     mediandiff: ({'window_size': [5, 15, 30, 50],
@@ -59,6 +62,10 @@ method_params_and_bounds = {
                  {'order': (3, 5),
                   's': (1e-2, 1e6),
                   'num_iterations': (1, 10)}),
+    tvr: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
+           'order': [1, 3]},
+          {'gamma': (1e-4, 1e7),
+           'order': (1, 3)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
                {'gamma': (1e-4, 1e7)}),
     iterative_velocity: ({'num_iterations': [1, 5, 10],
@@ -155,7 +162,9 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     # No need to optimize over singletons, just pass them through
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, list)}
 
-    # The search space is the Cartesian product of all dimensions where multiple options are given
+
+
+    # The Nelder-Mead's search space is the Cartesian product of all dimensions where multiple options are given in a list
     search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
     if any(v not in [float, int, bool] for v in search_space_types.values()):
         raise ValueError("Optimization over categorical strings currently not supported")

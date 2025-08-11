@@ -4,11 +4,15 @@ from pynumdiff.utils import utility
 from warnings import warn
 
 
-def _finite_difference(x, dt, num_iterations, order):
-    """Helper for all finite difference methods, since their iteration structure is all the same.
+def finite_difference(x, dt, num_iterations, order):
+    """Perform iterated finite difference of a given order. This serves as the common backing function for
+    all other methods in this module, since their iteration structure is all the same.
     
+    :param np.array[float] x: data to differentiate
+    :param float dt: step size
+    :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
+            rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
     :param int order: 1, 2, or 4, controls which finite differencing scheme to employ
-    For other parameters and return values, see public function docstrings
     """
     if num_iterations < 1: raise ValueError("num_iterations must be >0")
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
@@ -61,7 +65,7 @@ def _finite_difference(x, dt, num_iterations, order):
 
 
 def first_order(x, dt, params=None, options={}, num_iterations=1):
-    """First-order centered difference method
+    """First-order difference method
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size

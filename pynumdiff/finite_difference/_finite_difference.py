@@ -27,8 +27,8 @@ def finite_difference(x, dt, num_iterations, order):
             dxdt_hat[-1] = dxdt_hat[-2] # using stencil -1,0 vs stencil 0,1 you get an expression for the same value
         elif order == 2:
             dxdt_hat[1:-1] = (x_hat[2:] - x_hat[:-2])/2 # second-order center-difference formula
-            dxdt_hat[0] = (-3 * x_hat[0] + 4 * x_hat[2] - x_hat[4])/4 # use spaced out stencil to get endpoint formulas
-            dxdt_hat[-1] = (3 * x_hat[-1] - 4 * x_hat[-3] + x_hat[-5])/4          # that do not amplify noise. See #104
+            dxdt_hat[0] = x_hat[1] - x_hat[0]
+            dxdt_hat[-1] = x_hat[-1] - x_hat[-2] # use first-order endpoint formulas so as not to amplify noise. See #104
         elif order == 4:
             dxdt_hat[2:-2] = (8*(x_hat[3:-1] - x_hat[1:-3]) - x_hat[4:] + x_hat[:-4])/12 # fourth-order center-difference
             dxdt_hat[1] = (x_hat[2] - x_hat[0])/2

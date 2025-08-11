@@ -2,7 +2,7 @@
 """
 try:
     import cvxpy
-    from ._total_variation_regularization import velocity, acceleration, jerk, jerk_sliding, smooth_acceleration
+    from ._total_variation_regularization import tvr, velocity, acceleration, jerk, jerk_sliding, smooth_acceleration
 except:
     from warnings import warn
     warn("Limited Total Variation Regularization Support Detected! CVXPY is not installed. " +
@@ -12,4 +12,4 @@ except:
 
 from ._total_variation_regularization import iterative_velocity
 
-__all__ = ['velocity', 'acceleration', 'jerk', 'jerk_sliding', 'smooth_acceleration', 'iterative_velocity'] # So these get treated as direct members of the module by sphinx
+__all__ = ['tvr', 'velocity', 'acceleration', 'jerk', 'jerk_sliding', 'smooth_acceleration', 'iterative_velocity'] # So these get treated as direct members of the module by sphinx

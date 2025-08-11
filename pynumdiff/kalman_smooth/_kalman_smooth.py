@@ -80,11 +80,55 @@ def _RTS_smooth(xhat0, P0, y, A, C, Q, R, u=None, B=None):
 #########################################
 # Constant 1st, 2nd, and 3rd derivative #
 #########################################
-def _constant_derivative(x, P0, A, C, R, Q, forwardbackward):
-    """Helper for `constant_{velocity,acceleration,jerk}` functions, because there was a lot of
-    repeated code.
+def rts_const_deriv(x, dt, order, qr_ratio, forwardbackward):
+    """Perform Rauch-Tung-Striebel smoothing with a constant derivative model.
+
+    :param np.array[float] x: data series to differentiate
+    :param float dt: step size
+    :param int order: which derivative to stabilize in the constant-derivative model
+    :param qr_ratio: the process noise level of the divided by the measurement noise level, because,
+        per `our analysis <https://github.com/florisvb/PyNumDiff/issues/139>`_, the mean result is
+        dependent on the relative rather than absolute size of :math:`q` and :math:`r`.
+    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
+        (usually achieves better estimate at end points)
+
+    :return: tuple[np.array, np.array] of\n
+        - **x_hat** -- estimated (smoothed) x
+        - **dxdt_hat** -- estimated derivative of x
     """
-    xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0] # See #110 for why this choice of xhat0
+    q = 10**int(np.log10(qr_ratio)/2) # even-ish split of the powers across 0
+    r = q/qr_ratio
+
+    if order == 1:
+        A = np.array([[1, dt], [0, 1]]) # states are x, x'. This basically does an Euler update.
+        C = np.array([[1, 0]]) # we measure only y = noisy x
+        R = np.array([[r]])
+        Q = np.array([[1e-16, 0], [0, q]]) # uncertainty is around the velocity
+        P0 = np.array(100*np.eye(2)) # See #110 for why this choice of P0
+    elif order == 2:
+        A = np.array([[1, dt, (dt**2)/2], # states are x, x', x"
+                      [0, 1, dt],
+                      [0, 0,  1]])
+        C = np.array([[1, 0, 0]]) # we measure only y = noisy x
+        R = np.array([[r]])
+        Q = np.array([[1e-16, 0, 0],
+                      [0, 1e-16, 0],
+                      [0,     0, q]]) # uncertainty is around the acceleration
+        P0 = np.array(100*np.eye(3)) # See #110 for why this choice of P0
+    elif order == 3:
+        A = np.array([[1, dt, (dt**2)/2, (dt**3)/6], # states are x, x', x", x'"
+                      [0, 1, dt, (dt**2)/2],
+                      [0, 0,  1, dt],
+                      [0, 0,  0, 1]])
+        C = np.array([[1, 0, 0, 0]]) # we measure only y = noisy x
+        R = np.array([[r]])
+        Q = np.array([[1e-16,  0, 0,     0],
+                      [0, 1e-16, 0,     0],
+                      [0,     0, 1e-16, 0],
+                      [0,     0, 0,     q]]) # uncertainty is around the jerk
+        P0 = np.array(100*np.eye(4)) # See #110 for why this choice of P0
+
+    xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0] # The first estimate is the first seen state. See #110
     xhat_smooth = _RTS_smooth(xhat0, P0, x, A, C, Q, R) # noisy x are the "y" in Kalman-land  
     x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
     dxdt_hat_forward = xhat_smooth[:, 1]
@@ -131,13 +175,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
-    A = np.array([[1, dt], [0, 1]]) # states are x, x'. This basically does an Euler update.
-    C = np.array([[1, 0]]) # we measure only y = noisy x
-    R = np.array([[r]])
-    Q = np.array([[1e-16, 0], [0, q]]) # uncertainty is around the velocity
-    P0 = np.array(100*np.eye(2)) # See #110 for why this choice of P0
-
-    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
+    return rts_const_deriv(x, dt, 1, q/r, forwardbackward)
 
 
 def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
@@ -166,17 +204,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
-    A = np.array([[1, dt, (dt**2)/2], # states are x, x', x"
-                  [0, 1, dt],
-                  [0, 0,  1]])
-    C = np.array([[1, 0, 0]]) # we measure only y = noisy x
-    R = np.array([[r]])
-    Q = np.array([[1e-16, 0, 0],
-                  [0, 1e-16, 0],
-                  [0,     0, q]]) # uncertainty is around the acceleration
-    P0 = np.array(100*np.eye(3)) # See #110 for why this choice of P0
-
-    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
+    return rts_const_deriv(x, dt, 2, q/r, forwardbackward)
 
 
 def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
@@ -205,19 +233,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
-    A = np.array([[1, dt, (dt**2)/2, (dt**3)/6], # states are x, x', x", x'"
-                  [0, 1, dt, (dt**2)/2],
-                  [0, 0,  1, dt],
-                  [0, 0,  0, 1]])
-    C = np.array([[1, 0, 0, 0]]) # we measure only y = noisy x
-    R = np.array([[r]])
-    Q = np.array([[1e-16,  0, 0,     0],
-                   [0, 1e-16, 0,     0],
-                   [0,     0, 1e-16, 0],
-                   [0,     0, 0,     q]]) # uncertainty is around the jerk
-    P0 = np.array(100*np.eye(4)) # See #110 for why this choice of P0
-
-    return _constant_derivative(x, P0, A, C, R, Q, forwardbackward)
+    return rts_const_deriv(x, dt, 3, q/r, forwardbackward)
 
 
 def known_dynamics(x, params, u=None, options=None, xhat0=None, P0=None, A=None,

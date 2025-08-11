@@ -11,8 +11,8 @@ from ..utils import evaluate
 from ..finite_difference import finite_difference, first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
+from ..total_variation_regularization import tvr, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
+from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceleration, constant_jerk
 
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -77,6 +77,9 @@ method_params_and_bounds = {
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
+    rts_const_deriv: ({'forwardbackward': [True, False],
+                       'qr_ratio': [-16, -12, -9, -6, -3, 0, 3, 6, 9, 12, 16]},
+                      {'qr_ratio': [1e-20, 1e20]}),
     constant_velocity: ({'forwardbackward': [True, False],
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},

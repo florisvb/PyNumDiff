@@ -27,8 +27,8 @@ def finite_difference(x, dt, num_iterations, order):
             dxdt_hat[-1] = dxdt_hat[-2] # using stencil -1,0 vs stencil 0,1 you get an expression for the same value
         elif order == 2:
             dxdt_hat[1:-1] = (x_hat[2:] - x_hat[:-2])/2 # second-order center-difference formula
-            dxdt_hat[0] = x_hat[1] - x_hat[0]
-            dxdt_hat[-1] = x_hat[-1] - x_hat[-2] # use first-order endpoint formulas so as not to amplify noise. See #104
+            dxdt_hat[0] = (-3 * x_hat[0] + 4 * x_hat[2] - x_hat[4])/4
+            dxdt_hat[-1] = (3 * x_hat[-1] - 4 * x_hat[-3] + x_hat[-5])/4 # use spaced out stencil to get endpoint formulas that does not amplify noise. See #104
         elif order == 4:
             dxdt_hat[2:-2] = (8*(x_hat[3:-1] - x_hat[1:-3]) - x_hat[4:] + x_hat[:-4])/12 # fourth-order center-difference
             dxdt_hat[1] = (x_hat[2] - x_hat[0])/2
@@ -85,7 +85,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
         num_iterations = params[0] if isinstance(params, list) else params
 
-    return _finite_difference(x, dt, num_iterations, 1)
+    return finite_difference(x, dt, num_iterations, 1)
 
 
 def second_order(x, dt, num_iterations=1):
@@ -100,7 +100,7 @@ def second_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
-    return _finite_difference(x, dt, num_iterations, 2)
+    return finite_difference(x, dt, num_iterations, 2)
 
 
 def fourth_order(x, dt, num_iterations=1):
@@ -115,4 +115,4 @@ def fourth_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
-    return _finite_difference(x, dt, num_iterations, 4)
+    return finite_difference(x, dt, num_iterations, 4)

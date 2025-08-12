@@ -178,6 +178,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
             None for k,v in search_space_types.items()] # None means no bound on a dimension
 
     results = []
+    filterwarnings("ignore", '', UserWarning) # An extra filtering call, because some worker work can actually be done in the main process
     with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
         for categorical_combo in categorical_combos:
             # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same

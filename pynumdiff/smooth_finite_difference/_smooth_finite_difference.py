@@ -194,7 +194,7 @@ def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
-    t = np.arange(0, len(x)*dt, dt)
+    t = np.arange(len(x))*dt
 
     x_hat = x
     for _ in range(num_iterations):

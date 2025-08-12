@@ -10,23 +10,27 @@ from pynumdiff.finite_difference import second_order as finite_difference
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments, no-member
-def _add_noise(x, random_seed, noise_type, noise_parameters):
+def _add_noise(x, random_seed, noise_type, noise_parameters, outliers=False):
     """Add synthetic noise to data
 
     :param np.array[float] x: data
     :param int random_seed: an integer seed used to initialize the random number generator
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
-    :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param array-like noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
 
     :return: (np.array) -- noisy time series data
     """
     np.random.seed(random_seed)
     noise = np.random.__getattribute__(noise_type)(*noise_parameters, x.shape[0])
+    if outliers:
+        ndxs = np.random.choice(len(noise), len(noise)//100, replace=False) # select 1% of locations
+        noise[ndxs] = (np.random.choice([-1, 1], size=len(ndxs)) + np.random.uniform(-0.5, 0.5, len(ndxs)))*(np.max(x) - np.min(x))
     return x + noise
 
 
-def sine(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
+def sine(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False, random_seed=1,
          dt=0.01, simdt=0.0001, frequencies=(1, 1.7), magnitude=1):
     """Create toy example of time series consisted of sinusoidal modes
 
@@ -34,6 +38,7 @@ def sine(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -54,12 +59,12 @@ def sine(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed
         vel += magnitude/len(frequencies)*np.cos(t*2*np.pi*f)*2*np.pi*f
 
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart
-    noisy_pos = _add_noise(pos[idx], random_seed, noise_type, noise_parameters)
+    noisy_pos = _add_noise(pos[idx], random_seed, noise_type, noise_parameters, outliers)
 
     return noisy_pos, pos[idx], vel[idx]
 
 
-def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
+def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False, random_seed=1,
              dt=0.01, simdt=0.0001):
     """Create toy example of sharp-edged triangle wave with increasing frequencies
 
@@ -67,6 +72,7 @@ def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -103,13 +109,13 @@ def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_
 
     pos = np.interp(t, reversal_ts, reversal_vals)
     _, vel = finite_difference(pos, dt=simdt)
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters)
+    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     idx = np.arange(0, len(t), int(dt/simdt))
     return noisy_pos[idx], pos[idx], vel[idx]
 
 
-def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
+def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False, random_seed=1,
             dt=0.01, simdt=0.0001):
     """Create toy example of bounded exponential growth:
     http://www.biologydiscussion.com/population/population-growth/population-growth-curves-ecology/51854
@@ -118,6 +124,7 @@ def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_s
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -141,12 +148,12 @@ def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_s
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart
     pos = np.array(pos[idx])
     vel = np.array(vel[idx])
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters)
+    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     return noisy_pos, pos, vel
 
 
-def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
+def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False,
                       random_seed=1, dt=0.01, simdt=0.0001):
     """Create toy example of time series from an autonomous linear system
 
@@ -154,6 +161,7 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -175,13 +183,13 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     pos = xs[0,:]
 
     smooth_pos, vel = finite_difference(pos, simdt)
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters)
+    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart
     return noisy_pos[1:][idx], smooth_pos[1:][idx], vel[1:][idx]
 
 
-def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
+def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False,
                random_seed=1, dt=0.01):
     """Create a toy example of linear proportional integral controller with nonlinear control inputs.
     Simulate proportional integral control of a car attempting to maintain constant velocity while going
@@ -193,6 +201,7 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -242,12 +251,12 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
 
     pos = states[0, :]
     vel = states[1, :]
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters)
+    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     return noisy_pos, pos, vel
 
 
-def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
+def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False,
              random_seed=1, dt=0.01, simdt=0.0001):
     """Create toy example of x component from a lorenz attractor
 
@@ -255,6 +264,7 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
     :param str noise_type: type of noise, compatible with :code:`np.random` functions
                         (eg. 'normal', 'uniform', 'poisson')
     :param noise_parameters: parameters of the noise used in :code:`np.random`, leaving off :code:`size`
+    :param bool outliers: whether to corrupt 1% of the data points with out-of-distribution values
     :param int random_seed: an integer seed used to initialize the random number generator
     :param float dt: the step size
     :param float simdt: simulation step size used to generate the time series, typically smaller than
@@ -269,8 +279,7 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
     beta = 8/3
     rho = 45
 
-    def _lorenz_xyz_euler(duration=4, noise_type='normal', noise_parameters=(0, 0.5), random_seed=1,
-               dt=0.01, simdt=0.0001, x0=(5, 1, 3), normalize=True):
+    def _lorenz_xyz_euler(x0=(5, 1, 3), normalize=True):
         """Simulation of Lorenz system with Eular method"""
         t = np.arange(0, duration, simdt)
 
@@ -294,11 +303,10 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
         xyz /= f # because xyz is one longer than xyz_dot, leave off last entry
         xyz_dot /= f
 
-        noisy_xyz = np.vstack([_add_noise(xyz[i,:], random_seed+i, noise_type, noise_parameters) for i in range(3)])
+        noisy_xyz = np.vstack([_add_noise(xyz[i,:], random_seed+i, noise_type, noise_parameters, outliers) for i in range(3)])
         return noisy_xyz, xyz, xyz_dot
 
-    def _lorenz_xyz_odeint(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
-                   random_seed=1, dt=0.01, simdt=None, normalize=True):
+    def _lorenz_xyz_odeint(normalize=True):
         """Simulate the Lorenz system with scipy's ODE solver"""
         t = np.linspace(0, duration, int(duration/dt))
 
@@ -320,9 +328,8 @@ def lorenz_x(duration=4, noise_type='normal', noise_parameters=(0, 0.5),
             xyz /= 20
             xyz_dot /= 20
 
-        noisy_xyz = np.vstack([_add_noise(xyz[i,:], random_seed+i, noise_type, noise_parameters) for i in range(3)])
+        noisy_xyz = np.vstack([_add_noise(xyz[i,:], random_seed+i, noise_type, noise_parameters, outliers) for i in range(3)])
         return noisy_xyz, xyz, xyz_dot
 
-    noisy_pos, pos, vel = _lorenz_xyz_euler(duration, noise_type, noise_parameters,
-                                                    random_seed, dt, simdt)
+    noisy_pos, pos, vel = _lorenz_xyz_euler()
     return noisy_pos[0,:], pos[0,:], vel[0,:]

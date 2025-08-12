@@ -17,18 +17,18 @@ from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceler
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
-    spectraldiff: ({'even_extension': (True, False), # give boolean or numerical params in a list to scipy.optimize over them
-                   'pad_to_zero_dxdt': (True, False),
-                   'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
+    spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
+                   'pad_to_zero_dxdt': {True, False},
+                   'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]}, # give numerical params in a list to scipy.optimize over them
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
     polydiff: ({'step_size': [1, 2, 5],
-                'kernel': ('friedrichs', 'gaussian'), # use a tuple of multiple options for categoricals
+                'kernel': {'friedrichs', 'gaussian'}, # categorical
                 'poly_order': [2, 3, 5, 7],
                 'window_size': [11, 31, 51, 91, 131]},
                {'step_size': (1, 100),
                 'poly_order': (1, 8),
                 'window_size': (10, 1000)}),
-    savgoldiff: ({'poly_order': [2, 3, 5, 7, 9, 11, 13],
+    savgoldiff: ({'poly_order': [2, 3, 5, 7, 10],
                   'window_size': [3, 10, 30, 50, 90, 130, 200, 300],
                   'smoothing_win': [3, 10, 30, 50, 90, 130, 200, 300]},
                  {'poly_order': (1, 12),
@@ -42,7 +42,7 @@ method_params_and_bounds = {
                   'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
     finite_difference: ({'num_iterations': [5, 10, 30, 50],
-                         'order': (2, 4)}, # order is categorical here, because it can't be 3
+                         'order': {2, 4}}, # order is categorical here, because it can't be 3
                         {'num_iterations': (1, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
                   {'num_iterations': (1, 1000)}),
@@ -50,18 +50,18 @@ method_params_and_bounds = {
                   'num_iterations': [1, 5, 10]},
                 {'window_size': (1, 1e6),
                  'num_iterations': (1, 100)}),
-    butterdiff: ({'filter_order': tuple(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
+    butterdiff: ({'filter_order': set(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
                   'cutoff_freq': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
                   'num_iterations': [1, 5, 10]},
                  {'cutoff_freq': (1e-4, 1-1e-2),
                   'num_iterations': (1, 1000)}),
-    splinediff: ({'order': (3, 4, 5), # categorical, because order is whole number, and there aren't many choices
+    splinediff: ({'order': {3, 4, 5}, # categorical, because order is whole number, and there aren't many choices
                   's': [0.5, 0.9, 0.95, 1, 10, 100],
                   'num_iterations': [1, 5, 10]},
                  {'s': (1e-2, 1e6),
                   'num_iterations': (1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-               'order': (1, 2, 3)}, # categorical, because order is whole number, and there aren't many choices
+               'order': {1, 2, 3}}, # categorical, because order is whole number, and there aren't many choices
               {'gamma': (1e-4, 1e7)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
                {'gamma': (1e-4, 1e7)}),
@@ -75,7 +75,7 @@ method_params_and_bounds = {
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
     rts_const_deriv: ({'forwardbackward': (True, False),
-                       'order': (1, 2, 3), # for this few options, the optimization works better if this is categorical
+                       'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                        'qr_ratio': [1e-16, 1e-12] + [10**k for k in range(-9, 10, 2)] + [1e12, 1e16]},
                       {'qr_ratio': [1e-20, 1e20]}),
     constant_velocity: ({'forwardbackward': (True, False),
@@ -161,10 +161,10 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     params.update(search_space_updates) # for things not given, use defaults
 
     # No need to optimize over singletons, just pass them through
-    singleton_params = {k:v for k,v in params.items() if not isinstance(v, (list, tuple))}
+    singleton_params = {k:v for k,v in params.items() if not isinstance(v, (list, set))}
 
     # To handle categoricals, find their combination, and then pass each set individually
-    categorical_params = {k for k,v in params.items() if isinstance(v, tuple)}
+    categorical_params = {k for k,v in params.items() if isinstance(v, set)}
     categorical_combos = [dict(zip(categorical_params, combo)) for combo in product(*[params[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
     # The Nelder-Mead's search space is the dimensions where multiple numerical options are given in a list

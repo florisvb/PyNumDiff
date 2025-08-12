@@ -54,9 +54,9 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     return x_hat, dxdt_hat
 
 
-def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
+def tvrdiff(x, dt, order, gamma, solver=None):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
-    total variation regularized derivative.
+    total variation regularized derivative. Other convex-solver-based methods in this module call this function.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -64,7 +64,7 @@ def _total_variation_regularized_derivative(x, dt, order, gamma, solver=None):
     :param float gamma: regularization parameter
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
                     In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
-  
+
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
@@ -131,7 +131,7 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    return _total_variation_regularized_derivative(x, dt, 1, gamma, solver=solver)
+    return tvrdiff(x, dt, 1, gamma, solver=solver)
 
 
 def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
@@ -158,7 +158,7 @@ def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    return _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
+    return tvrdiff(x, dt, 2, gamma, solver=solver)
 
 
 def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
@@ -185,7 +185,7 @@ def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
-    return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
+    return tvrdiff(x, dt, 3, gamma, solver=solver)
 
 
 def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_size=None, solver=None):
@@ -215,7 +215,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     elif gamma == None or window_size == None:
         raise ValueError("`gamma` and `window_size` must be given.")
 
-    _, dxdt_hat = _total_variation_regularized_derivative(x, dt, 2, gamma, solver=solver)
+    _, dxdt_hat = tvrdiff(x, dt, 2, gamma, solver=solver)
 
     kernel = utility.gaussian_kernel(window_size)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)
@@ -255,11 +255,11 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, wind
 
     if len(x) < window_size or window_size < 15:
         warn("len(x) should be > window_size >= 15, calling standard jerk() without sliding")
-        return _total_variation_regularized_derivative(x, dt, 3, gamma, solver=solver)
+        return tvrdiff(x, dt, 3, gamma, solver=solver)
 
     if window_size % 2 == 0:
         window_size += 1 # has to be odd
         warn("Kernel window size should be odd. Added 1 to length.")
     ramp = window_size//5
     kernel = np.hstack((np.arange(1, ramp+1)/ramp, np.ones(window_size - 2*ramp), np.arange(ramp, 0, -1)/ramp))
-    return utility.slide_function(_total_variation_regularized_derivative, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)
+    return utility.slide_function(tvrdiff, x, dt, kernel, 3, gamma, stride=ramp, solver=solver)

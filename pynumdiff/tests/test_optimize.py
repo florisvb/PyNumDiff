@@ -24,32 +24,32 @@ def test_finite_difference():
     assert params2['num_iterations'] == 1
 
 def test_mediandiff():
-    params1, val1 = optimize(mediandiff, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(mediandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params1, val1 = optimize(mediandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
+    params2, val2 = optimize(mediandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     assert params1['window_size'] == 5
     assert params2['window_size'] == 1
 
 def test_meandiff():
-    params1, val1 = optimize(meandiff, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(meandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params1, val1 = optimize(meandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
+    params2, val2 = optimize(meandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     assert params1['window_size'] == 5
     assert params2['window_size'] == 1
 
 def test_gaussiandiff():
-    params1, val1 = optimize(gaussiandiff, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(gaussiandiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params1, val1 = optimize(gaussiandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
+    params2, val2 = optimize(gaussiandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     assert params1['window_size'] == 9
     assert params2['window_size'] == 1
 
 def test_friedrichsdiff():
-    params1, val1 = optimize(friedrichsdiff, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(friedrichsdiff, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params1, val1 = optimize(friedrichsdiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
+    params2, val2 = optimize(friedrichsdiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     assert params1['window_size'] == 9
     assert params2['window_size'] == 1
 
 def test_iterative_velocity():
-    params1, val1 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(iterative_velocity, x, dt, search_space={'num_iterations':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params1, val1 = optimize(iterative_velocity, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
+    params2, val2 = optimize(iterative_velocity, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     
     np.testing.assert_almost_equal(params1['gamma'], 0.0001, decimal=4)
     np.testing.assert_almost_equal(params2['gamma'], 0.0001, decimal=4)
@@ -59,7 +59,7 @@ def test_velocity():
     except: skip("could not import cvxpy, skipping test_velocity")
 
     params1, val1 = optimize(velocity, x, dt, dxdt_truth=dxdt_truth, padding='auto', maxiter=20)
-    params2, val2 = optimize(velocity, x, dt, tvgamma=tvgamma, dxdt_truth=None, padding='auto', maxiter=20)
+    params2, val2 = optimize(velocity, x, dt, tvgamma=tvgamma, padding='auto', maxiter=20)
 
     np.testing.assert_almost_equal(params1['gamma'], 0.0769, decimal=3)
     np.testing.assert_almost_equal(params2['gamma'], 0.010, decimal=3)
@@ -76,18 +76,18 @@ def test_acceleration():
 
 def test_savgoldiff():
     params1, val1 = optimize(savgoldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
+    params2, val2 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, padding='auto')
     assert (params1['poly_order'], params1['window_size'], params1['smoothing_win']) == (7, 41, 3)
     assert (params2['poly_order'], params2['window_size'], params2['smoothing_win']) == (3, 3, 5)
 
 def test_spectraldiff():
     params1, val1 = optimize(spectraldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, padding='auto')
-    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.105, decimal=2)
-    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.105, decimal=2)
+    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.18, decimal=2)
+    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.45, decimal=2)
 
 def test_polydiff():
-    params1, val1 = optimize(polydiff, x, dt, search_space={'step_size':1}, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(polydiff, x, dt, search_space={'step_size':1}, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
-    assert (params1['poly_order'], params1['window_size']) == (6, 50)
-    assert (params2['poly_order'], params2['window_size']) == (4, 10)
+    params1, val1 = optimize(polydiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'step_size':1}, padding='auto')
+    params2, val2 = optimize(polydiff, x, dt, tvgamma=tvgamma, search_space_updates={'step_size':1}, padding='auto')
+    assert (params1['poly_order'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
+    assert (params2['poly_order'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')

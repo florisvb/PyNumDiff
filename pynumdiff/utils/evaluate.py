@@ -52,7 +52,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     fig.tight_layout()
 
     if show_error:
-        _, _, rms_dxdt = metrics(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
+        _, _, rms_dxdt = rmse(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
         R_sqr = error_correlation(dxdt_hat, dxdt_truth)
         print('RMS error in velocity: ', rms_dxdt)
         print('Error correlation: ', R_sqr)
@@ -76,8 +76,9 @@ def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_h
     fig.tight_layout()
 
 
-def metrics(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
-    """Evaluate x_hat based on various metrics, depending on whether dxdt_truth and x_truth are known or not.
+def rmse(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
+    """Evaluate x_hat based on RMSE, calculating different ones depending on whether :code:`dxdt_truth`
+    and :code:`x_truth` are known.
 
     :param np.array[float] x: data that was differentiated
     :param float dt: step size

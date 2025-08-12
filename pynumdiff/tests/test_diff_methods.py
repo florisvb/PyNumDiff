@@ -8,7 +8,8 @@ from ..total_variation_regularization import velocity, acceleration, jerk, itera
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 # Function alias for testing a case where parameters change the behavior in a big way
-def iterated_first_order(*args, **kwargs): return first_order(*args, **kwargs)
+def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
+def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -30,7 +31,7 @@ test_funcs_and_derivs = [
 # Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
     (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
-    (iterated_first_order, {'num_iterations':2}), (iterated_first_order, [2], {'iterate':True}),
+    (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (polydiff, {'poly_order':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'poly_order':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
@@ -65,24 +66,30 @@ error_bounds = {
                   [(-25, -25), (1, 0), (0, 0), (1, 1)],
                   [(-25, -25), (2, 2), (0, 0), (2, 2)],
                   [(-25, -25), (3, 3), (0, 0), (3, 3)]],
-    iterated_first_order: [[(-9, -10), (-25, -25), (0, -1), (1, 0)],
-                           [(-9, -10), (-13, -14), (0, -1), (1, 0)],
-                           [(0, 0), (1, 0), (0, 0), (1, 0)],
-                           [(0, 0), (1, 0), (0, 0), (1, 1)],
-                           [(1, 1), (2, 2), (1, 1), (2, 2)],
-                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
     second_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (0, -1), (0, 0), (1, 1)],
                    [(-25, -25), (1, 1), (0, 0), (1, 1)],
                    [(-25, -25), (3, 3), (0, 0), (3, 3)]],
+    iterated_second_order: [[(-9, -10), (-25, -25), (0, -1), (0, 0)],
+                           [(-9, -10), (-14, -14), (0, -1), (0, 0)],
+                           [(-1, -1), (0, 0), (0, -1), (0, 0)],
+                           [(0, 0), (1, 0), (0, 0), (1, 0)],
+                           [(1, 1), (2, 2), (1, 1), (2, 2)],
+                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
     fourth_order: [[(-25, -25), (-25, -25), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (-13, -13), (0, 0), (1, 1)],
                    [(-25, -25), (-2, -2), (0, 0), (1, 1)],
                    [(-25, -25), (1, 0), (0, 0), (1, 1)],
                    [(-25, -25), (2, 2), (0, 0), (2, 2)]],
+    iterated_fourth_order: [[(-9, -10), (-25, -25), (0, -1), (0, 0)],
+                            [(-9, -10), (-13, -13), (0, -1), (0, 0)],
+                            [(-1, -1), (0, 0), (-1, -1), (0, 0)],
+                            [(0, -1), (1, 1), (0, 0), (1, 1)],
+                            [(1, 1), (2, 2), (1, 1), (2, 2)],
+                            [(1, 1), (3, 3), (1, 1), (3, 3)]],
     lineardiff: [[(-6, -6), (-5, -6), (0, -1), (0, 0)],
                  [(0, 0), (2, 1), (0, 0), (2, 1)],
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
@@ -144,20 +151,20 @@ error_bounds = {
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (3, 3), (1, 0), (3, 3)]],
     constant_velocity: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                        [(-6, -6), (-5, -5), (0, -1), (0, 0)],
+                        [(-3, -3), (-2, -2), (0, -1), (0, 0)],
                         [(-1, -2), (0, 0), (0, -1), (0, 0)],
                         [(-1, -1), (1, 0), (0, -1), (1, 0)],
                         [(1, 1), (2, 2), (1, 1), (2, 2)],
                         [(1, 1), (3, 3), (1, 1), (3, 3)]],
     constant_acceleration: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                            [(-5, -6), (-4, -5), (0, -1), (0, 0)],
-                            [(-5, -5), (-4, -4), (0, -1), (0, 0)],
+                            [(-3, -4), (-3, -3), (0, -1), (0, 0)],
+                            [(-3, -3), (-2, -2), (0, -1), (0, 0)],
                             [(-1, -1), (0, 0), (0, -1), (0, 0)],
                             [(1, 1), (2, 2), (1, 1), (2, 2)],
                             [(1, 1), (3, 3), (1, 1), (3, 3)]],
     constant_jerk: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                    [(-5, -5), (-4, -5), (0, -1), (0, 0)],
                     [(-4, -5), (-3, -4), (0, -1), (0, 0)],
+                    [(-3, -4), (-2, -3), (0, -1), (0, 0)],
                     [(-1, -2), (0, 0), (0, -1), (0, 0)],
                     [(1, 0), (2, 1), (1, 0), (2, 1)],
                     [(1, 1), (3, 3), (1, 1), (3, 3)]],

@@ -11,14 +11,14 @@ from ..utils import evaluate
 from ..finite_difference import finite_difference, first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
 from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
-from ..total_variation_regularization import tvr, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
+from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceleration, constant_jerk
 
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
-    spectraldiff: ({'even_extension': [True, False], # give boolean or numerical params in a list to scipy.optimize over them
-                   'pad_to_zero_dxdt': [True, False],
+    spectraldiff: ({'even_extension': (True, False), # give boolean or numerical params in a list to scipy.optimize over them
+                   'pad_to_zero_dxdt': (True, False),
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]},
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
     polydiff: ({'step_size': [1, 2, 5],
@@ -42,7 +42,7 @@ method_params_and_bounds = {
                   'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
     finite_difference: ({'num_iterations': [5, 10, 30, 50],
-                         'order': (2, 4)}, # order is categorical here, because can't be 3
+                         'order': (2, 4)}, # order is categorical here, because it can't be 3
                         {'num_iterations': (1, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
                   {'num_iterations': (1, 1000)}),
@@ -50,22 +50,19 @@ method_params_and_bounds = {
                   'num_iterations': [1, 5, 10]},
                 {'window_size': (1, 1e6),
                  'num_iterations': (1, 100)}),
-    butterdiff: ({'filter_order': [1, 2, 3, 4, 5, 6, 7],
+    butterdiff: ({'filter_order': tuple(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
                   'cutoff_freq': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
                   'num_iterations': [1, 5, 10]},
-                 {'filter_order': (1, 10),
-                  'cutoff_freq': (1e-4, 1-1e-2),
+                 {'cutoff_freq': (1e-4, 1-1e-2),
                   'num_iterations': (1, 1000)}),
-    splinediff: ({'order': [3, 5],
+    splinediff: ({'order': (3, 4, 5), # categorical, because order is whole number, and there aren't many choices
                   's': [0.5, 0.9, 0.95, 1, 10, 100],
                   'num_iterations': [1, 5, 10]},
-                 {'order': (3, 5),
-                  's': (1e-2, 1e6),
+                 {'s': (1e-2, 1e6),
                   'num_iterations': (1, 10)}),
-    tvr: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-           'order': [1, 3]},
-          {'gamma': (1e-4, 1e7),
-           'order': (1, 3)}),
+    tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
+               'order': (1, 2, 3)}, # categorical, because order is whole number, and there aren't many choices
+              {'gamma': (1e-4, 1e7)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
                {'gamma': (1e-4, 1e7)}),
     iterative_velocity: ({'num_iterations': [1, 5, 10],
@@ -77,12 +74,11 @@ method_params_and_bounds = {
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
-    rts_const_deriv: ({'forwardbackward': [True, False],
-                       'order': [1, 3],
-                       'qr_ratio': [1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 1, 1e3, 1e6, 1e9, 1e12, 1e16]},
-                      {'order': (1, 3),
-                       'qr_ratio': [1e-20, 1e20]}),
-    constant_velocity: ({'forwardbackward': [True, False],
+    rts_const_deriv: ({'forwardbackward': (True, False),
+                       'order': (1, 2, 3), # for this few options, the optimization works better if this is categorical
+                       'qr_ratio': [1e-16, 1e-12] + [10**k for k in range(-9, 10, 2)] + [1e12, 1e16]},
+                      {'qr_ratio': [1e-20, 1e20]}),
+    constant_velocity: ({'forwardbackward': (True, False),
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
                          {'q': (1e-10, 1e10),
@@ -113,8 +109,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     :return: float, cost of this objective at the point
     """
     point_params = {k:(v if search_space_types[k] == float else 
-                int(np.round(v)) if search_space_types[k] == int else
-                v > 0.5) for k,v in zip(search_space_types, point)} # point -> dict
+                int(np.round(v))) for k,v in zip(search_space_types, point)} # point -> dict
     # add back in the singletons we're not searching over
     try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # estimate x and dxdt
     except np.linalg.LinAlgError: return 1000000000 # some methods can fail numerically
@@ -131,24 +126,25 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         return rms_rec_x + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
 
 
-def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, padding=0, metric='rmse',
-    opt_method='Nelder-Mead', maxiter=10):
+def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
+    padding=0, opt_method='Nelder-Mead', maxiter=10):
     """Find the optimal parameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
     :param np.array[float] x: data to differentiate
     :param float dt: step size
-    :param dict search_space: function parameter settings to use as initial starting points in optimization,
-                    structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The search space
-                    is the Cartesian product. If left None, a default search space of initial values is used.
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
     :param float tvgamma: Only used if :code:`dxdt_truth` is given. Regularization value used to select for parameters
                     that yield a smooth derivative. Larger value results in a smoother derivative.
+    :param dict search_space_updates: At the top of :code:`_optimize.py`, each method has a search space of parameters
+                    settings structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The Cartesian
+                    product of values are used as initial starting points in optimization. If left None, the default search
+                    space is used.
+    :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
+                    is not None, see _objective_function
     :param int padding: number of time steps to ignore at the beginning and end of the time series in the
                     optimization, or :code:`'auto'` to ignore 2.5% at each end. Larger value causes the
                     optimization to emphasize the accuracy of dxdt in the middle of the time series
-    :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
-                    is not None, see _objective_function
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
     :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
 
@@ -162,7 +158,7 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
         raise ValueError('`metric` can only be `error_correlation` if `dxdt_truth` is given.')
 
     params, bounds = method_params_and_bounds[func]
-    params.update(search_space) # for things not given, use defaults
+    params.update(search_space_updates) # for things not given, use defaults
 
     # No need to optimize over singletons, just pass them through
     singleton_params = {k:v for k,v in params.items() if not isinstance(v, (list, tuple))}
@@ -171,15 +167,14 @@ def optimize(func, x, dt, search_space={}, dxdt_truth=None, tvgamma=1e-2, paddin
     categorical_params = {k for k,v in params.items() if isinstance(v, tuple)}
     categorical_combos = [dict(zip(categorical_params, combo)) for combo in product(*[params[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
-    # The Nelder-Mead's search space is the dimensions where multiple numerical (float or castable to float) options are given in a list
+    # The Nelder-Mead's search space is the dimensions where multiple numerical options are given in a list
     search_space_types = {k:type(v[0]) for k,v in params.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
-    if any(v not in [float, int, bool] for v in search_space_types.values()):
-        raise ValueError("To optimize over categorical strings, put them in a tuple, not a list.")
-    # If excluding string type, I can just cast ints and bools to floats, and we're good to go
+    if any(v not in [float, int] for v in search_space_types.values()):
+        raise ValueError("To optimize over categorical strings or bools, put them in a tuple, not a list.")
+    # Cast ints to floats, and we're good to go
     starting_points = list(product(*[np.array(params[k]).astype(float) for k in search_space_types]))
     # The numerical space should have bounds
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
-            (0, 1) if v == bool else
             None for k,v in search_space_types.items()] # None means no bound on a dimension
 
     results = []
@@ -240,17 +235,17 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
-    methods = [second_order, fourth_order, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
-        splinediff, spectraldiff, polydiff, savgoldiff, constant_velocity, constant_acceleration, constant_jerk]
+    methods = [finite_difference, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
+        splinediff, spectraldiff, polydiff, savgoldiff, rts_const_deriv]
     try: # optionally skip some methods
         import cvxpy
-        methods += [acceleration, jerk, smooth_acceleration]
+        methods += [tvrdiff, smooth_acceleration]
     except ImportError:
         warn("CVXPY not installed, skipping acceleration, jerk, and smooth_acceleration")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):
-        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma)
+        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=({'order':(2,3)} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
         if v < best_value:
             method = func
             best_value = v

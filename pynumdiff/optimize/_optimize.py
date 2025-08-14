@@ -61,7 +61,7 @@ method_params_and_bounds = {
                  {'s': (1e-2, 1e6),
                   'num_iterations': (1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-               'order': {1, 2, 3}}, # categorical, because order is whole number, and there aren't many choices
+               'order': {1, 2, 3}}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
               {'gamma': (1e-4, 1e7)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
                {'gamma': (1e-4, 1e7)}),

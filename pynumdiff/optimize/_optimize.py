@@ -74,11 +74,11 @@ method_params_and_bounds = {
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
-    rts_const_deriv: ({'forwardbackward': (True, False),
+    rts_const_deriv: ({'forwardbackward': {True, False},
                        'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                        'qr_ratio': [1e-16, 1e-12] + [10**k for k in range(-9, 10, 2)] + [1e12, 1e16]},
                       {'qr_ratio': [1e-20, 1e20]}),
-    constant_velocity: ({'forwardbackward': (True, False),
+    constant_velocity: ({'forwardbackward': {True, False},
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
                          {'q': (1e-10, 1e10),
@@ -246,7 +246,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):
-        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=({'order':(2,3)} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
+        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=({'order':{2,3}} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
         if v < best_value:
             method = func
             best_value = v

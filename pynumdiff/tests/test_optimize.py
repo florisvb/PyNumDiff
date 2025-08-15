@@ -78,8 +78,8 @@ def test_acceleration():
 def test_savgoldiff():
     params1, val1 = optimize(savgoldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
     params2, val2 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, padding='auto')
-    assert (params1['poly_order'], params1['window_size'], params1['smoothing_win']) == (7, 41, 3)
-    assert (params2['poly_order'], params2['window_size'], params2['smoothing_win']) == (3, 3, 5)
+    assert (params1['poly_deg'], params1['window_size'], params1['smoothing_win']) == (7, 41, 3)
+    assert (params2['poly_deg'], params2['window_size'], params2['smoothing_win']) == (3, 3, 5)
 
 def test_spectraldiff():
     params1, val1 = optimize(spectraldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
@@ -90,5 +90,5 @@ def test_spectraldiff():
 def test_polydiff():
     params1, val1 = optimize(polydiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'step_size':1}, padding='auto')
     params2, val2 = optimize(polydiff, x, dt, tvgamma=tvgamma, search_space_updates={'step_size':1}, padding='auto')
-    assert (params1['poly_order'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
-    assert (params2['poly_order'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')
+    assert (params1['poly_deg'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
+    assert (params2['poly_deg'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')

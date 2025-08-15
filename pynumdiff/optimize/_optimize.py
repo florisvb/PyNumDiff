@@ -24,15 +24,15 @@ method_params_and_bounds = {
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
     polydiff: ({'step_size': [1, 2, 5],
                 'kernel': {'friedrichs', 'gaussian'}, # categorical
-                'poly_deg': [2, 3, 5, 7],
+                'degree': [2, 3, 5, 7],
                 'window_size': [11, 31, 51, 91, 131]},
                {'step_size': (1, 100),
-                'poly_deg': (1, 8),
+                'degree': (1, 8),
                 'window_size': (10, 1000)}),
-    savgoldiff: ({'poly_deg': [2, 3, 5, 7, 10],
+    savgoldiff: ({'degree': [2, 3, 5, 7, 10],
                   'window_size': [3, 10, 30, 50, 90, 130, 200, 300],
                   'smoothing_win': [3, 10, 30, 50, 90, 130, 200, 300]},
-                 {'poly_deg': (1, 12),
+                 {'degree': (1, 12),
                   'window_size': (3, 1000),
                   'smoothing_win': (3, 1000)}),
     lineardiff: ({'kernel': 'gaussian',
@@ -56,7 +56,7 @@ method_params_and_bounds = {
                   'num_iterations': [1, 5, 10]},
                  {'cutoff_freq': (1e-4, 1-1e-2),
                   'num_iterations': (1, 1000)}),
-    splinediff: ({'deg': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
+    splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
                   's': [0.5, 0.9, 0.95, 1, 10, 100],
                   'num_iterations': [1, 5, 10]},
                  {'s': (1e-2, 1e6),

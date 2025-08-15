@@ -3,10 +3,11 @@ from pytest import mark
 from warnings import warn
 
 from ..finite_difference import first_order, second_order, fourth_order
-from ..linear_model import lineardiff, polydiff, savgoldiff, spectraldiff
+from ..linear_model import lineardiff, spectraldiff
+from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
-from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
+from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 # Function alias for testing a case where parameters change the behavior in a big way
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)

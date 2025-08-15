@@ -228,7 +228,8 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
 
 
 def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, window_size=101):
-    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
+    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative in a
+    sliding window.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size

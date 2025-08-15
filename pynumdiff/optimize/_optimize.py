@@ -8,9 +8,10 @@ from multiprocessing import Pool
 from tqdm import tqdm
 
 from ..utils import evaluate
-from ..finite_difference import finite_difference, first_order, second_order, fourth_order
-from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..linear_model import spectraldiff, polydiff, savgoldiff, lineardiff
+from ..finite_difference import finitediff, first_order, second_order, fourth_order
+from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from ..linear_model import spectraldiff, lineardiff
+from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceleration, constant_jerk
 
@@ -41,9 +42,9 @@ method_params_and_bounds = {
                  {'order': (1, 5),
                   'gamma': (1e-3, 1000),
                   'window_size': (15, 1000)}),
-    finite_difference: ({'num_iterations': [5, 10, 30, 50],
-                         'order': {2, 4}}, # order is categorical here, because it can't be 3
-                        {'num_iterations': (1, 1000)}),
+    finitediff: ({'num_iterations': [5, 10, 30, 50],
+                  'order': {2, 4}}, # order is categorical here, because it can't be 3
+                 {'num_iterations': (1, 1000)}),
     first_order: ({'num_iterations': [5, 10, 30, 50]},
                   {'num_iterations': (1, 1000)}),
     mediandiff: ({'window_size': [5, 15, 30, 50],
@@ -236,7 +237,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
-    methods = [finite_difference, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
+    methods = [finitediff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
         splinediff, spectraldiff, polydiff, savgoldiff, rts_const_deriv]
     try: # optionally skip some methods
         import cvxpy

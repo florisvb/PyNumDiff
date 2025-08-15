@@ -4,7 +4,7 @@ from pynumdiff.utils import utility
 from warnings import warn
 
 
-def finite_difference(x, dt, num_iterations, order):
+def finitediff(x, dt, num_iterations, order):
     """Perform iterated finite difference of a given order. This serves as the common backing function for
     all other methods in this module.
     
@@ -85,7 +85,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
         num_iterations = params[0] if isinstance(params, list) else params
 
-    return finite_difference(x, dt, num_iterations, 1)
+    return finitediff(x, dt, num_iterations, 1)
 
 
 def second_order(x, dt, num_iterations=1):
@@ -100,7 +100,7 @@ def second_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
-    return finite_difference(x, dt, num_iterations, 2)
+    return finitediff(x, dt, num_iterations, 2)
 
 
 def fourth_order(x, dt, num_iterations=1):
@@ -115,4 +115,4 @@ def fourth_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
-    return finite_difference(x, dt, num_iterations, 4)
+    return finitediff(x, dt, num_iterations, 4)

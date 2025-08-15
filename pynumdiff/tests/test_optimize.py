@@ -1,9 +1,10 @@
 import numpy as np
 from pytest import skip
 
-from ..finite_difference import first_order as iterated_finite_difference # actually second order
-from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff, splinediff
-from ..linear_model import spectraldiff, polydiff, savgoldiff
+from ..finite_difference import first_order as iterated_finite_difference
+from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from ..linear_model import spectraldiff
+from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, iterative_velocity
 from ..optimize import optimize
 from ..utils.simulate import pi_cruise_control

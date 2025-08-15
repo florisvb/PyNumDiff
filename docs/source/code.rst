@@ -6,6 +6,7 @@ API documentation
 
    finite_difference
    smooth_finite_difference
+   polynomial_fit
    total_variation_regularization
    kalman_smooth
    linear_model

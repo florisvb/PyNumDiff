@@ -4,6 +4,7 @@ from warnings import warn
 
 # included code
 from pynumdiff.finite_difference import second_order as finite_difference
+from pynumdiff.polynomial_fit import splinediff as _splinediff # patch through
 from pynumdiff.utils import utility
 
 
@@ -170,38 +171,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     return x_hat, dxdt_hat
 
 
-def splinediff(x, dt, params=None, options={}, order=3, s=None, num_iterations=1):
-    """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
-    scipy.interpolate.UnivariateSpline.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list params: (**deprecated**, prefer :code:`order`, :code:`cutoff_freq`, and :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int order: polynomial order of the spline. A kth order spline can be differentiated k times.
-    :param float s: positive smoothing factor used to choose the number of knots. Number of knots will be increased
-        until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
-    :param int num_iterations: how many times to apply smoothing
-
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
-    """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and " +
-            "`num_iterations` instead.", DeprecationWarning)
-        order, s = params[0:2]
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[2]
-
-    t = np.arange(len(x))*dt
-
-    x_hat = x
-    for _ in range(num_iterations):
-        spline = scipy.interpolate.UnivariateSpline(t, x_hat, k=order, s=s)
-        x_hat = spline(t)
-
-    dspline = spline.derivative()
-    dxdt_hat = dspline(t)
-
-    return x_hat, dxdt_hat
+def splinediff(*args, **kwargs):
+    warn("`splindiff` has moved to `polynomial_fit.splinediff` and will be removed from "
+        + "`smooth_finite_difference` in a future release.", DeprecationWarning)
+    return _splinediff(*args, **kwargs)

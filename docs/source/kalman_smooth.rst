@@ -4,7 +4,7 @@ kalman_smooth
 .. automodule:: pynumdiff.kalman_smooth
     :no-members:
 
-.. autofunction:: pynumdiff.kalman_smooth.rts_const_deriv
+.. autofunction:: pynumdiff.kalman_smooth.rtsdiff
 .. autofunction:: pynumdiff.kalman_smooth.constant_velocity
 .. autofunction:: pynumdiff.kalman_smooth.constant_acceleration
 .. autofunction:: pynumdiff.kalman_smooth.constant_jerk

@@ -2,7 +2,7 @@
 - `kalman_smooth` contains classic linear Kalman filter and RTS smoothing code, as well as a constant-derivative naive-model smoothing method for 1st (velocity), 2nd (acceleration), or 3rd (jerk) order.
 - `linear_model` contains `lineardiff`, which tries to fit a linear model on a sliding window, and `spectraldiff`, based on Fourier transforms.
 - `optimize` contains code to find best parameter settings for methods, tuned using Nelder-Mead according to the paper "Numerical differentiation of noisy data: A unifying multi-objective optimization framework", as well as a method suggestion metamethod.
-- `polynomial_fit` contains `splinediff`, `polydiff`, and `savgoldiff`, which all explicitly or implicitly fit polynomials over pieces of the data.
+- `polynomial_fit` contains methods which explicitly or implicitly fit polynomials over pieces of the data.
 - `smooth_finite_difference` contains methods which do a smoothing step followed by simple finite difference.
 - `tests` contains `pytest` unit tests of
 	1. all the differentiation methods, checking their results against a suite of known analytic functions (including an ability to plot if the `--plot` command is passed to `pytest`, see `conftest.py`)

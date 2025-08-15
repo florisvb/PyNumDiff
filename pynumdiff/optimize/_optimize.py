@@ -13,7 +13,7 @@ from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, fried
 from ..linear_model import spectraldiff, lineardiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import rts_const_deriv, constant_velocity, constant_acceleration, constant_jerk
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk
 
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -75,7 +75,7 @@ method_params_and_bounds = {
                            'window_size': [3, 10, 30, 50, 90, 130]},
                           {'gamma': (1e-4, 1e7),
                            'window_size': (3, 1000)}),
-    rts_const_deriv: ({'forwardbackward': {True, False},
+    rtsdiff: ({'forwardbackward': {True, False},
                        'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                        'qr_ratio': [1e-16, 1e-12] + [10**k for k in range(-9, 10, 2)] + [1e12, 1e16]},
                       {'qr_ratio': [1e-20, 1e20]}),
@@ -238,7 +238,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
     methods = [finitediff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
-        splinediff, spectraldiff, polydiff, savgoldiff, rts_const_deriv]
+        splinediff, spectraldiff, polydiff, savgoldiff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
         methods += [tvrdiff, smooth_acceleration]

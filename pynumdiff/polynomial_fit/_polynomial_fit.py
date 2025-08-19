@@ -10,7 +10,8 @@ def splinediff(x, dt, params=None, options={}, degree=3, s=None, num_iterations=
     scipy.interpolate.UnivariateSpline.
 
     :param np.array[float] x: data to differentiate
-    :param float dt: step size
+    :param float or array[float] dt: This function supports variable step size. This parameter is either the constant
+        step size if given as a single float, or data locations if given as an array of same length as :code:`x`. 
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int degree: polynomial degree of the spline. A kth degree spline can be differentiated k times.
@@ -29,7 +30,11 @@ def splinediff(x, dt, params=None, options={}, degree=3, s=None, num_iterations=
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
-    t = np.arange(len(x))*dt
+    if isinstance(dt, (np.ndarray, list)): # support variable step size for this function
+        if len(x) != len(dt): raise ValueError("If `dt` is given as array-like, must have same length as `x`.")
+        t = dt
+    else:
+        t = np.arange(len(x))*dt
 
     x_hat = x
     for _ in range(num_iterations):

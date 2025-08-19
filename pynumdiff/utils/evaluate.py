@@ -54,8 +54,8 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     if show_error:
         _, _, rms_dxdt = rmse(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
         R_sqr = error_correlation(dxdt_hat, dxdt_truth)
-        print('RMS error in velocity: ', rms_dxdt)
-        print('Error correlation: ', R_sqr)
+        axes[1].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
+                     transform=axes[1].transAxes, fontsize=15, verticalalignment='top')
 
 
 def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_hat3, title3):
@@ -72,6 +72,10 @@ def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_h
         axes[i].tick_params(axis='y', labelsize=15)
         axes[i].set_title(title, fontsize=18)
         if i==2: axes[i].legend(loc='lower right', fontsize=12)
+        _, _, rms_dxdt = rmse(np.zeros(dxdt_hat.shape), dt, np.zeros(dxdt_hat.shape), dxdt_hat, np.zeros(dxdt_hat.shape), dxdt_truth)
+        R_sqr = error_correlation(dxdt_hat, dxdt_truth)
+        axes[i].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
+                     transform=axes[i].transAxes, fontsize=15, verticalalignment='top')
 
     fig.tight_layout()
 

@@ -179,7 +179,7 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
 
-    weights = np.zeros((int(np.ceil(len(x)/stride)), len(x)))
+    weights = np.zeros((int(np.ceil(len(x)/stride)), len(x))) # Could be more space efficient
     x_hats = np.zeros(weights.shape)
     dxdt_hats = np.zeros(weights.shape)
 

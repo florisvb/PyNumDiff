@@ -231,10 +231,10 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
 
 
 def rbfdiff(x, _t, sigma=1, lmbd=0.01):
-    """Find smoothed function and derivative estimates assuming the signal is generated from a Gaussian
-    process, effectively the same assumption the Kalman filter makes. This method works by generating a
-    sparse kernel (naively NxN but truncated to not include tiny values) and solving a linear system
-    using the noisy data as target. It can handle variable step size just as easily as uniform step size.
+    """Find smoothed function and derivative estimates by fitting noisy data against a radial-basis-function-filled
+    kernel (naively NxN but made sparse by truncating tiny values). This function uses a Gaussian kernel, thereby
+    assuming the signal is generated from a Gaussian process, effectively the same assumption the Kalman filter makes.
+    It can handle variable step size just as easily as uniform step size.
 
     :param np.array[float] x: data to differentiate
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant

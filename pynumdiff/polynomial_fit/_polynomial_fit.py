@@ -7,7 +7,7 @@ from pynumdiff.utils import utility
 
 def splinediff(x, _t, params=None, options={}, degree=3, s=None, num_iterations=1):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
-    scipy.interpolate.UnivariateSpline.
+    scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
 
     :param np.array[float] x: data to differentiate
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant

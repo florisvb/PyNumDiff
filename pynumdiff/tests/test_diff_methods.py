@@ -3,7 +3,7 @@ from pytest import mark
 from warnings import warn
 
 from ..finite_difference import first_order, second_order, fourth_order
-from ..linear_model import lineardiff, spectraldiff
+from ..linear_model import lineardiff, spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
@@ -54,7 +54,8 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15}),
     (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
-    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'})
+    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
+    (rbfdiff, {'sigma':0.5, 'lmbd':0.001})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
@@ -212,7 +213,13 @@ error_bounds = {
                  [(1, 0), (2, 2), (1, 0), (2, 2)],
                  [(1, 0), (2, 1), (1, 0), (2, 1)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
-                 [(1, 1), (3, 3), (1, 1), (3, 3)]]
+                 [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    rbfdiff: [[(-2, -2), (0, 0), (0, -1), (0, 0)],
+              [(-1, -1), (1, 0), (0, -1), (1, 1)],
+              [(-1, -1), (1, 1), (0, -1), (1, 1)],
+              [(-2, -2), (0, 0), (0, -1), (0, 0)],
+              [(0, 0), (2, 2), (0, 0), (2, 2)],
+              [(1, 1), (3, 3), (1, 1), (3, 3)]]
 }
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
@@ -231,7 +238,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
     # sample the true function and true derivative, and make noisy samples
-    if diff_method in [spline_irreg_step]: # list that can handle variable dt
+    if diff_method in [spline_irreg_step, rbfdiff]: # list that can handle variable dt
         x = f(t_irreg)
         dxdt = df(t_irreg)
         _t = t_irreg
@@ -252,7 +259,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        t_ = t_irreg if diff_method in [spline_irreg_step] else t
+        t_ = t_irreg if diff_method in [spline_irreg_step, rbfdiff] else t
         axes[i, 0].plot(t_, f(t_))
         axes[i, 0].plot(t_, x, 'C0+')
         axes[i, 0].plot(t_, x_hat, 'C2.', ms=4)

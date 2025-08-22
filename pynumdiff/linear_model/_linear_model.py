@@ -1,5 +1,6 @@
 import math, scipy
 import numpy as np
+from scipy import sparse
 from warnings import warn
 
 from pynumdiff.finite_difference import second_order as finite_difference
@@ -22,9 +23,6 @@ def polydiff(*args, **kwargs):
     return _polydiff(*args, **kwargs)
 
 
-###############
-# Linear diff #
-###############
 def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
                                            solver=None, A_known=None, epsilon=1e-6):
     """Given state and the derivative, find the system evolution and measurement matrices."""
@@ -161,9 +159,6 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     return x_hat, dxdt_hat
 
 
-###############################
-# Fourier Spectral derivative #
-###############################
 def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True, pad_to_zero_dxdt=True):
     """Take a derivative in the fourier domain, with high frequency attentuation.
 
@@ -233,3 +228,53 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
+
+
+def rbfdiff(x, _t, sigma=1, lmbd=0.01):
+    """Find smoothed function and derivative estimates assuming the signal is generated from a Gaussian
+    process, effectively the same assumption the Kalman filter makes. This method works by generating a
+    sparse kernel (naively NxN but truncated to not include tiny values) and solving a linear system
+    using the noisy data as target. It can handle variable step size just as easily as uniform step size.
+
+    :param np.array[float] x: data to differentiate
+    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+        step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
+    :param float sigma: controls width of radial basis function
+    :param float lmbd: controls strength of bias toward data
+
+    :return: tuple[np.array, np.array] of\n
+             - **x_hat** -- estimated (smoothed) x
+             - **dxdt_hat** -- estimated derivative of x
+    """
+    if isinstance(_t, (np.ndarray, list)): # support variable step size for this function
+        if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
+        t = _t
+    else:
+        t = np.arange(len(x))*_t
+
+    # The below does the approximate equivalent of this code, but sparsely in O(N sigma), since the rbf falls off rapidly
+    # t_i, t_j = np.meshgrid(t,t)
+    # r = t_j - t_i # radius
+    # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel
+    # drbfdt = -(r / sigma**2) * rbf # derivative of kernel
+    # rbf_regularized = rbf + lmbd*np.eye(len(t))
+    # alpha = np.linalg.solve(rbf_regularized, x)
+
+    cutoff = np.sqrt(-2 * sigma**2 * np.log(1e-4))
+    rows, cols, vals, dvals = [], [], [], []
+    for n in range(len(t)):
+        # Only consider points within a cutoff. Gaussian drops below eps at distance ~ sqrt(-2*sigma^2 log eps)
+        l = np.searchsorted(t, t[n] - cutoff) # O(log N) to find indices of points within cutoff
+        r = np.searchsorted(t, t[n] + cutoff) # finds index where new value should be inserted
+        for j in range(l, r): # width of this is dependent on sigma. [l, r) is correct inclusion/exclusion
+            radius = t[n] - t[j]
+            v = np.exp(-radius**2 / (2 * sigma**2))
+            dv = -radius / sigma**2 * v
+            rows.append(n); cols.append(j); vals.append(v); dvals.append(dv)
+
+    rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(len(t), len(t))) # Build sparse kernels
+    drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(len(t), len(t)))
+    rbf_regularized = rbf + lmbd*sparse.eye(len(t), format="csr")
+    alpha = sparse.linalg.spsolve(rbf_regularized, x) # solve sparse system
+
+    return rbf @ alpha, drbfdt @ alpha

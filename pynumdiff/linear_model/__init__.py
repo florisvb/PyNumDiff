@@ -8,8 +8,8 @@ except:
     warn("Limited Linear Model Support Detected! CVXPY is not installed. " +
         "Install CVXPY to use lineardiff derivatives. You can still use other methods.")
 
-from ._linear_model import savgoldiff, polydiff, spectraldiff
+from ._linear_model import savgoldiff, polydiff, spectraldiff, rbfdiff
 
-__all__ = ['lineardiff', 'spectraldiff'] # So these get treated as direct members of the module by sphinx
-# polydiff and savgoldiff are still imported for now for backwards compatibility but are not
-# documented as part of this module, since they've moved
+__all__ = ['lineardiff', 'spectraldiff', 'rbfdiff'] # So these get treated as direct members of the
+# module by sphinx polydiff and savgoldiff are still imported for now for backwards compatibility
+# but are not documented as part of this module, since they've moved

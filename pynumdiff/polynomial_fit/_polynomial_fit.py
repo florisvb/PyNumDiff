@@ -5,13 +5,13 @@ from warnings import warn
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt, params=None, options={}, degree=3, s=None, num_iterations=1):
+def splinediff(x, _t, params=None, options={}, degree=3, s=None, num_iterations=1):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.UnivariateSpline.
 
     :param np.array[float] x: data to differentiate
-    :param float or array[float] dt: This function supports variable step size. This parameter is either the constant
-        step size if given as a single float, or data locations if given as an array of same length as :code:`x`. 
+    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+        step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int degree: polynomial degree of the spline. A kth degree spline can be differentiated k times.
@@ -30,11 +30,11 @@ def splinediff(x, dt, params=None, options={}, degree=3, s=None, num_iterations=
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
-    if isinstance(dt, (np.ndarray, list)): # support variable step size for this function
-        if len(x) != len(dt): raise ValueError("If `dt` is given as array-like, must have same length as `x`.")
-        t = dt
+    if isinstance(_t, (np.ndarray, list)): # support variable step size for this function
+        if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
+        t = _t
     else:
-        t = np.arange(len(x))*dt
+        t = np.arange(len(x))*_t
 
     x_hat = x
     for _ in range(num_iterations):

@@ -27,21 +27,23 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
         - **P_post** -- a posteriori estimates of P
         if :code:`save_P` is :code:`True` else only **xhat_post** to save memory
     """
-    xhat_post = np.empty((len(y), *xhat0.shape))
+    N = y.shape[0]
+    m = xhat0.shape[0] # dimension of the state
+    xhat_post = np.empty((N,m))
     if save_P:
-        xhat_pre = np.empty((len(y), *xhat0.shape)) # _pre = a priori predictions based on only past information
-        P_pre = np.empty((len(y), *P0.shape)) # _post = a posteriori combinations of all information available at a step
-        P_post = np.empty((len(y), *P0.shape))
+        xhat_pre = np.empty((N,m)) # _pre = a priori predictions based on only past information
+        P_pre = np.empty((N,m,m)) # _post = a posteriori combinations of all information available at a step
+        P_post = np.empty((N,m,m))
     # determine some things ahead of the loop
     equispaced = np.isscalar(_t)
     control = isinstance(B, np.ndarray) and isinstance(B, np.ndarray) # whether there is a control input
     if equispaced:
         An, Qn, Bn = A, Q, B # in this case only need to assign once
     else:
-        M = np.block([[A, Q],[numpy.zeros(A.shape), -A.T]]) # If variable dt, we'll exponentiate this a bunch
+        M = np.block([[A, Q],[np.zeros(A.shape), -A.T]]) # If variable dt, we'll exponentiate this a bunch
         if control: Mc = np.block([[A, B],[np.zeros((A.shape[0], 2*A.shape[1]))]])
     
-    for n in range(y.shape[0]):
+    for n in range(N):
         if n == 0: # first iteration is a special case, involving less work
             xhat_ = xhat0
             P_ = P0
@@ -49,12 +51,12 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
             if not equispaced:
                 dt = _t[n] - _t[n-1]
                 eM = expm(M * dt) # form discrete-time matrices TODO doesn't work at n=0
-                An = eM[:order+1,:order+1] # upper left block
-                Qn = eM[:order+1,order+1:] @ An.T # upper right block
-                if dt < 0: Qn = np.abs(Qn) # eigenvalues go negative if reverse direction, but noise shouldn't shrink
+                An = eM[:m,:m] # upper left block
+                Qn = eM[:m,m:] @ An.T # upper right block
+                if dt < 0: Qn = np.abs(Qn) # eigenvalues go negative if reverse time, but noise shouldn't shrink
                 if control:
                     eM = expm(Mc * dt)
-                    Bn = eM[:order+1,order+1:] # upper right block 
+                    Bn = eM[:m,m:] # upper right block 
             xhat_ = An @ xhat + Bn @ u if control else An @ xhat # ending underscores denote an a priori prediction
             P_ = An @ P @ An.T + Qn # the dense matrix multiplies here are the most expensive step
         

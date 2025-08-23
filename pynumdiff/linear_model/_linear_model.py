@@ -238,7 +238,7 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
 
     :param np.array[float] x: data to differentiate
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
-        step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
+        dt if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param float sigma: controls width of radial basis function
     :param float lmbd: controls strength of bias toward data
 

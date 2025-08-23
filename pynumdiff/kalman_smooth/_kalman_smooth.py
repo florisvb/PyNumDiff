@@ -8,7 +8,7 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
 
     :param np.array y: series of measurements, stacked along axis 0.
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
-        dt if given as a single float, or data locations if given as an array of same length as :code:`x`.
+        dt if given as a single float, or sample locations if given as an array of same length as :code:`x`.
     :param np.array xhat0: a priori guess of initial state at the time of the first measurement
     :param np.array P0: a priori guess of state covariance at the time of first measurement (often identity matrix)
     :param np.array A: state transition matrix, in discrete time if constant dt, in continuous time if variable dt
@@ -77,7 +77,7 @@ def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True)
     """Perform Rauch-Tung-Striebel smoothing, using information from forward Kalman filtering.
 
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
-        dt if given as a single float, or data locations if given as an array of same length as :code:`x`.
+        dt if given as a single float, or sample locations if given as an array of same length as the state histories.
     :param np.array A: state transition matrix, in discrete time if constant dt, in continuous time if variable dt
     :param list[np.array] xhat_pre: a priori estimates of xhat from a kalman_filter forward pass
     :param list[np.array] xhat_post: a posteriori estimates of xhat from a kalman_filter forward pass

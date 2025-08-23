@@ -246,11 +246,11 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
              - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
-    if isinstance(_t, (np.ndarray, list)): # support variable step size for this function
+    if np.isscalar(_t):
+        t = np.arange(len(x))*_t
+    else: # support variable step size for this function
         if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
         t = _t
-    else:
-        t = np.arange(len(x))*_t
 
     # The below does the approximate equivalent of this code, but sparsely in O(N sigma), since the rbf falls off rapidly
     # t_i, t_j = np.meshgrid(t,t)

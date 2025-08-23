@@ -30,11 +30,11 @@ def splinediff(x, _t, params=None, options={}, degree=3, s=None, num_iterations=
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
-    if isinstance(_t, (np.ndarray, list)): # support variable step size for this function
+    if np.isscalar(_t):
+        t = np.arange(len(x))*_t
+    else: # support variable step size for this function
         if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
         t = _t
-    else:
-        t = np.arange(len(x))*_t
 
     x_hat = x
     for _ in range(num_iterations):

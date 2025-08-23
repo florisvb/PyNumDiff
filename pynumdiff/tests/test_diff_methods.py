@@ -6,7 +6,7 @@ from ..finite_difference import first_order, second_order, fourth_order
 from ..linear_model import lineardiff, spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import constant_velocity, constant_acceleration, constant_jerk
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
@@ -44,9 +44,10 @@ diff_methods_and_params = [
     (spline_irreg_step, {'degree':5, 's':2}),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
-    (constant_velocity, {'r':1e-4, 'q':1e-2}), (constant_velocity, [1e-4, 1e-2]),
-    (constant_acceleration, {'r':1e-4, 'q':1e-1}), (constant_acceleration, [1e-4, 1e-1]),
-    (constant_jerk, {'r':1e-4, 'q':10}), (constant_jerk, [1e-4, 10]),
+    (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
+    (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
+    (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
+    (rtsdiff, {'order':2, 'qr_ratio':1e7, 'forwardbackward':True}),
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
@@ -184,24 +185,30 @@ error_bounds = {
                    [(-1, -1), (0, 0), (0, -1), (1, 0)],
                    [(0, 0), (2, 2), (0, 0), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    constant_velocity: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                        [(-3, -3), (-2, -2), (0, -1), (0, 0)],
-                        [(-1, -2), (0, 0), (0, -1), (0, 0)],
-                        [(-1, -1), (1, 0), (0, -1), (1, 0)],
-                        [(1, 1), (2, 2), (1, 1), (2, 2)],
-                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    constant_acceleration: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                            [(-3, -4), (-3, -3), (0, -1), (0, 0)],
-                            [(-3, -3), (-2, -2), (0, -1), (0, 0)],
-                            [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                            [(1, 1), (2, 2), (1, 1), (2, 2)],
-                            [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    constant_jerk: [[(-25, -25), (-25, -25), (0, -1), (0, 0)],
-                    [(-4, -5), (-3, -4), (0, -1), (0, 0)],
-                    [(-3, -4), (-2, -3), (0, -1), (0, 0)],
-                    [(-1, -2), (0, 0), (0, -1), (0, 0)],
-                    [(1, 0), (2, 1), (1, 0), (2, 1)],
-                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    constant_velocity: [[(-25, -25), (-25, -25), (0, -1), (1, 1)],
+                        [(-4, -5), (-3, -3), (0, -1), (1, 1)],
+                        [(-3, -3), (0, 0), (0, -1), (1, 1)],
+                        [(-3, -3), (1, 0), (0, -1), (1, 1)],
+                        [(-1, -1), (2, 2), (0, 0), (2, 2)],
+                        [(-1, -1), (3, 3), (0, 0), (3, 3)]],
+    constant_acceleration: [[(-25, -25), (-25, -25), (0, -1), (1, 1)],
+                            [(-5, -5), (-4, -4), (0, -1), (1, 1)],
+                            [(-4, -5), (-3, -3), (0, -1), (1, 1)],
+                            [(-3, -3), (0, 0), (0, -1), (1, 1)],
+                            [(-1, -1), (1, 1), (0, -1), (1, 1)],
+                            [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    constant_jerk: [[(-25, -25), (-25, -25), (0, -1), (1, 1)],
+                    [(-6, -6), (-5, -5), (0, -1), (1, 1)],
+                    [(-5, -5), (-4, -4), (0, -1), (1, 1)],
+                    [(-3, -3), (-1, -1), (0, -1), (1, 1)],
+                    [(-1, -1), (1, 1), (0, -1), (1, 1)],
+                    [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    rtsdiff: [[(-25, -25), (-25, -25), (0, -1), (1, 1)],
+              [(-5, -5), (-4, -4), (0, -1), (1, 1)],
+              [(-4, -4), (-3, -3), (0, -1), (1, 1)],
+              [(-2, -3), (0, 0), (0, -1), (1, 1)],
+              [(-1, -2), (1, 1), (0, -1), (1, 1)],
+              [(0, 0), (3, 3), (0, 0), (3, 3)]],
     spectraldiff: [[(-9, -10), (-14, -15), (-1, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (1, 1), (1, 1), (1, 1)],
@@ -238,7 +245,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
     # sample the true function and true derivative, and make noisy samples
-    if diff_method in [spline_irreg_step, rbfdiff]: # list that can handle variable dt
+    if diff_method in [spline_irreg_step, rtsdiff, rbfdiff]: # list that can handle variable dt
         x = f(t_irreg)
         dxdt = df(t_irreg)
         _t = t_irreg
@@ -259,7 +266,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        t_ = t_irreg if diff_method in [spline_irreg_step, rbfdiff] else t
+        t_ = t_irreg if diff_method in [spline_irreg_step, rtsdiff, rbfdiff] else t
         axes[i, 0].plot(t_, f(t_))
         axes[i, 0].plot(t_, x, 'C0+')
         axes[i, 0].plot(t_, x_hat, 'C2.', ms=4)

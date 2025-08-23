@@ -8,4 +8,5 @@ kalman_smooth
 .. autofunction:: pynumdiff.kalman_smooth.constant_velocity
 .. autofunction:: pynumdiff.kalman_smooth.constant_acceleration
 .. autofunction:: pynumdiff.kalman_smooth.constant_jerk
-.. autofunction:: pynumdiff.kalman_smooth.known_dynamics
+.. autofunction:: pynumdiff.kalman_smooth.kalman_filter
+.. autofunction:: pynumdiff.kalman_smooth.rts_smooth

@@ -252,7 +252,7 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
         if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
         t = _t
 
-    # The below does the approximate equivalent of this code, but sparsely in O(N sigma), since the rbf falls off rapidly
+    # The below does the approximate equivalent of this code, but sparsely in O(N sigma^2), since the rbf falls off rapidly
     # t_i, t_j = np.meshgrid(t,t)
     # r = t_j - t_i # radius
     # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel

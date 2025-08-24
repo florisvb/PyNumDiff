@@ -6,6 +6,7 @@ from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, fried
 from ..linear_model import spectraldiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, iterative_velocity
+from ..kalman_smooth import rtsdiff
 from ..optimize import optimize
 from ..utils.simulate import pi_cruise_control
 
@@ -92,3 +93,12 @@ def test_polydiff():
     params2, val2 = optimize(polydiff, x, dt, tvgamma=tvgamma, search_space_updates={'step_size':1}, padding='auto')
     assert (params1['degree'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
     assert (params2['degree'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')
+
+# This test runs in a reasonable amount of time locally but for some reason takes forever in CI
+# def test_rtsdiff_with_irregular_step():
+#     t = np.arange(len(x))*dt; np.random.seed(7) # seed so the test can't randomly fail
+#     t_irreg = t + np.random.uniform(-dt/10, dt/10, *t.shape) # add jostle
+#     params1, val1 = optimize(rtsdiff, x, t, dxdt_truth=dxdt_truth)
+#     params2, val2 = optimize(rtsdiff, x, t_irreg, dxdt_truth=dxdt_truth)
+#     assert val2 < 1.15*val1 # optimization works and comes out similar, since jostle is small
+#     assert params1['qr_ratio']*0.85 < params2['qr_ratio'] < params1['qr_ratio']*1.15

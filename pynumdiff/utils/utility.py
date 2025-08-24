@@ -1,5 +1,7 @@
-import os, sys, copy, scipy
+import os, sys, copy
 import numpy as np
+from scipy.integrate import cumulative_trapezoid
+from scipy.optimize import minimize
 
 
 def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
@@ -95,16 +97,16 @@ def peakdet(x, delta, t=None):
 
 
 # Trapazoidal integration, with 0 first value so that the lengths match. See #88.
-def integrate_dxdt_hat(dxdt_hat, dt):
-    """Wrapper for scipy.integrate.cumulative_trapezoid to integrate dxdt_hat that ensures
-    the integral has the same length
+def integrate_dxdt_hat(dxdt_hat, _t):
+    """Wrapper for scipy.integrate.cumulative_trapezoid
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
-    :param float dt: time step in seconds
+    :param float _t: stepsize if given as a scalar or a vector of sample locations
 
     :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """
-    return np.hstack((0, scipy.integrate.cumulative_trapezoid(dxdt_hat)))*dt
+    return cumulative_trapezoid(dxdt_hat, initial=0)*_t if np.isscalar(_t) \
+            else cumulative_trapezoid(dxdt_hat, x=_t, initial=0)
 
 
 # Optimization routine to estimate the integration constant.
@@ -118,7 +120,7 @@ def estimate_integration_constant(x, x_hat):
 
     :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
     """
-    return scipy.optimize.minimize(lambda x0, x, xhat: np.linalg.norm(x - (x_hat+x0)), # fn to minimize in 1st argument
+    return minimize(lambda x0, x, xhat: np.linalg.norm(x - (x_hat+x0)), # fn to minimize in 1st argument
         0, args=(x, x_hat), method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
 
 

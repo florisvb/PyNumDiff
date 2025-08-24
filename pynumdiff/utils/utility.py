@@ -181,26 +181,27 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
 
-    weights = np.zeros((int(np.ceil(len(x)/stride)), len(x))) # Could be more space efficient
-    x_hats = np.zeros(weights.shape)
-    dxdt_hats = np.zeros(weights.shape)
+    x_hat = np.zeros(x.shape)
+    dxdt_hat = np.zeros(x.shape)
+    weight_sum = np.zeros(x.shape)
 
     for i,midpoint in enumerate(range(0, len(x), stride)): # iterate window midpoints
         # find where to index data and kernel, taking care at edges
-        window = slice(max(0, midpoint - half_window_size),
-                        min(len(x), midpoint + half_window_size + 1)) # +1 because slicing is exclusive of end
-        kslice = slice(max(0, half_window_size - midpoint),
-                        min(len(kernel), len(kernel) - (midpoint + half_window_size + 1 - len(x))))
+        start = max(0, midpoint - half_window_size)
+        end = min(len(x), midpoint + half_window_size + 1) # +1 because slicing is exclusive of end
+        window = slice(start, end)
 
-        # weights need to be renormalized if running off an edge
-        weights[i, window] = kernel if kslice.stop - kslice.stop == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
-        if pass_weights: kwargs['weights'] = weights[i, window]
+        kstart = max(0, half_window_size - midpoint)
+        kend = kstart + (end - start)
+        kslice = slice(kstart, kend)
 
-        # run the function on the window and save results
-        x_hats[i,window], dxdt_hats[i,window] = func(x[window], dt, *args, **kwargs)
+        w = kernel if (end-start) == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
+        if pass_weights: kwargs['weights'] = w
 
-    weights /= weights.sum(axis=0, keepdims=True) # normalize the weights
-    x_hat = np.sum(weights*x_hats, axis=0)
-    dxdt_hat = np.sum(weights*dxdt_hats, axis=0)
+        # run the function on the window and add weighted results to cumulative answers
+        x_window_hat, dxdt_window_hat = func(x[window], dt, *args, **kwargs)
+        x_hat[window] += w * x_window_hat
+        dxdt_hat[window] += w * dxdt_window_hat
+        weight_sum[window] += w # save sum of weights for normalization at the end
 
-    return x_hat, dxdt_hat
+    return x_hat/weight_sum, dxdt_hat/weight_sum

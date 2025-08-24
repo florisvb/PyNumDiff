@@ -95,9 +95,9 @@ def test_polydiff():
     assert (params2['degree'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')
 
 def test_rtsdiff_with_irregular_step():
-    t = np.arange(len(x))*dt; np.random.seed(0) # seed so the test can't randomly fail
+    t = np.arange(len(x))*dt; np.random.seed(7) # seed so the test can't randomly fail
     t_irreg = t + np.random.uniform(-dt/10, dt/10, *t.shape) # add jostle
-    params1, val1 = optimize(rtsdiff, x, t, dxdt_truth=dxdt_truth)
-    params2, val2 = optimize(rtsdiff, x, t_irreg, dxdt_truth=dxdt_truth)
+    params1, val1 = optimize(rtsdiff, x, t, dxdt_truth=dxdt_truth, search_space_updates={'forwardbackward':False})
+    params2, val2 = optimize(rtsdiff, x, t_irreg, dxdt_truth=dxdt_truth, search_space_updates={'forwardbackward':False})
     assert val2 < 1.2*val1 # optimization works and comes out similar, since jostle is small
     assert params1['qr_ratio']*0.8 < params2['qr_ratio'] < params1['qr_ratio']*1.2

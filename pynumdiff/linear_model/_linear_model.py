@@ -231,16 +231,17 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
 
 
 def rbfdiff(x, _t, sigma=1, lmbd=0.01):
-    """Find smoothed function and derivative estimates by fitting noisy data against a radial-basis-function-filled
-    kernel (naively NxN but made sparse by truncating tiny values). This function uses a Gaussian kernel, thereby
-    assuming the signal is generated from a Gaussian process, effectively the same assumption the Kalman filter makes.
-    It can handle variable step size just as easily as uniform step size.
+    """Find smoothed function and derivative estimates by fitting noisy data with radial-basis-functions. Naively,
+    fill a matrix with basis function samples, similar to the implicit inverse problem of spectral methods, but
+    truncate tiny values to make columns sparse. Each basis function "hill" is topped with a "tower" of height
+    :code:`lmbd` to reach noisy data samples, and the final smoothed reconstruction is found by razing these and only
+    keeping the hills.
 
     :param np.array[float] x: data to differentiate
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
-    :param float sigma: controls width of radial basis function
-    :param float lmbd: controls strength of bias toward data
+    :param float sigma: controls width of radial basis functions
+    :param float lmbd: controls smoothness
 
     :return: tuple[np.array, np.array] of\n
              - **x_hat** -- estimated (smoothed) x
@@ -255,10 +256,10 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
     # The below does the approximate equivalent of this code, but sparsely in O(N sigma^2), since the rbf falls off rapidly
     # t_i, t_j = np.meshgrid(t,t)
     # r = t_j - t_i # radius
-    # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel
+    # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel, O(N^2) entries
     # drbfdt = -(r / sigma**2) * rbf # derivative of kernel
     # rbf_regularized = rbf + lmbd*np.eye(len(t))
-    # alpha = np.linalg.solve(rbf_regularized, x)
+    # alpha = np.linalg.solve(rbf_regularized, x) # O(N^3)
 
     cutoff = np.sqrt(-2 * sigma**2 * np.log(1e-4))
     rows, cols, vals, dvals = [], [], [], []
@@ -272,9 +273,9 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
             dv = -radius / sigma**2 * v
             rows.append(n); cols.append(j); vals.append(v); dvals.append(dv)
 
-    rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(len(t), len(t))) # Build sparse kernels
+    rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(len(t), len(t))) # Build sparse kernels, O(N sigma) entries
     drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(len(t), len(t)))
-    rbf_regularized = rbf + lmbd*sparse.eye(len(t), format="csr")
-    alpha = sparse.linalg.spsolve(rbf_regularized, x) # solve sparse system
+    rbf_regularized = rbf + lmbd*sparse.eye(len(t), format="csr") # identity matrix gives a little extra height at the centers
+    alpha = sparse.linalg.spsolve(rbf_regularized, x) # solve sparse system targeting the noisy data, O(N sigma^2)
 
-    return rbf @ alpha, drbfdt @ alpha
+    return rbf @ alpha, drbfdt @ alpha # find samples of reconstructions using the smooth bases

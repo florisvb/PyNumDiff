@@ -1,12 +1,12 @@
 License
-==============
+=======
 
 The MIT License (MIT)
 
-Copyright (c) 2021
+Copyright (c) 2025
 Floris van Breugel, The University of Nevada, Reno, Mechanical Engineering Department
-Yuying Liu, The University of Washington Applied Math Department
 Pavel Komarov, Univerity of Washington Electrical and Computer Engineering
+Yuying Liu, The University of Washington Applied Math Department
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

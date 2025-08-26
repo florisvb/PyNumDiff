@@ -101,7 +101,7 @@ def integrate_dxdt_hat(dxdt_hat, _t):
     """Wrapper for scipy.integrate.cumulative_trapezoid
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
-    :param float _t: stepsize if given as a scalar or a vector of sample locations
+    :param float _t: step size if given as a scalar or a vector of sample locations
 
     :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """

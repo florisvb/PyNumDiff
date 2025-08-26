@@ -10,8 +10,8 @@ readme = "README.md"
 license = {text = "MIT"}
 maintainers = [
   {name = "Floris van Breugel", email = "fvanbreugel@unr.edu"},
-  {name = "Yuying Liu", email = "yliu814@uw.edu"},
-  {name = "Pavel Komarov", email = "pvlkmrv@uw.edu"}
+  {name = "Pavel Komarov", email = "pvlkmrv@uw.edu"},
+  {name = "Yuying Liu", email = "yliu814@uw.edu"}
 ]
 keywords = ["derivative", "smoothing", "curve fitting", "optimization", "total variation"]
 classifiers = [

@@ -10,8 +10,9 @@ from tqdm import tqdm
 from ..utils import evaluate
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
-from ..linear_model import spectraldiff, lineardiff
+from ..linear_model import lineardiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
+from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk
 
@@ -22,6 +23,10 @@ method_params_and_bounds = {
                    'pad_to_zero_dxdt': {True, False},
                    'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]}, # give numerical params in a list to scipy.optimize over them
                   {'high_freq_cutoff': (1e-5, 1-1e-5)}),
+    rbfdiff: ({'sigma': [1e-3, 1e-2, 1e-1, 1],
+               'lmbd': [1e-3, 1e-2, 1e-1]},
+              {'sigma': (1e-3, 1e3),
+               'lmbd': (1e-4, 0.5)}),
     polydiff: ({'step_size': [1, 2, 5],
                 'kernel': {'friedrichs', 'gaussian'}, # categorical
                 'degree': [2, 3, 5, 7],
@@ -238,16 +243,17 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
     methods = [finitediff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
-        splinediff, spectraldiff, polydiff, savgoldiff, rtsdiff]
+        spectraldiff, rbfdiff, splinediff, polydiff, savgoldiff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
         methods += [tvrdiff, smooth_acceleration]
     except ImportError:
-        warn("CVXPY not installed, skipping acceleration, jerk, and smooth_acceleration")
+        warn("CVXPY not installed, skipping tvrdiff and smooth_acceleration")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):
-        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=({'order':{2,3}} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
+        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=(
+            {'order':{2,3}} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
         if v < best_value:
             method = func
             best_value = v

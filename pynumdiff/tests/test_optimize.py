@@ -3,7 +3,7 @@ from pytest import skip
 
 from ..finite_difference import first_order as iterated_finite_difference
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
-from ..linear_model import spectraldiff
+from ..basis_fit import spectraldiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, iterative_velocity
 from ..kalman_smooth import rtsdiff

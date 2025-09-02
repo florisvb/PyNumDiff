@@ -28,7 +28,7 @@ PyNumDiff is a Python package that implements various methods for computing nume
 3. iterated finite differencing
 4. total variation regularization of a finite difference derivative
 5. Kalman (RTS) smoothing
-6. Fourier spectral with tricks
+6. basis-function-based methods
 7. linear local approximation with linear model
 
 Most of these methods have multiple parameters, so we take a principled approach and propose a multi-objective optimization framework for choosing parameters that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
@@ -47,7 +47,7 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 somethingdiff(x, dt, **kwargs)
 ```
 
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case `dt` can also receive an array of values to denote sample locations.
+where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `_t` and can receive either a constant step size or an array of values to denote sample locations.
 
 You can provide the parameters:
 ```python

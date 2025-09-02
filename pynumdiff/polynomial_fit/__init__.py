@@ -1,4 +1,4 @@
-"""Find a smooth fit with some kind of polynomials, and then take derivative.
+"""Methods based on fitting data with polynomials
 """
 from ._polynomial_fit import splinediff, polydiff, savgoldiff
 

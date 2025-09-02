@@ -88,8 +88,8 @@ def test_slide_function():
     assert np.allclose(x, x_hat)
 
 
-def test_simulate():
-    return
+# def test_simulate():
+#     return
 
-def test_evaluate():
-    return
+# def test_evaluate():
+#     return

@@ -1,6 +1,7 @@
+- `basis_fit` contains methods based on fitting basis functions, including a variant of the classic Fourier-spectral method.
 - `finite_difference` contains a method to do iterative 1st, 2nd or 4th order finite differencing.
-- `kalman_smooth` contains classic linear Kalman filter and RTS smoothing code, as well as a constant-derivative naive-model smoothing method for 1st (velocity), 2nd (acceleration), or 3rd (jerk) order.
-- `linear_model` contains `lineardiff`, which tries to fit a linear model on a sliding window, and `spectraldiff`, based on Fourier transforms.
+- `kalman_smooth` contains classic linear Kalman filter and RTS smoothing code, as well as a constant-derivative naive-model smoothing method.
+- `linear_model` contains a method that tries to fit a linear model on a sliding window.
 - `optimize` contains code to find best parameter settings for methods, tuned using Nelder-Mead according to the paper "Numerical differentiation of noisy data: A unifying multi-objective optimization framework", as well as a method suggestion metamethod.
 - `polynomial_fit` contains methods which explicitly or implicitly fit polynomials over pieces of the data.
 - `smooth_finite_difference` contains methods which do a smoothing step followed by simple finite difference.

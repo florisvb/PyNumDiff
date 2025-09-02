@@ -1,5 +1,5 @@
 API documentation
-============================
+=================
 
 .. toctree::
    :maxdepth: 1
@@ -9,6 +9,7 @@ API documentation
    polynomial_fit
    total_variation_regularization
    kalman_smooth
+   basis_fit
    linear_model
    optimize
    utils

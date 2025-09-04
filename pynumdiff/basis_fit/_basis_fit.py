@@ -6,7 +6,7 @@ from pynumdiff.utils import utility
 
 
 def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True, pad_to_zero_dxdt=True):
-    """Take a derivative in the fourier domain, with high frequency attentuation.
+    """Take a derivative in the Fourier domain, with high frequency attentuation.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size

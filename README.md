@@ -9,10 +9,13 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 </p>
 
 <p align="center">
+    <img src='https://github.com/florisvb/pynumdiff/actions/workflows/test.yml/badge.svg'/>
     <a href='https://pynumdiff.readthedocs.io/master/'>
         <img src='https://app.readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
+    <a href='https://coveralls.io/github/florisvb/PyNumDiff?branch=master'>
+        <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
-        <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI version" height="18"></a>
+        <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
     <a href="https://zenodo.org/badge/latestdoi/159711175">
         <img src="https://zenodo.org/badge/159711175.svg" alt="DOI"></a>
     <a href="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5">

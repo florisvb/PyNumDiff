@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  Linux:
+  run-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,8 +13,10 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: tests
+      - name: tests and coverage
         run: |
-          pip install -e .[advanced,dev]
-          pytest pynumdiff
-
+          pip install -e .[advanced,dev] coveralls
+          coverage run --source=pynumdiff -m pytest -s
+          coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}

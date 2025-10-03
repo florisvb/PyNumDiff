@@ -124,6 +124,7 @@ def rtsdiff(x, _t, order, qr_ratio, forwardbackward):
     """
     if not np.isscalar(_t) and len(x) != len(_t):
         raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
+    x = np.asarray(x) # to flexibly allow array-like inputs
 
     q = 10**int(np.log10(qr_ratio)/2) # even-ish split of the powers across 0
     r = q/qr_ratio

@@ -17,7 +17,7 @@ def finitediff(x, dt, num_iterations, order):
     if num_iterations < 1: raise ValueError("num_iterations must be >0")
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
 
-    x_hat = x # preserve a reference to x, because if iterating we need it to find the final constant of integration
+    x_hat = np.asarray(x) # allows for array-like. Preserve reference to x, for finding the final constant of integration
     dxdt_hat = np.zeros(x.shape) # preallocate reusable memory
 
     # For all but the last iteration, do the differentate->integrate smoothing loop, being careful with endpoints

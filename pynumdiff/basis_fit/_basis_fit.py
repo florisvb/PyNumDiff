@@ -38,9 +38,9 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     # make derivative go to zero at ends (optional)
     if pad_to_zero_dxdt:
         padding = 100
-        pre = x[0]*np.ones(padding) # extend the edges
-        post = x[-1]*np.ones(padding)
-        x = np.hstack((pre, x, post))
+        pre = getattr(x, 'values', x)[0]*np.ones(padding) # getattr to use .values if x is a pandas Series
+        post = getattr(x, 'values', x)[-1]*np.ones(padding)
+        x = np.hstack((pre, x, post)) # extend the edges
         kernel = utility.mean_kernel(padding//2)
         x_hat = utility.convolutional_smoother(x, kernel) # smooth the edges in
         x_hat[padding:-padding] = x[padding:-padding] # replace middle with original signal

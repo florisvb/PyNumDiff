@@ -14,12 +14,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-
       - name: tests and coverage
         run: |
           pip install -e .[advanced,dev] coveralls
           coverage run --source=pynumdiff -m pytest -s
-          coveralls --verbose
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          COVERALLS_GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          coverage xml
+      - uses: coverallsapp/github-action@v2
+        with:
+          format: cobertura
+          file: coverage.xml

@@ -5,16 +5,21 @@ on:
   pull_request:
 
 jobs:
-  Linux:
+  run-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # important for Coveralls to read commit history
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-
-      - name: tests
+      - name: tests and coverage
         run: |
-          pip install -e .[advanced,dev]
-          pytest pynumdiff
-
+          pip install -e .[advanced,dev] coveralls
+          coverage run --source=pynumdiff --omit='pynumdiff/_version.py' -m pytest -s
+          coverage xml
+      - uses: coverallsapp/github-action@v2
+        with:
+          format: cobertura
+          file: coverage.xml

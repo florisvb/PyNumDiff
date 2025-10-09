@@ -1,0 +1,18 @@
+on:
+  release:
+    types: [created]
+jobs:
+  deploy-to-pypi:
+    runs-on: ubuntu-latest
+    env:
+      TWINE_USERNAME: __token__
+      TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - run: |
+        pip install build wheel twine
+        python -m build
+        twine upload dist/*

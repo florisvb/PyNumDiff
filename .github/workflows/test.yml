@@ -17,7 +17,7 @@ jobs:
       - name: tests and coverage
         run: |
           pip install -e .[advanced,dev] coveralls
-          coverage run --source=pynumdiff -m pytest -s
+          coverage run --source=pynumdiff --omit='pynumdiff/_version.py' -m pytest -s
           coverage xml
       - uses: coverallsapp/github-action@v2
         with:

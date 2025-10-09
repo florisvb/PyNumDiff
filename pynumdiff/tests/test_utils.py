@@ -4,7 +4,8 @@ Unit tests for utility functions
 # pylint: skip-file
 
 import numpy as np
-from pynumdiff.utils import utility, simulate, evaluate
+from pynumdiff.utils import utility, evaluate
+from pynumdiff.utils.simulate import sine, triangle, pop_dyn, linear_autonomous, pi_cruise_control, lorenz_x
 np.random.seed(42) # The answer to life, the universe, and everything
 
 
@@ -88,8 +89,26 @@ def test_slide_function():
     assert np.allclose(x, x_hat)
 
 
-# def test_simulate():
-#     return
+def test_simulations(request):
+    if request.config.getoption("--plot"):
+        from matplotlib import pyplot
+        fig, axes = pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)
+
+    for i,(sim,title) in enumerate(zip(
+        [pi_cruise_control, sine, triangle, pop_dyn, linear_autonomous, lorenz_x],
+        ["Cruise Control", "Sum of Sines", "Triangles", "Logistic Growth", "Linear Autonomous", "Lorenz First Dimension"])):
+    
+        y, x, dxdt = sim(duration=4, dt=0.01, noise_type='normal', noise_parameters=[0,0.1])
+        assert len(y) == len(x) == len(dxdt)
+
+        if request.config.getoption("--plot"):
+            t = np.arange(len(y))*0.01
+            ax = axes[i//3, i%3]
+            ax.plot(t, x, 'k--', linewidth=3, label=r"true $x$")
+            ax.plot(t, y, '.', color='blue', zorder=-100, markersize=5, label="noisy data")
+            if i//3 == 0: ax.set_xticklabels([])
+            ax.set_title(title, fontsize=18)
+            if i == 5: ax.legend(loc='lower right', fontsize=12)
 
 # def test_evaluate():
 #     return

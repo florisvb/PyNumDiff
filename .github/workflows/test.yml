@@ -19,8 +19,7 @@ jobs:
         run: |
           pip install -e .[advanced,dev] coveralls
           coverage run --source=pynumdiff -m pytest -s
-          coveralls
+          coveralls --verbose
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          COVERALLS_SERVICE_NAME: github
           COVERALLS_GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}

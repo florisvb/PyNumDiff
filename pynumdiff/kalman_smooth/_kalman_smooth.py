@@ -256,11 +256,11 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     return rtsdiff(x, dt, 3, q/r, forwardbackward)
 
 
-def robustdiff(x, dt, order, qr_ratio):
+def robustdiff(x, dt, order, qr_ratio, huberM):
     """Perform robust differentiation using L1-norm optimization instead of L2-norm RTS smoothing.
     
     This function solves the L1-normed MAP optimization problem for outlier-resistant differentiation:
-    min_{x_n} sum_{n=0}^{N-1} ||R^(-1/2)(y_n - C x_n)||_1 + sum_{n=1}^{N-1} ||Q^(-1/2)(x_n - A x_{n-1})||_1
+    :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^(-1/2)(y_n - C x_n)) + sum_{n=1}^{N-1} J(Q^(-1/2)(x_n - A x_{n-1}))`
     
     The L1 norm provides better robustness to outliers compared to the L2 norm used in standard
     Kalman smoothing. Uses CVXPY for convex optimization.
@@ -270,6 +270,7 @@ def robustdiff(x, dt, order, qr_ratio):
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
     :param float qr_ratio: the process noise level of the divided by the measurement noise level, because the result is
         dependent on the relative rather than absolute size of :math:`q` and :math:`r`.
+    :param float huberM: radius where quadratic of Huber loss function turns linear. M=0 reduces to the :math:`\\ell_1` norm.
 
     :return: tuple[np.array, np.array] of\n
         - **x_hat** -- estimated (smoothed) x
@@ -286,20 +287,19 @@ def robustdiff(x, dt, order, qr_ratio):
     R = np.array([[r]]) # 1 observed state, so this is 1x1
     
     # convert to discrete time using matrix exponential
-    eM = expm(np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]]) * dt)
+    eM = expm(np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]]) * dt) # Note this could handle variable dt, similar to rtsdiff
     A_d = eM[:order+1, :order+1]
     Q_d = eM[:order+1, order+1:] @ A_d.T
-    if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-15 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
-    
-    print(f"order = {order}, qr_ratio = {qr_ratio:.3e}, (q,r) = {(q,r)}, cond(Q_d) = {np.linalg.cond(Q_d):.3e}")
+    if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
-    # Solve the L1-norm optimization problem
-    x_states = convex_smooth(x, A_d, Q_d, R, C)
+    print(f"order={order}, qr_ratio={qr_ratio:.3e}, huberM={huberM}, cond(Q)={np.linalg.cond(Q_d):.3e}")
+    x_states = convex_smooth(x, A_d, Q_d, R, C, huberM=huberM) # outsource solution of the convex optimization problem
     return x_states[:, 0], x_states[:, 1]
 
 
-def convex_smooth(y, A, Q, R, C, huberM=1):
-    """Solve the L1-norm optimization problem for robust smoothing using CVXPY.
+def convex_smooth(y, A, Q, R, C, huberM=0):
+    """Solve the optimization problem for robust smoothing using CVXPY. Note this currently assumes constant dt
+    but could be extended to handle variable step sizes by finding discrete-time A and Q for requisite gaps.
 
     :param np.array[float] y: measurements
     :param np.array A: discrete-time state transition matrix
@@ -307,6 +307,7 @@ def convex_smooth(y, A, Q, R, C, huberM=1):
     :param np.array R: measurement noise covariance matrix
     :param np.array C: measurement matrix
     :param float huberM: radius where quadratic of Huber loss function turns linear. M=0 reduces to the :math:`\\ell_1` norm.
+    
     :return: np.array -- state estimates (N x state_dim)
     """
     N = len(y)
@@ -314,23 +315,20 @@ def convex_smooth(y, A, Q, R, C, huberM=1):
 
     R_sqrt_inv = np.linalg.inv(sqrtm(R))
     Q_sqrt_inv = np.linalg.inv(sqrtm(Q))
-    objective = cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM == 0
+    objective = cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3
                      else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)]) # Measurement terms: sum of |R^(-1/2)(y_n - C x_n)|_1
-    objective += cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if huberM == 0
+    objective += cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if huberM < 1e-3
                       else cvxpy.sum(cvxpy.huber(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), huberM)) for n in range(1, N)]) # Process terms: sum of |Q^(-1/2)(x_n - A x_{n-1})|_1
     
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try:
         problem.solve(solver=cvxpy.CLARABEL)
-    except cvxpy.error.SolverError as e1:
-        print(f"CLARABEL failed ({e1}). Retrying with SCS.")
-        try:
-            problem.solve(solver=cvxpy.SCS) # SCS is a lot slower but pretty bulletproof even with big condition numbers
-        except cvxpy.error.SolverError as e2:
-            print(f"SCS failed ({e2}). Returning NaNs.")
+    except cvxpy.error.SolverError:
+        print(f"CLARABEL failed. Retrying with SCS.")
+        problem.solve(solver=cvxpy.SCS) # SCS is a lot slower but pretty bulletproof even with big condition numbers
 
-    if x_states.value is None:
-        print(f"Solver returned None. Status: {problem.status}")
+    if x_states.value is None: # There is occasional solver failure with huber as opposed to 1-norm
+        warn("Convex solvers failed with status {problem.status}. Returning NaNs.")
         return np.full((N, A.shape[0]), np.nan)
     
     return x_states.value

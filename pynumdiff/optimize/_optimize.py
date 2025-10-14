@@ -14,7 +14,7 @@ from ..linear_model import lineardiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -88,7 +88,10 @@ method_params_and_bounds = {
                          'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8]},
                          {'q': (1e-10, 1e10),
-                          'r': (1e-10, 1e10)})
+                          'r': (1e-10, 1e10)}),
+    robustdiff: ({'order': {1, 2, 3}, #categorical
+                    'qr_ratio': [10**k for k in range(-1, 18, 3)]},
+                   {'qr_ratio': [1e-1, 1e18]})
 }
 for method in [second_order, fourth_order]:
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
@@ -246,9 +249,9 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
         spectraldiff, rbfdiff, splinediff, polydiff, savgoldiff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
-        methods += [tvrdiff, smooth_acceleration]
+        methods += [tvrdiff, smooth_acceleration, robustdiff]
     except ImportError:
-        warn("CVXPY not installed, skipping tvrdiff and smooth_acceleration")
+        warn("CVXPY not installed, skipping tvrdiff, smooth_acceleration, and robustdiff")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):

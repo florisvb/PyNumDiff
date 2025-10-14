@@ -7,7 +7,7 @@ from ..linear_model import lineardiff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
@@ -59,6 +59,7 @@ diff_methods_and_params = [
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001})
     ]
+diff_methods_and_params = [(robustdiff, {'order':3, 'qr_ratio':1e6})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations and random seed.
@@ -210,6 +211,12 @@ error_bounds = {
               [(-2, -3), (0, 0), (0, -1), (1, 1)],
               [(-1, -2), (1, 1), (0, -1), (1, 1)],
               [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    robustdiff: [[(-25, -25), (-15, -15), (0, -1), (0, 0)],
+                 [(-14, -14), (-13, -13), (0, -1), (0, 0)],
+                 [(-14, -14), (-13, -13), (0, -1), (0, 0)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 0)],
+                 [(0, 0), (1, 1), (0, 0), (1, 1)],
+                 [(1, 1), (3, 3), (1, 1), (3, 3)]],
     spectraldiff: [[(-9, -10), (-14, -15), (-1, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (1, 1), (1, 1), (1, 1)],

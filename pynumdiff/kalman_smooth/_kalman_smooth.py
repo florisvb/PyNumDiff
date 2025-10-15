@@ -276,9 +276,7 @@ def robustdiff(x, dt, order, qr_ratio, huberM=0):
         - **x_hat** -- estimated (smoothed) x
         - **dxdt_hat** -- estimated derivative of x
     """
-    #q = 10**int(np.log10(qr_ratio)) # even-ish split of the powers across 0
-    #r = q/qr_ratio
-    q = 1e4
+    q = 1e4 # I found q too small worsened condition number of the Q matrix, so fixing it at a biggish value
     r = q/qr_ratio
 
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)

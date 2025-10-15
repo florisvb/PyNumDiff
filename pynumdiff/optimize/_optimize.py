@@ -83,8 +83,8 @@ method_params_and_bounds = {
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-               'qr_ratio': [10**k for k in range(-1, 18, 3)],
-                 'huberM': [0., 2, 10]}, # 0. so type is float. Good choices here really depend on the data scale
+               'qr_ratio': [10**k for k in range(-1, 16, 4)],
+                 'huberM': [0., 5, 20]}, # 0. so type is float. Good choices here really depend on the data scale
               {'qr_ratio': (1e-1, 1e18),
                  'huberM': (0, 1e2)}), # really only want to use l2 norm when nearby
     lineardiff: ({'kernel': 'gaussian',

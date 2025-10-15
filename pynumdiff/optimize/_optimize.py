@@ -82,7 +82,7 @@ method_params_and_bounds = {
            'forwardbackward': {True, False}},
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
-    robustdiff: ({'order': {1, 2, 3}, # categorical
+    robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
                'qr_ratio': [10**k for k in range(-1, 18, 3)],
                  'huberM': [0., 2, 10]}, # 0. so type is float. Good choices here really depend on the data scale
               {'qr_ratio': (1e-1, 1e18),
@@ -125,9 +125,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     """
     key = sha1((''.join(f"{v:.3e}" for v in point) + # This hash is stable across processes. Takes bytes
                ''.join(str(v) for k,v in sorted(categorical_params.items()))).encode()).digest()
-    if key in cache:
-        print("shortcircuit found")
-        return cache[key] # short circuit if this hyperparam combo has already been queried
+    if key in cache: return cache[key] # short circuit if this hyperparam combo has already been queried, ~10% savings per #160
 
     point_params = {k:(v if search_space_types[k] == float else int(np.round(v)))
                         for k,v in zip(search_space_types, point)} # point -> dict
@@ -230,7 +228,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
     a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
     using default search spaces defined at the top of the :code:`pynumdiff/optimize/_optimize.py` file.
-    This routine will take a few minutes to run.
+    This routine will take a few minutes to run, especially due to `robustdiff`.
     
     Excluded:
         - ``first_order``, because iterating causes drift
@@ -262,8 +260,8 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
-    methods = [finitediff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff,
-        polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, rtsdiff]
+    methods = [meandiff, mediandiff, gaussiandiff, friedrichsdiff, butterdiff,
+        polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, finitediff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
         methods += [tvrdiff, smooth_acceleration, robustdiff]
@@ -273,7 +271,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     best_value = float('inf') # core loop
     for func in tqdm(methods):
         p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=(
-            {'order':{2,3}} if func==tvrdiff else {})) # TVR with order 1 hacks the cost function
+            {'order':{2,3}} if func in [tvrdiff, robustdiff] else {})) # convex-based with order 1 hack the cost function
         if v < best_value:
             method = func
             best_value = v

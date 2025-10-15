@@ -256,7 +256,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     return rtsdiff(x, dt, 3, q/r, forwardbackward)
 
 
-def robustdiff(x, dt, order, qr_ratio, huberM):
+def robustdiff(x, dt, order, qr_ratio, huberM=0):
     """Perform robust differentiation using L1-norm optimization instead of L2-norm RTS smoothing.
     
     This function solves the L1-normed MAP optimization problem for outlier-resistant differentiation:
@@ -292,7 +292,6 @@ def robustdiff(x, dt, order, qr_ratio, huberM):
     Q_d = eM[:order+1, order+1:] @ A_d.T
     if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
-    print(f"order={order}, qr_ratio={qr_ratio:.3e}, huberM={huberM}, cond(Q)={np.linalg.cond(Q_d):.3e}")
     x_states = convex_smooth(x, A_d, Q_d, R, C, huberM=huberM) # outsource solution of the convex optimization problem
     return x_states[:, 0], x_states[:, 1]
 
@@ -324,7 +323,7 @@ def convex_smooth(y, A, Q, R, C, huberM=0):
     try:
         problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError:
-        print(f"CLARABEL failed. Retrying with SCS.")
+        warn(f"CLARABEL failed. Retrying with SCS.")
         problem.solve(solver=cvxpy.SCS) # SCS is a lot slower but pretty bulletproof even with big condition numbers
 
     if x_states.value is None: # There is occasional solver failure with huber as opposed to 1-norm

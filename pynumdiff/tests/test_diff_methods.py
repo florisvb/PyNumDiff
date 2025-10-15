@@ -41,25 +41,25 @@ diff_methods_and_params = [
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
     (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
     (butterdiff, {'filter_order':3, 'cutoff_freq':0.074}), (butterdiff, [3, 0.074]),
-    (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
-    (spline_irreg_step, {'degree':5, 's':2}),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
+    (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
+    (spline_irreg_step, {'degree':5, 's':2}),
+    (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
+    (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
     (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
     (rtsdiff, {'order':2, 'qr_ratio':1e7, 'forwardbackward':True}),
+    (robustdiff, {'order':3, 'qr_ratio':1e6}),
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15}),
-    (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
-    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'}),
-    (rbfdiff, {'sigma':0.5, 'lmbd':0.001})
+    (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'})
     ]
-diff_methods_and_params = [(robustdiff, {'order':3, 'qr_ratio':1e6})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations and random seed.
@@ -211,9 +211,9 @@ error_bounds = {
               [(-2, -3), (0, 0), (0, -1), (1, 1)],
               [(-1, -2), (1, 1), (0, -1), (1, 1)],
               [(0, 0), (3, 3), (0, 0), (3, 3)]],
-    robustdiff: [[(-25, -25), (-15, -15), (0, -1), (0, 0)],
-                 [(-14, -14), (-13, -13), (0, -1), (0, 0)],
-                 [(-14, -14), (-13, -13), (0, -1), (0, 0)],
+    robustdiff: [[(-15, -15), (-14, -14), (0, -1), (0, 0)],
+                 [(-14, -14), (-13, -14), (0, -1), (0, 0)],
+                 [(-14, -14), (-14, -14), (0, -1), (0, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
@@ -248,12 +248,12 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # some methods rely on cvxpy, and we'd like to allow use of pynumdiff without convex optimization
-    if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration]:
+    if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration, robustdiff]:
         try: import cvxpy
         except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
 
     # sample the true function and true derivative, and make noisy samples
-    if diff_method in [spline_irreg_step, rtsdiff, rbfdiff]: # list that can handle variable dt
+    if diff_method in [spline_irreg_step, rbfdiff, rtsdiff]: # list that can handle variable dt
         x = f(t_irreg)
         dxdt = df(t_irreg)
         _t = t_irreg

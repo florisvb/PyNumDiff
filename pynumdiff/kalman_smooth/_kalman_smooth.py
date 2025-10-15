@@ -314,10 +314,10 @@ def convex_smooth(y, A, Q, R, C, huberM=0):
 
     R_sqrt_inv = np.linalg.inv(sqrtm(R))
     Q_sqrt_inv = np.linalg.inv(sqrtm(Q))
-    objective = cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3
-                     else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)]) # Measurement terms: sum of |R^(-1/2)(y_n - C x_n)|_1
-    objective += cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if huberM < 1e-3
-                      else cvxpy.sum(cvxpy.huber(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), huberM)) for n in range(1, N)]) # Process terms: sum of |Q^(-1/2)(x_n - A x_{n-1})|_1
+    objective = cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3 # Measurement terms: sum of ||R^(-1/2)(y_n - C x_n)||_1
+                     else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)]) 
+    objective += cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if huberM < 1e-3 # Process terms: sum of ||Q^(-1/2)(x_n - A x_{n-1})||_1
+                      else cvxpy.sum(cvxpy.huber(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), huberM)) for n in range(1, N)])
     
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try:

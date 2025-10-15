@@ -26,7 +26,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     if xlim is None:
         xlim = [t[0], t[-1]]
 
-    fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6), constrained_layout=True)
     
     axes[0].plot(t, x_truth, '--', color='black', linewidth=3, label=r"true $x$")
     axes[0].plot(t, x, '.', color='blue', zorder=-100, markersize=markersize, label=r"noisy data")
@@ -37,7 +37,6 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     axes[0].tick_params(axis='x', labelsize=15)
     axes[0].tick_params(axis='y', labelsize=15)
     axes[0].legend(loc='lower right', fontsize=12)
-    axes[0].set_rasterization_zorder(0)
 
     axes[1].plot(t, dxdt_truth, '--', color='black', linewidth=3, label=r"true  $\frac{dx}{dt}$")
     axes[1].plot(t, dxdt_hat, color='red', label=r"est. $\hat{\frac{dx}{dt}}$")
@@ -47,15 +46,14 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     axes[1].tick_params(axis='x', labelsize=15)
     axes[1].tick_params(axis='y', labelsize=15)
     axes[1].legend(loc='lower right', fontsize=12)
-    axes[1].set_rasterization_zorder(0)
-
-    fig.tight_layout()
 
     if show_error:
         _, _, rms_dxdt = rmse(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
         R_sqr = error_correlation(dxdt_hat, dxdt_truth)
         axes[1].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
                      transform=axes[1].transAxes, fontsize=15, verticalalignment='top')
+    
+    return fig, axes
 
 
 def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_hat3, title3):

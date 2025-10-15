@@ -257,10 +257,11 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
 
 
 def robustdiff(x, dt, order, qr_ratio, huberM=0):
-    """Perform outlier-robust differentiation by solving the MAP optimization problem:
-    :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`
-    with loss functions :math:`V,J` the :math:`\\ell_1` norm or Huber loss instead of the :math:`\\ell_2` norm
-    optimized by RTS smoothing. Uses convex optimization, calls :code:`convex_smooth`.
+    """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
+    :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
+    where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
+    loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is convex, so this method calls
+    :code:`convex_smooth`.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
@@ -287,19 +288,19 @@ def robustdiff(x, dt, order, qr_ratio, huberM=0):
     Q_d = eM[:order+1, order+1:] @ A_d.T
     if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
-    x_states = convex_smooth(x, A_d, Q_d, R, C, huberM=huberM) # outsource solution of the convex optimization problem
+    x_states = convex_smooth(x, A_d, Q_d, C, R, huberM=huberM) # outsource solution of the convex optimization problem
     return x_states[:, 0], x_states[:, 1]
 
 
-def convex_smooth(y, A, Q, R, C, huberM=0):
+def convex_smooth(y, A, Q, C, R, huberM=0):
     """Solve the optimization problem for robust smoothing using CVXPY. Note this currently assumes constant dt
     but could be extended to handle variable step sizes by finding discrete-time A and Q for requisite gaps.
 
     :param np.array[float] y: measurements
     :param np.array A: discrete-time state transition matrix
     :param np.array Q: discrete-time process noise covariance matrix
-    :param np.array R: measurement noise covariance matrix
     :param np.array C: measurement matrix
+    :param np.array R: measurement noise covariance matrix
     :param float huberM: radius where quadratic of Huber loss function turns linear. M=0 reduces to the :math:`\\ell_1` norm.
     
     :return: np.array -- state estimates (N x state_dim)

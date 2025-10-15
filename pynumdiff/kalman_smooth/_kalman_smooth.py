@@ -109,7 +109,7 @@ def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True)
 
 def rtsdiff(x, _t, order, qr_ratio, forwardbackward):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
-    and :code:`rts_smooth`, which are made public. Other constant derivative methods in this module call this function.
+    and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
     :param np.array[float] x: data series to differentiate
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
@@ -257,13 +257,10 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
 
 
 def robustdiff(x, dt, order, qr_ratio, huberM=0):
-    """Perform robust differentiation using L1-norm optimization instead of L2-norm RTS smoothing.
-    
-    This function solves the L1-normed MAP optimization problem for outlier-resistant differentiation:
-    :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^(-1/2)(y_n - C x_n)) + sum_{n=1}^{N-1} J(Q^(-1/2)(x_n - A x_{n-1}))`
-    
-    The L1 norm provides better robustness to outliers compared to the L2 norm used in standard
-    Kalman smoothing. Uses CVXPY for convex optimization.
+    """Perform outlier-robust differentiation by solving the MAP optimization problem:
+    :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`
+    with loss functions :math:`V,J` the :math:`\\ell_1` norm or Huber loss instead of the :math:`\\ell_2` norm
+    optimized by RTS smoothing. Uses convex optimization, calls :code:`convex_smooth`.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size

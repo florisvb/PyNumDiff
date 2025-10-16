@@ -170,7 +170,8 @@ def rtsdiff(x, _t, order, qr_ratio, forwardbackward):
 
 
 def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.
+    """Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.\n
+    **Deprecated**, prefer :code:`rtsdiff` with order 1 instead.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
@@ -195,11 +196,13 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
+    warn("`constant_velocity` is deprecated. Call `rtsdiff` with order 1 instead.", DeprecationWarning)
     return rtsdiff(x, dt, 1, q/r, forwardbackward)
 
 
 def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.
+    """Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.\n
+    **Deprecated**, prefer :code:`rtsdiff` with order 2 instead.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
@@ -224,11 +227,13 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
+    warn("`constant_acceleration` is deprecated. Call `rtsdiff` with order 2 instead.", DeprecationWarning)
     return rtsdiff(x, dt, 2, q/r, forwardbackward)
 
 
 def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.
+    """Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.\n
+    **Deprecated**, prefer :code:`rtsdiff` with order 3 instead.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
@@ -253,6 +258,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     elif r == None or q == None:
         raise ValueError("`q` and `r` must be given.")
 
+    warn("`constant_jerk` is deprecated. Call `rtsdiff` with order 3 instead.", DeprecationWarning)
     return rtsdiff(x, dt, 3, q/r, forwardbackward)
 
 

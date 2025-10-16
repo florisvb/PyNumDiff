@@ -108,7 +108,8 @@ def tvrdiff(x, dt, order, gamma, solver=None):
 
 
 def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.
+    """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.\n
+    **Deprecated**, prefer :code:`tvrdiff` with order 1 instead.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -131,11 +132,13 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
+    warn("`velocity` is deprecated. Call `tvrdiff` with order 1 instead.", DeprecationWarning)
     return tvrdiff(x, dt, 1, gamma, solver=solver)
 
 
 def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.
+    """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.\n
+    **Deprecated**, prefer :code:`tvrdiff` with order 2 instead.
     
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -158,11 +161,13 @@ def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
+    warn("`acceleration` is deprecated. Call `tvrdiff` with order 2 instead.", DeprecationWarning)
     return tvrdiff(x, dt, 2, gamma, solver=solver)
 
 
 def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.
+    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.\n
+    **Deprecated**, prefer :code:`tvrdiff` with order 3 instead.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -185,6 +190,7 @@ def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
     elif gamma == None:
         raise ValueError("`gamma` must be given.")
 
+    warn("`jerk` is deprecated. Call `tvrdiff` with order 3 instead.", DeprecationWarning)
     return tvrdiff(x, dt, 3, gamma, solver=solver)
 
 

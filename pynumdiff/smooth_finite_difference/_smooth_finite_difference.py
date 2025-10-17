@@ -8,14 +8,11 @@ from pynumdiff.polynomial_fit import splinediff as _splinediff # patch through
 from pynumdiff.utils import utility
 
 
-################################
-# Smoothing finite differences #
-################################
 def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1):
     """Differentiate by applying a smoothing kernel to the signal, then performing 2nd-order finite difference.
     :code:`meandiff`, :code:`mediandiff`, :code:`gaussiandiff`, and :code:`friedrichsdiff` call this function.
 
-    :param np.ndarray[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: step size
     :param str kernel: prefilter data, {:code:`'mean'`, :code:`'median'`, :code:`'gaussian'`,
         :code:`'friedrichs'`}
@@ -45,7 +42,7 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     """Perform mean smoothing by convolving mean kernel with x followed by second order finite difference\n
     **Deprecated**, prefer :code:`kerneldiff` with kernel :code:`'mean'` instead.
 
-    :param np.ndarray[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate
     :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
         :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`

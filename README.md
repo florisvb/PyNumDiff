@@ -26,10 +26,10 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 
 PyNumDiff is a Python package that implements various methods for computing numerical derivatives of noisy data, which can be a critical step in developing dynamic models or designing control. There are seven different families of methods implemented in this repository:
 
-1. convolutional smoothing followed by finite difference calculation
-2. polynomial fit methods
-3. basis function fit methods
-4. iterated finite differencing
+1. prefiltering followed by finite difference calculation
+2. iterated finite differencing
+3. polynomial fit methods
+4. basis function fit methods
 5. total variation regularization of a finite difference derivative
 6. generalized Kalman smoothing
 7. local approximation with linear model

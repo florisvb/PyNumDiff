@@ -13,7 +13,7 @@ else: # executes if try is successful
     from .linear_model import lineardiff
 
 from .finite_difference import finitediff, first_order, second_order, fourth_order
-from .smooth_finite_difference import meandiff, mediandiff, gaussiandiff, friedrichsdiff, butterdiff
+from .smooth_finite_difference import kerneldiff, meandiff, mediandiff, gaussiandiff, friedrichsdiff, butterdiff
 from .polynomial_fit import splinediff, polydiff, savgoldiff
 from .basis_fit import spectraldiff, rbfdiff
 from .total_variation_regularization import iterative_velocity

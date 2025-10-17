@@ -65,7 +65,8 @@ def finitediff(x, dt, num_iterations, order):
 
 
 def first_order(x, dt, params=None, options={}, num_iterations=1):
-    """First-order difference method
+    """First-order difference method\n
+    **Deprecated**, prefer :code:`finitediff` with order 1 instead.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -85,11 +86,13 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
         num_iterations = params[0] if isinstance(params, list) else params
 
+    warn("`first_order` is deprecated. Call `finitediff` with order 1 instead.", DeprecationWarning)
     return finitediff(x, dt, num_iterations, 1)
 
 
 def second_order(x, dt, num_iterations=1):
-    """Second-order centered difference method, with special endpoint formulas.
+    """Second-order centered difference method, with special endpoint formulas.\n
+    **Deprecated**, prefer :code:`finitediff` with order 2 instead.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -100,11 +103,13 @@ def second_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
+    warn("`second_order` is deprecated. Call `finitediff` with order 2 instead.", DeprecationWarning)
     return finitediff(x, dt, num_iterations, 2)
 
 
 def fourth_order(x, dt, num_iterations=1):
-    """Fourth-order centered difference method, with special endpoint formulas.
+    """Fourth-order centered difference method, with special endpoint formulas.\n
+    **Deprecated**, prefer :code:`finitediff` with order 4 instead.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -115,4 +120,5 @@ def fourth_order(x, dt, num_iterations=1):
              - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** -- estimated derivative of x
     """
+    warn("`fourth_order` is deprecated. Call `finitediff` with order 4 instead.", DeprecationWarning)
     return finitediff(x, dt, num_iterations, 4)

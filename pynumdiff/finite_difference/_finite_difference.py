@@ -4,7 +4,7 @@ from pynumdiff.utils import utility
 from warnings import warn
 
 
-def finitediff(x, dt, num_iterations, order):
+def finitediff(x, dt, num_iterations=1, order=2):
     """Perform iterated finite difference of a given order. This serves as the common backing function for
     all other methods in this module.
     

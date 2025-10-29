@@ -53,7 +53,7 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
         else:
             if not equispaced:
                 dt = _t[n] - _t[n-1]
-                eM = expm(M * dt) # form discrete-time matrices TODO doesn't work at n=0
+                eM = expm(M * dt) # form discrete-time matrices
                 An = eM[:m,:m] # upper left block
                 Qn = eM[:m,m:] @ An.T # upper right block
                 if dt < 0: Qn = np.abs(Qn) # eigenvalues go negative if reverse time, but noise shouldn't shrink
@@ -314,20 +314,20 @@ def convex_smooth(y, A, Q, C, R, huberM=0):
     N = len(y)
     x_states = cvxpy.Variable((N, A.shape[0])) # each row is [position, velocity, acceleration, ...] at step n
 
-    R_sqrt_inv = np.linalg.inv(sqrtm(R))
     Q_sqrt_inv = np.linalg.inv(sqrtm(Q))
-    objective = cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3 # Measurement terms: sum of ||R^(-1/2)(y_n - C x_n)||_1
-                     else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)]) 
-    objective += cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if huberM < 1e-3 # Process terms: sum of ||Q^(-1/2)(x_n - A x_{n-1})||_1
-                      else cvxpy.sum(cvxpy.huber(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), huberM)) for n in range(1, N)])
-    
+    R_sqrt_inv = np.linalg.inv(sqrtm(R))
+    # Process terms: sum of 1/2||Q^(-1/2)(x_n - A x_{n-1})||_2^2
+    objective = 0.5*cvxpy.sum([cvxpy.sum_squares(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1])) for n in range(1, N)])
+    # Measurement terms: sum of sqrt(2)||R^(-1/2)(y_n - C x_n)||_1, per https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf section 6
+    objective += np.sqrt(2)*cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3
+                     else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)])
+
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try:
         problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError:
         warn(f"CLARABEL failed. Retrying with SCS.")
         problem.solve(solver=cvxpy.SCS) # SCS is a lot slower but pretty bulletproof even with big condition numbers
-
     if x_states.value is None: # There is occasional solver failure with huber as opposed to 1-norm
         warn("Convex solvers failed with status {problem.status}. Returning NaNs.")
         return np.full((N, A.shape[0]), np.nan)

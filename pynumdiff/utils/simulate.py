@@ -6,7 +6,7 @@ from scipy.integrate import odeint
 
 # local imports
 from pynumdiff.utils.utility import peakdet
-from pynumdiff.finite_difference import second_order as finite_difference
+from pynumdiff.finite_difference import finitediff
 
 
 # pylint: disable-msg=too-many-locals, too-many-arguments, no-member
@@ -108,7 +108,7 @@ def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outlier
     reversal_ts = t[reversal_idxs]
 
     pos = np.interp(t, reversal_ts, reversal_vals)
-    _, vel = finite_difference(pos, dt=simdt)
+    _, vel = finitediff(pos, dt=simdt)
     noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     idx = np.arange(0, len(t), int(dt/simdt))
@@ -182,7 +182,7 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     xs = np.vstack(xs).T
     pos = xs[0,:]
 
-    smooth_pos, vel = finite_difference(pos, simdt)
+    smooth_pos, vel = finitediff(pos, simdt)
     noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
 
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart

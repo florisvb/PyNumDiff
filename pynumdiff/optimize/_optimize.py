@@ -153,7 +153,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
 
 def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
-    padding=0, opt_method='Nelder-Mead', maxiter=10):
+    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True):
     """Find the optimal parameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
@@ -173,6 +173,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     optimization to emphasize the accuracy of dxdt in the middle of the time series
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
     :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
+    :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations, but
+                    for experiments it is a better use of resources to pool at that higher level
 
     :return: tuple[dict, float] of\n
             - **opt_params** -- best parameter settings for the differentation method
@@ -206,16 +208,25 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
 
     results = []
     filterwarnings("ignore", '', UserWarning) # An extra filtering call, because some worker work can actually be done in the main process
-    with Manager() as manager:
-        cache = manager.dict() # cache answers to avoid expensive repeat queries
-        with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
-            for categorical_combo in categorical_combos:
-                # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same
-                _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
-                    categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
-                    metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
-                _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-                results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
+    if parallel:
+        with Manager() as manager:
+            cache = manager.dict() # cache answers to avoid expensive repeat queries
+            with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
+                for categorical_combo in categorical_combos:
+                    # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same
+                    _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
+                        categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
+                        metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
+                    _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
+                    results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
+    else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
+        cache = dict()
+        for categorical_combo in categorical_combos:
+            _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
+                categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
+                metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
+            _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
+            results = [_minimize(p) for p in starting_points]
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x

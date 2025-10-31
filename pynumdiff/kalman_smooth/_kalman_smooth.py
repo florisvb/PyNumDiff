@@ -262,27 +262,31 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     return rtsdiff(x, dt, 3, q/r, forwardbackward)
 
 
-def robustdiff(x, dt, order, qr_ratio, huberM=0):
+def robustdiff(x, dt, order, q, r, proc_huberM=6, meas_huberM=1.345):
     """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
     :math:`\\min_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
     loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is convex, so this method calls
     :code:`convex_smooth`.
 
+    Note that for Huber losses, :code:`M` is the radius where the Huber loss function turns from quadratic to linear, in units of
+    standard deviation, because all inputs to Huber are normalized by noise levels, :code:`q` and :code:`r`. This choice affects
+    which portion of inputs fall beyond the transition: Assuming Gaussian inliers, :code:`M = scipy.norm.ppf(1 - outlier_portion/2)`.
+    :code:`M=0` reduces to the :math:`\\ell_1` norm, and :code:`M=6` is essentially the :math:`\\ell_2` norm, becaue the portion of
+    examples beyond :math:`6\\sigma` is miniscule, about :code:`1.97e-9`.
+
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
-    :param float qr_ratio: the process noise level of the divided by the measurement noise level, because the result is
-        dependent on the relative rather than absolute size of :math:`q` and :math:`r`.
-    :param float huberM: radius where quadratic of Huber loss function turns linear. M=0 reduces to the :math:`\\ell_1` norm.
+    :param float q: the process noise level
+    :param float r: measurement noise level
+    :param float proc_huberM: quadratic-to-linear transition point for process loss
+    :param float meas_huberM: quadratic-to-linear transition point for measurement loss
 
     :return: tuple[np.array, np.array] of\n
         - **x_hat** -- estimated (smoothed) x
         - **dxdt_hat** -- estimated derivative of x
     """
-    q = 1e4 # I found q too small worsened condition number of the Q matrix, so fixing it at a biggish value
-    r = q/qr_ratio
-
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
@@ -294,11 +298,11 @@ def robustdiff(x, dt, order, qr_ratio, huberM=0):
     Q_d = eM[:order+1, order+1:] @ A_d.T
     if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
-    x_states = convex_smooth(x, A_d, Q_d, C, R, huberM=huberM) # outsource solution of the convex optimization problem
+    x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM, meas_huberM) # outsource solution of the convex optimization problem
     return x_states[:, 0], x_states[:, 1]
 
 
-def convex_smooth(y, A, Q, C, R, huberM=0):
+def convex_smooth(y, A, Q, C, R, proc_huberM=6, meas_huberM=1.345):
     """Solve the optimization problem for robust smoothing using CVXPY. Note this currently assumes constant dt
     but could be extended to handle variable step sizes by finding discrete-time A and Q for requisite gaps.
 
@@ -316,20 +320,26 @@ def convex_smooth(y, A, Q, C, R, huberM=0):
 
     Q_sqrt_inv = np.linalg.inv(sqrtm(Q))
     R_sqrt_inv = np.linalg.inv(sqrtm(R))
-    # Process terms: sum of 1/2||Q^(-1/2)(x_n - A x_{n-1})||_2^2
-    objective = 0.5*cvxpy.sum([cvxpy.sum_squares(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1])) for n in range(1, N)])
-    # Measurement terms: sum of sqrt(2)||R^(-1/2)(y_n - C x_n)||_1, per https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf section 6
-    objective += np.sqrt(2)*cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if huberM < 1e-3
-                     else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), huberM)) for n in range(N)])
+    # Process terms: sum of J(Q^(-1/2)(x_n - A x_{n-1}))
+    objective = cvxpy.sum([cvxpy.norm(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), 1) if proc_huberM < 1e-3 # l1 case
+                    else cvxpy.sum_squares(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1])) if proc_huberM > (6 - 1e-3) # l2 case
+                    else cvxpy.sum(cvxpy.huber(Q_sqrt_inv @ (x_states[n] - A @ x_states[n-1]), proc_huberM)) # proper Huber
+                    for n in range(1, N)])
+    # Measurement terms: sum of g V(R^(-1/2)(y_n - C x_n))
+    objective += cvxpy.sum([cvxpy.norm(R_sqrt_inv @ (y[n] - C @ x_states[n]), 1) if meas_huberM < 1e-3
+                    else cvxpy.sum_squares(R_sqrt_inv @ (y[n] - C @ x_states[n])) if meas_huberM > (6 - 1e-3)
+                    else cvxpy.sum(cvxpy.huber(R_sqrt_inv @ (y[n] - C @ x_states[n]), meas_huberM))
+                    for n in range(N)])
 
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try:
         problem.solve(solver=cvxpy.CLARABEL)
+        print("CLARABEL succeeded")
     except cvxpy.error.SolverError:
-        warn(f"CLARABEL failed. Retrying with SCS.")
+        print(f"CLARABEL failed. Retrying with SCS.")
         problem.solve(solver=cvxpy.SCS) # SCS is a lot slower but pretty bulletproof even with big condition numbers
     if x_states.value is None: # There is occasional solver failure with huber as opposed to 1-norm
-        warn("Convex solvers failed with status {problem.status}. Returning NaNs.")
+        print("Convex solvers failed with status {problem.status}. Returning NaNs.")
         return np.full((N, A.shape[0]), np.nan)
     
     return x_states.value

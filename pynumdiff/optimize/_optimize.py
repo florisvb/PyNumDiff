@@ -88,10 +88,13 @@ method_params_and_bounds = {
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-               'qr_ratio': [10**k for k in range(-1, 16, 4)],
-                 'huberM': [0., 5, 20]}, # 0. so type is float. Good choices here really depend on the data scale
-              {'qr_ratio': (1e-1, 1e18),
-                 'huberM': (0, 1e2)}), # really only want to use l2 norm when nearby
+                      'q': [1e-1, 1e1, 1e4, 1e8, 1e12],
+                      'r': [1e-1, 1e1, 1e4, 1e8, 1e12],
+            'proc_huberM': {0, 1, 1.345, 2, 6}, # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
+            'meas_huberM': {0, 1, 1.345, 2, 6}}, # and 6 assumes basically no outliers -> l2 norm. Try (1 - norm.cdf(M))*2 to see outlier portion
+                     {'q': (1e-1, 1e18),
+                      'r': (1e-5, 1e18),
+                 'huberM': (0, 5)}), # really only want to use l2 norm when nearby
     lineardiff: ({'kernel': 'gaussian',
                    'order': 3,
                    'gamma': [1e-1, 1, 10, 100],

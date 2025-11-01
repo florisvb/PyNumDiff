@@ -13,13 +13,9 @@ jobs:
           fetch-depth: 0 # important for Coveralls to read commit history
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.13' # because cvxopt binaries for 3.14 don't yet exist, and building is terrible
       - name: tests and coverage
-        run: | # lines before pip install are for building cvxopt from source, which is recently necessary for Python 3.14, too new for prebuilt wheel
-          sudo apt-get install -y libblas-dev liblapack-dev libsuitesparse-dev libglpk-dev
-          export CVXOPT_GLPK=True
-          export CVXOPT_GLPK_INC=/usr/include
-          export CVXOPT_GLPK_LIB=/usr/lib/x86_64-linux-gnu
+        run: |
           pip install -e .[advanced,dev] coveralls
           coverage run --source=pynumdiff --omit='pynumdiff/_version.py,pynumdiff/tests/*,pynumdiff/utils/old_pi_cruise_control.py' -m pytest -s
           coverage xml

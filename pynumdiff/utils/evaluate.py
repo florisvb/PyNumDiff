@@ -22,7 +22,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
 
     :return: Display two plots
     """
-    t = np.arange(0, dt*len(x), dt)
+    t = np.arange(len(x))*dt
     if xlim is None:
         xlim = [t[0], t[-1]]
 

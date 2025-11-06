@@ -80,20 +80,20 @@ method_params_and_bounds = {
                      'window_size': (3, 1000)}),
     rtsdiff: ({'forwardbackward': {True, False},
                          'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
-                      'qr_ratio': [10**k for k in range(-9, 10, 2)] + [1e12, 1e16]},
-                     {'qr_ratio': [1e-10, 1e20]}), # qr_ratio is usually >>1
+                  'log_qr_ratio': [float(k) for k in range(-9, 10, 2)] + [12, 16]},
+                 {'log_qr_ratio': [-10, 20]}), # qr_ratio is usually >>1
     constant_velocity: ({'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8], # Deprecated method
                          'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
            'forwardbackward': {True, False}},
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-                      'q': [1e-1, 1e1, 1e4, 1e8, 1e12],
-                      'r': [1e-1, 1e1, 1e4, 1e8, 1e12],
-            'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
+                  'log_q': [1., 4, 8, 12], # decimal after first entry ensure this is treated as float type
+                  'log_r': [-1., 1, 4, 8],
+            #'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
             'meas_huberM': [0., 2, 6]}, # and 6 assumes basically no outliers -> l2 norm. Try (1 - norm.cdf(M))*2 to see outlier portion
-                     {'q': (1e-1, 1e18),
-                      'r': (1e-5, 1e18),
+                 {'log_q': (-1, 18),
+                  'log_r': (-5, 18),
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
     lineardiff: ({'kernel': 'gaussian',

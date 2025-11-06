@@ -50,7 +50,7 @@ diff_methods_and_params = [
     (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
-    (rtsdiff, {'order':2, 'qr_ratio':1e7, 'forwardbackward':True}),
+    (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     #(robustdiff, {'order':3, 'qr_ratio':1e8}), # Add back later, once the design stabilizes
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),

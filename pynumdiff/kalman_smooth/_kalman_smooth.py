@@ -199,7 +199,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_velocity` is deprecated. Call `rtsdiff` with order 1 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 1, q/r, forwardbackward)
+    return rtsdiff(x, dt, 1, np.log10(q/r), forwardbackward)
 
 
 def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
@@ -230,7 +230,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_acceleration` is deprecated. Call `rtsdiff` with order 2 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 2, q/r, forwardbackward)
+    return rtsdiff(x, dt, 2, np.log10(q/r), forwardbackward)
 
 
 def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
@@ -261,7 +261,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_jerk` is deprecated. Call `rtsdiff` with order 3 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 3, q/r, forwardbackward)
+    return rtsdiff(x, dt, 3, np.log10(q/r), forwardbackward)
 
 
 def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=1.345):

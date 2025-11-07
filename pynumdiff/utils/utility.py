@@ -2,6 +2,7 @@ import os, sys, copy
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
+from scipy.stats import median_abs_deviation
 
 
 def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
@@ -96,9 +97,14 @@ def peakdet(x, delta, t=None):
     return np.array(maxtab), np.array(mintab)
 
 
-# Trapazoidal integration, with 0 first value so that the lengths match. See #88.
+def huber(x, M):
+    """Huber loss function, for outlier-robust applications, `see here <https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber>`_"""
+    absx = np.abs(x)
+    return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
+
+
 def integrate_dxdt_hat(dxdt_hat, _t):
-    """Wrapper for scipy.integrate.cumulative_trapezoid
+    """Wrapper for scipy.integrate.cumulative_trapezoid. Use 0 as first value so lengths match, see #88.
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
     :param float _t: step size if given as a scalar or a vector of sample locations
@@ -109,22 +115,30 @@ def integrate_dxdt_hat(dxdt_hat, _t):
             else cumulative_trapezoid(dxdt_hat, x=_t, initial=0)
 
 
-# Optimization routine to estimate the integration constant.
-def estimate_integration_constant(x, x_hat):
+def estimate_integration_constant(x, x_hat, M=6):
     """Integration leaves an unknown integration constant. This function finds a best fit integration
     constant given x and x_hat (the integral of dxdt_hat) by optimizing :math:`\\min_c ||x - \\hat{x} + c||_2`.
 
     :param np.array[float] x: timeseries of measurements
-    :param np.array[float] x_hat: smoothed estiamte of x, for the purpose of this function this should have been determined
-        by integrate_dxdt_hat
+    :param np.array[float] x_hat: smoothed estimate of x
+    :param float M: robustifies constant estimation using Huber loss. The default is intended to capture the idea
+        of "six sigma": Assuming Gaussian inliers and M in units of standard deviation, the portion of inliers
+        beyond the Huber loss' transition is only about 1.97e-9. M here is in units of scaled mean absolute deviation,
+        so scatter can be calculated and used to normalize data without being thrown off by outliers.
 
     :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
     """
-    return minimize(lambda x0, x, xhat: np.linalg.norm(x - (x_hat+x0)), # fn to minimize in 1st argument
-        0, args=(x, x_hat), method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
+    if M == float('inf'): # calculates the constant to be mean(diff(x, x_hat)), equivalent to argmin_{x0} ||x_hat + x0 - x||_2^2
+        return np.mean(x - x_hat) # Solves the L2 distance minimization
+    elif M < 0.1: # small M looks like L1 loss, and Huber gets too flat to work well
+        return np.median(x - x_hat) # Solves the L1 distance minimization
+    else:
+        sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
+        if sigma < 1e-6: sigma = 1 # guard against divide by zero
+        return minimize(lambda x0: np.mean(huber((x - (x_hat+x0))/sigma, M)), # fn to minimize in 1st argument
+            0, method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
 
 
-# kernels
 def mean_kernel(window_size):
     """A uniform boxcar of total integral 1"""
     return np.ones(window_size)/window_size
@@ -141,6 +155,7 @@ def friedrichs_kernel(window_size):
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)
+
 
 def convolutional_smoother(x, kernel, num_iterations=1):
     """Perform smoothing by convolving x with a kernel.

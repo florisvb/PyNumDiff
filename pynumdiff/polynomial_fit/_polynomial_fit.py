@@ -19,9 +19,8 @@ def splinediff(x, _t, params=None, options={}, degree=3, s=None, num_iterations=
         until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
     :param int num_iterations: how many times to apply smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and " +
@@ -61,9 +60,8 @@ def polydiff(x, dt, params=None, options=None, degree=None, window_size=None, st
     :param int step_size: step size for sliding
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None:
         warn("`params` and `options` parameters will be removed in a future version. Use `degree` " +
@@ -115,9 +113,8 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     :param int smoothing_win: size of the window used for gaussian smoothing, a good default is
         window_size, but smaller for high frequnecy data
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `degree`, " +
@@ -138,7 +135,6 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel)
 
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_integration_constant(x, x_hat)
-    x_hat = x_hat + x0
+    x_hat += utility.estimate_integration_constant(x, x_hat)
 
     return x_hat, dxdt_hat

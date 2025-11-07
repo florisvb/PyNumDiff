@@ -83,9 +83,8 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
     :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None:
         warn("`params` and `options` parameters will be removed in a future version. Use `order`, " +

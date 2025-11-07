@@ -30,9 +30,8 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
         :code:`'large'` has simpler numerics but is more efficient for large-scale problems. :code:`'large'`
         is more readily modified for higher-order derivatives, since the implicit differentiation matrix is square.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, " +
@@ -65,9 +64,8 @@ def tvrdiff(x, dt, order, gamma, solver=None):
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
                     In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     # Normalize for numerical consistency with convex solver
     mean = np.mean(x)
@@ -119,9 +117,8 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
@@ -148,9 +145,8 @@ def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
@@ -177,9 +173,8 @@ def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
@@ -208,9 +203,8 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
@@ -246,9 +240,8 @@ def jerk_sliding(x, dt, params=None, options=None, gamma=None, solver=None, wind
                 In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
     :param int window_size: how wide to make the kernel
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +

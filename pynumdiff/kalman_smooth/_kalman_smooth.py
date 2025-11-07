@@ -25,12 +25,11 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
 
-    :return: tuple[np.array, np.array, np.array, np.array] of\n
-        - **xhat_pre** -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
-        - **xhat_post** -- a posteriori estimates of xhat
-        - **P_pre** -- a priori estimates of P
-        - **P_post** -- a posteriori estimates of P
-        if :code:`save_P` is :code:`True` else only **xhat_post** to save memory
+    :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
+             - **xhat_post** (np.array) -- a posteriori estimates of xhat
+             - **P_pre** (np.array) -- a priori estimates of P
+             - **P_post** (np.array) -- a posteriori estimates of P
+             if :code:`save_P` is :code:`True` else only **xhat_post** to save memory
     """
     N = y.shape[0]
     m = xhat0.shape[0] # dimension of the state
@@ -84,16 +83,15 @@ def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True)
     :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or sample locations if given as an array of same length as the state histories.
     :param np.array A: state transition matrix, in discrete time if constant dt, in continuous time if variable dt
-    :param list[np.array] xhat_pre: a priori estimates of xhat from a kalman_filter forward pass
-    :param list[np.array] xhat_post: a posteriori estimates of xhat from a kalman_filter forward pass
-    :param list[np.array] P_pre: a priori estimates of P from a kalman_filter forward pass
-    :param list[np.array] P_post: a posteriori estimates of P from a kalman_filter forward pass
+    :param np.array xhat_pre: a priori estimates of xhat from a kalman_filter forward pass
+    :param np.array xhat_post: a posteriori estimates of xhat from a kalman_filter forward pass
+    :param np.array P_pre: a priori estimates of P from a kalman_filter forward pass
+    :param np.array P_post: a posteriori estimates of P from a kalman_filter forward pass
     :param bool compute_P_smooth: it's extra work if you don't need it
     
-    :return: tuple[np.array, np.array] of\n
-        - **xhat_smooth** -- RTS smoothed xhat
-        - **P_smooth** -- RTS smoothed P
-        if :code:`compute_P_smooth` is :code:`True` else only **xhat_smooth**
+    :return: - **xhat_smooth** (np.array) -- RTS smoothed xhat
+             - **P_smooth** (np.array) -- RTS smoothed P estimates
+             if :code:`compute_P_smooth` is :code:`True` else only **xhat_smooth**
     """
     xhat_smooth = np.empty(xhat_post.shape); xhat_smooth[-1] = xhat_post[-1] # preallocate arrays
     if compute_P_smooth: P_smooth = np.empty(P_post.shape); P_smooth[-1] = P_post[-1]
@@ -123,9 +121,8 @@ def rtsdiff(x, _t, order, log_qr_ratio, forwardbackward):
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
-    :return: tuple[np.array, np.array] of\n
-        - **x_hat** -- estimated (smoothed) x
-        - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if not np.isscalar(_t) and len(x) != len(_t):
         raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
@@ -185,9 +182,8 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
-    :return: tuple[np.array, np.array] of\n
-        - **x_hat** -- estimated (smoothed) x
-        - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
@@ -216,9 +212,8 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
-    :return: tuple[np.array, np.array] of\n
-        - **x_hat** -- estimated (smoothed) x
-        - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
@@ -247,9 +242,8 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
 
-    :return: tuple[np.array, np.array] of\n
-        - **x_hat** -- estimated (smoothed) x
-        - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
@@ -290,13 +284,9 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     :param float proc_huberM: quadratic-to-linear transition point for process loss
     :param float meas_huberM: quadratic-to-linear transition point for measurement loss
 
-    :return: tuple[np.array, np.array] of\n
-        - **x_hat** -- estimated (smoothed) x
-        - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    #q = 1e4 # I found q too small worsened condition number of the Q matrix, so fixing it at a biggish value
-    #r = q/qr_ratio
-
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
@@ -324,13 +314,13 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     :param float proc_huberM: Huber loss parameter. :math:`M=0` reduces to :math:`\\sqrt{2}\\ell_1`.
     :param float meas_huberM: Huber loss parameter. :math:`M=\\infty` reduces to :math:`\\frac{1}{2}\\ell_2^2`.
     
-    :return: np.array -- state estimates (state_dim x N)
+    :return: (np.array) -- state estimates (state_dim x N)
     """
     N = len(y)
     x_states = cvxpy.Variable((A.shape[0], N)) # each column is [position, velocity, acceleration, ...] at step n
 
     def huber_const(M): # from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
-        a = 2*np.exp(-M**2 / 2)/M
+        a = 2*np.exp(-M**2 / 2)/M # huber_const smoothly transitions Huber between 1-norm and 2-norm squared cases
         b = np.sqrt(2*np.pi)*(2*norm.cdf(M) - 1)
         return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
 
@@ -338,17 +328,17 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1]) # all Q^(-1/2)(x_n - A x_{n-1})
     meas_resids = np.linalg.inv(sqrtm(R)) @ (y.reshape(C.shape[0],-1) - C @ x_states) # all R^(-1/2)(y_n - C x_n)
     # Process terms: sum of J(proc_resids)
-    objective = 0.5*cvxpy.sum_squares(proc_resids) if huberM == float('inf') \
-                else np.sqrt(2)*cvxpy.sum(cvxpy.abs(proc_resids)) if huberM < 1e-3 \
-                else huber_const(huberM)*cvxpy.sum(cvxpy.huber(proc_resids, huberM))  # 1/2 l2^2, l1, or Huber
+    objective = 0.5*cvxpy.sum_squares(proc_resids) if proc_huberM == float('inf') \
+                else np.sqrt(2)*cvxpy.sum(cvxpy.abs(proc_resids)) if proc_huberM < 1e-3 \
+                else huber_const(proc_huberM)*cvxpy.sum(cvxpy.huber(proc_resids, proc_huberM)) # 1/2 l2^2, l1, or Huber
     # Measurement terms: sum of V(meas_resids)
-    objective += 0.5*cvxpy.sum_squares(meas_resids) if huberM == float('inf') \
-                else np.sqrt(2)*cvxpy.sum(cvxpy.abs(meas_resids)) if huberM < 1e-3 \
-                else huber_const(huberM)*cvxpy.sum(cvxpy.huber(meas_resids, huberM)) # CVXPY quirk: norm(, 1) != sum(abs()) for matrices
+    objective += 0.5*cvxpy.sum_squares(meas_resids) if meas_huberM == float('inf') \
+                else np.sqrt(2)*cvxpy.sum(cvxpy.abs(meas_resids)) if meas_huberM < 1e-3 \
+                else huber_const(meas_huberM)*cvxpy.sum(cvxpy.huber(meas_resids, meas_huberM)) # CVXPY quirk: norm(, 1) != sum(abs()) for matrices
     
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try: problem.solve(solver=cvxpy.CLARABEL); print("CLARABEL succeeded")
-    except cvxpy.error.SolverError: pass # Could try a different solver here, like SCS, but slows things down
+    except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
     
-    if x_states.value is None: return np.full((A.shape[0], N), np.nan) # There can be solver failure, even without exception
+    if x_states.value is None: return np.full((A.shape[0], N), np.nan) # There can be solver failure, even without error
     return x_states.value

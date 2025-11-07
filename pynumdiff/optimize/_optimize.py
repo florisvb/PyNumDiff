@@ -87,15 +87,23 @@ method_params_and_bounds = {
            'forwardbackward': {True, False}},
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
+    # robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
+    #               'log_q': [1., 4, 8, 12], # decimal after first entry ensure this is treated as float type
+    #               'log_r': [-1., 1, 4, 8],
+    #         #'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
+    #         'meas_huberM': [0., 2, 6]}, # and 6 assumes basically no outliers -> l2 norm. Try (1 - norm.cdf(M))*2 to see outlier portion
+    #              {'log_q': (-1, 18),
+    #               'log_r': (-5, 18),
+    #         'proc_huberM': (0, 6),
+    #         'meas_huberM': (0, 6)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
                   'log_q': [1., 4, 8, 12], # decimal after first entry ensure this is treated as float type
                   'log_r': [-1., 1, 4, 8],
-            #'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
-            'meas_huberM': [0., 2, 6]}, # and 6 assumes basically no outliers -> l2 norm. Try (1 - norm.cdf(M))*2 to see outlier portion
-                 {'log_q': (-1, 18),
-                  'log_r': (-5, 18),
-            'proc_huberM': (0, 6),
-            'meas_huberM': (0, 6)}),
+               #'qr_ratio': [10**k for k in range(-1, 16, 4)],
+                 'huberM': [0., 5, 10]}, # 0. so type is float. Good choices here really depend on the data scale
+                 {'log_q': (0, 18),
+                  'log_r': (-5, 10),
+                 'huberM': (0, 20)}), # really only want to use quadratic when nearby; 20sigma is a huge distance
     lineardiff: ({'kernel': 'gaussian',
                    'order': 3,
                    'gamma': [1e-1, 1, 10, 100],
@@ -132,27 +140,28 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
     :return: float, cost of this objective at the point
     """
+    # Short circuit if this hyperparam combo has already been queried, ~10% savings per #160
     key = sha1((''.join(f"{v:.3e}" for v in point) + # This hash is stable across processes. Takes bytes
                ''.join(str(v) for k,v in sorted(categorical_params.items()))).encode()).digest()
-    if key in cache: return cache[key] # short circuit if this hyperparam combo has already been queried, ~10% savings per #160
+    if key in cache: return cache[key]
 
+    # Query the differentiation method at this choice of hyperparameters
     point_params = {k:(v if search_space_types[k] == float else int(np.round(v)))
                         for k,v in zip(search_space_types, point)} # point -> dict
-    # add back in the singletons we're not searching over
+    # add back in singletons and categorical choices the Nelder-Mead isn't searching over
     try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # estimate x and dxdt
     except np.linalg.LinAlgError: cache[key] = 1e10; return 1e10 # some methods can fail numerically
 
-    # evaluate estimate
-    if dxdt_truth is not None: # then minimize ||dxdt_hat - dxdt_truth||^2
-        if metric == 'rmse':
-            rms_rec_x, rms_x, rms_dxdt = evaluate.rmse(x, dt, x_hat, dxdt_hat, dxdt_truth=dxdt_truth, padding=padding)
+    # Evaluate estimate according to a loss function
+    if dxdt_truth is not None:
+        if metric == 'rmse': # minimize ||dxdt_hat - dxdt_truth||_2
+            rms_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = rms_dxdt; return rms_dxdt
         elif metric == 'error_correlation':
-            ec = evaluate.error_correlation(dxdt_hat, dxdt_truth, padding=padding)
+            ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = ec; return ec
-    else: # then minimize [ || integral(dxdt_hat) - x||^2 + gamma*TV(dxdt_hat) ]
-        rms_rec_x, rms_x, rms_dxdt = evaluate.rmse(x, dt, x_hat, dxdt_hat, dxdt_truth=None, padding=padding)
-        cost = rms_rec_x + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
+    else: # then minimize sqrt{2*Mean(Huber((x_hat- x)/sigma))}*sigma + gamma*TV(dxdt_hat)
+        cost = evaluate.robust_rme(x, x_hat, padding=padding) + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
         cache[key] = cost; return cost
 
 
@@ -186,8 +195,6 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     """
     if metric not in ['rmse','error_correlation']:
         raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
-    if metric == 'error_correlation' and dxdt_truth is None:
-        raise ValueError('`metric` can only be `error_correlation` if `dxdt_truth` is given.')
 
     search_space, bounds = method_params_and_bounds[func]
     search_space.update(search_space_updates) # for things not given, use defaults

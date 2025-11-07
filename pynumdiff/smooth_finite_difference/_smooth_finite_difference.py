@@ -19,9 +19,8 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1):
     :param int window_size: filtering kernel size
     :param int num_iterations: how many times to apply mean smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if kernel in ['mean', 'gaussian', 'friedrichs']:
         kernel = getattr(utility, f"{kernel}_kernel")(window_size)
@@ -50,9 +49,8 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     :param int window_size: filter window size
     :param int num_iterations: how many times to apply mean smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
@@ -76,9 +74,8 @@ def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     :param int window_size: filter window size
     :param int num_iterations: how many times to apply median smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
@@ -103,9 +100,8 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
     :param int window_size: filter window size
     :param int num_iterations: how many times to apply gaussian smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
@@ -130,9 +126,8 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
     :param int window_size: filter window size
     :param int num_iterations: how many times to apply smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
@@ -158,9 +153,8 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
         value is normalized to the range 0-1, where 1 is the Nyquist frequency.
     :param int num_iterations: how many times to apply smoothing
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `filter_order`, " +

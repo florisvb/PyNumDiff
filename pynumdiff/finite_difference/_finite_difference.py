@@ -13,6 +13,9 @@ def finitediff(x, dt, num_iterations=1, order=2):
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
     :param int order: 1, 2, or 4, controls which finite differencing scheme to employ
+
+    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if num_iterations < 1: raise ValueError("num_iterations must be >0")
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
@@ -59,7 +62,7 @@ def finitediff(x, dt, num_iterations=1, order=2):
     dxdt_hat /= dt # don't forget to scale by dt, can't skip it this time
 
     if num_iterations > 1: # We've lost a constant of integration in the above
-        x_hat += utility.estimate_integration_constant(x, x_hat) # uses least squares
+        x_hat += utility.estimate_integration_constant(x, x_hat)
 
     return x_hat, dxdt_hat
 
@@ -75,9 +78,8 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     warn("`first_order` in past releases was actually calculating a second-order FD. Use `second_order` to achieve " +
         "approximately the same behavior. Note that odd-order methods have asymmetrical stencils, which causes " +
@@ -99,9 +101,8 @@ def second_order(x, dt, num_iterations=1):
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     warn("`second_order` is deprecated. Call `finitediff` with order 2 instead.", DeprecationWarning)
     return finitediff(x, dt, num_iterations, 2)
@@ -116,9 +117,8 @@ def fourth_order(x, dt, num_iterations=1):
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     warn("`fourth_order` is deprecated. Call `finitediff` with order 4 instead.", DeprecationWarning)
     return finitediff(x, dt, num_iterations, 4)

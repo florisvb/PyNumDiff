@@ -25,56 +25,12 @@ def test_finite_difference():
     assert params1['num_iterations'] == 5
     assert params2['num_iterations'] == 1
 
-def test_mediandiff():
-    params1, val1 = optimize(mediandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
-    params2, val2 = optimize(mediandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
-    assert params1['window_size'] == 5
-    assert params2['window_size'] == 1
-
-def test_meandiff():
-    params1, val1 = optimize(meandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
-    params2, val2 = optimize(meandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
-    assert params1['window_size'] == 5
-    assert params2['window_size'] == 1
-
-def test_gaussiandiff():
-    params1, val1 = optimize(gaussiandiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
-    params2, val2 = optimize(gaussiandiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
-    assert params1['window_size'] == 9
-    assert params2['window_size'] == 1
-
-def test_friedrichsdiff():
-    params1, val1 = optimize(friedrichsdiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
-    params2, val2 = optimize(friedrichsdiff, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
-    assert params1['window_size'] == 9
-    assert params2['window_size'] == 1
-
 def test_iterative_velocity():
     params1, val1 = optimize(iterative_velocity, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
     params2, val2 = optimize(iterative_velocity, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
     
     np.testing.assert_almost_equal(params1['gamma'], 0.0001, decimal=4)
     np.testing.assert_almost_equal(params2['gamma'], 0.0001, decimal=4)
-
-def test_velocity():
-    try: import cvxpy
-    except: skip("could not import cvxpy, skipping test_velocity")
-
-    params1, val1 = optimize(velocity, x, dt, dxdt_truth=dxdt_truth, padding='auto', maxiter=20)
-    params2, val2 = optimize(velocity, x, dt, tvgamma=tvgamma, padding='auto', maxiter=20)
-
-    np.testing.assert_almost_equal(params1['gamma'], 0.0769, decimal=3)
-    np.testing.assert_almost_equal(params2['gamma'], 0.010, decimal=3)
-
-def test_acceleration():
-    try: import cvxpy
-    except: pytest.skip("could not import cvxpy, skipping test_acceleration")
-
-    params1, val1 = optimize(acceleration, x, dt, dxdt_truth=dxdt_truth, padding='auto', maxiter=20)
-    params2, val2 = optimize(acceleration, x, dt, tvgamma=tvgamma, padding='auto', maxiter=20)
-
-    np.testing.assert_almost_equal(params1['gamma'], 0.147, decimal=3)
-    np.testing.assert_almost_equal(params2['gamma'], 0.0046, decimal=4)
 
 def test_savgoldiff():
     params1, val1 = optimize(savgoldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')

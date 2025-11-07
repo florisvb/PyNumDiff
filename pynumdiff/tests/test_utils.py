@@ -22,16 +22,22 @@ def test_integrate_dxdt_hat():
 
 def test_estimate_integration_constant():
     """For known simple functions, make sure the initial condition is as expected"""
-    for x,x_hat,c in [([1.0, 2.0, 3.0, 4.0, 5.0], [0.0, 1.0, 2.0, 3.0, 4.0], 1), # Perfect alignment case, xhat shifted by 1
-        (np.ones(5)*10, np.ones(5)*5, 5),
-        ([0], [1], -1)]:
+    for x,x_hat,c in [(np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0]), 1), # Perfect alignment case, xhat shifted by 1
+            (np.ones(5)*10, np.ones(5)*5, 5),
+            (np.array([0]), np.array([1]), -1)]:
         x0 = utility.estimate_integration_constant(x, x_hat)
         assert np.allclose(x0, float(c), rtol=1e-3)
 
-    np.random.seed(42) # Noisy case. Seed for reproducibility
-    x0 = utility.estimate_integration_constant([1.0, 2.0, 3.0, 4.0, 5.0],
-        np.array([0.0, 1.0, 2.0, 3.0, 4.0]) + np.random.normal(0, 0.1, 5))
-    assert 0.9 < x0 < 1.1 # The result should be close to 1.0, but not exactly due to noise
+    x_hat = np.sin(np.arange(400)*0.01)
+    x = x_hat + np.random.normal(0, 0.1, 400) + 1 # shift data by 1
+    x0 = utility.estimate_integration_constant(x, x_hat, M=float('inf'))
+    assert 0.95 < x0 < 1.05 # The result should be close to 1.0, but not exactly due to noise
+
+    x[100] = 100 # outlier case
+    x0 = utility.estimate_integration_constant(x, x_hat, M=0)
+    assert 0.95 < x0 < 1.05
+    x0 = utility.estimate_integration_constant(x, x_hat, M=6)
+    assert 0.95 < x0 < 1.05
 
 
 def test_convolutional_smoother():
@@ -63,19 +69,19 @@ def test_peakdet(request):
         pyplot.title('peakdet validataion')
         pyplot.show()
 
-    assert np.allclose(maxtab, [[0.473, 1.59843494], # these numbers validated by eye with --plot
-                                [1.795, 1.90920786],
-                                [3.314, -0.04585991],
-                                [4.992, 0.74798665],
-                                [6.345, 1.89597554],
-                                [7.778, 0.57190318],
-                                [9.424, 0.58764606]])
-    assert np.allclose(mintab, [[1.096, 0.30361178],
-                                [2.739, -1.12624328],
-                                [4.072, -2.00254655],
-                                [5.582, -0.31529832],
-                                [7.135, -0.58327787],
-                                [8.603, -1.71278265]])
+    assert np.allclose(maxtab, [[0.447, 1.58575613], # these numbers validated by eye with --plot
+                                [1.818, 1.91349239],
+                                [3.316,-0.02740252],
+                                [4.976, 0.74512778],
+                                [6.338, 1.89861691],
+                                [7.765, 0.57577842],
+                                [9.402, 0.59450898]])
+    assert np.allclose(mintab, [[1.139, 0.31325728],
+                                [2.752,-1.12769567],
+                                [4.098,-2.00326946],
+                                [5.507,-0.31714122],
+                                [7.211,-0.59708324],
+                                [8.612,-1.7118216 ]])
 
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""
@@ -90,6 +96,7 @@ def test_slide_function():
 
 
 def test_simulations(request):
+    """Just sprint through running them all to make sure they go. Optionally plot with flag."""
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
         fig, axes = pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)
@@ -110,5 +117,13 @@ def test_simulations(request):
             ax.set_title(title, fontsize=18)
             if i == 5: ax.legend(loc='lower right', fontsize=12)
 
-# def test_evaluate():
-#     return
+
+def test_robust_rme():
+    """Ensure the robust error metric is the same as RMSE for big M, and that it does
+    better in the presence of outliers"""
+    u = np.sin(np.arange(100)*0.1)
+    v = u + np.random.randn(100)
+    assert np.allclose(evaluate.rmse(u, v), evaluate.robust_rme(u, v, M=6))
+
+    v[40] = 100 # throw an outlier in there
+    assert evaluate.robust_rme(u, v, M=2) < evaluate.rmse(u, v)

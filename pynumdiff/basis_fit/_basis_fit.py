@@ -19,9 +19,8 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
             zero before taking FFT.
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
@@ -52,26 +51,24 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     if even_extension is True:
         x = np.hstack((x, x[::-1]))
 
-    # If odd, make N even, and pad x
+    # Form wavenumbers
     N = len(x)
-
-    # Define the frequency range.
     k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
     if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
-    omega = k*2*np.pi/(dt*N) # turn wavenumbers into frequencies in radians/s
 
-    # Frequency based smoothing: remove signals with a frequency higher than high_freq_cutoff
+    # Filter to zero out higher wavenumbers
     discrete_cutoff = int(high_freq_cutoff*N/2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
-    omega[discrete_cutoff:N-discrete_cutoff] = 0
+    filt = np.ones(k.shape); filt[discrete_cutoff:N-discrete_cutoff] = 0
+
+    # Smoothed signal
+    X = np.fft.fft(x)
+    x_hat = np.real(np.fft.ifft(filt * X))
+    x_hat = x_hat[padding:L+padding]
 
     # Derivative = 90 deg phase shift
-    dxdt_hat = np.real(np.fft.ifft(1.0j * omega * np.fft.fft(x)))
+    omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
+    dxdt_hat = np.real(np.fft.ifft(1j * k * omega * filt * X))
     dxdt_hat = dxdt_hat[padding:L+padding]
-
-    # Integrate to get x_hat
-    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_integration_constant(x[padding:L+padding], x_hat)
-    x_hat = x_hat + x0
 
     return x_hat, dxdt_hat
 
@@ -88,9 +85,8 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
     :param float sigma: controls width of radial basis functions
     :param float lmbd: controls smoothness
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
-             - **dxdt_hat** -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if np.isscalar(_t):
         t = np.arange(len(x))*_t

@@ -20,7 +20,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     :param bool show_error: whether to show the rmse
     :param int markersize: marker size of noisy observations
 
-    :return: Display two plots
+    :return: (tuple) -- figure and axes
     """
     t = np.arange(len(x))*dt
     if xlim is None:
@@ -48,8 +48,8 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     axes[1].legend(loc='lower right', fontsize=12)
 
     if show_error:
-        _, _, rms_dxdt = rmse(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth)
-        R_sqr = error_correlation(dxdt_hat, dxdt_truth)
+        rms_dxdt = rmse(dxdt_truth, dxdt_hat)
+        R_sqr = error_correlation(dxdt_truth, dxdt_hat)
         axes[1].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
                      transform=axes[1].transAxes, fontsize=15, verticalalignment='top')
     
@@ -70,71 +70,68 @@ def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_h
         axes[i].tick_params(axis='y', labelsize=15)
         axes[i].set_title(title, fontsize=18)
         if i==2: axes[i].legend(loc='lower right', fontsize=12)
-        _, _, rms_dxdt = rmse(np.zeros(dxdt_hat.shape), dt, np.zeros(dxdt_hat.shape), dxdt_hat, np.zeros(dxdt_hat.shape), dxdt_truth)
-        R_sqr = error_correlation(dxdt_hat, dxdt_truth)
-        axes[i].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
+        rmse_dxdt = rmse(dxdt_truth, dxdt_hat)
+        R_sqr = error_correlation(dxdt_truth, dxdt_hat)
+        axes[i].text(0.05, 0.95, f"RMSE = {rmse_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
                      transform=axes[i].transAxes, fontsize=15, verticalalignment='top')
 
     fig.tight_layout()
 
 
-def rmse(x, dt, x_hat, dxdt_hat, x_truth=None, dxdt_truth=None, padding=0):
-    """Evaluate x_hat based on RMSE, calculating different ones depending on whether :code:`dxdt_truth`
-    and :code:`x_truth` are known.
+def robust_rme(x, x_hat, padding=0, M=6):
+    """Robustified/Huberized Root Mean Error metric, used to determine fit between smooth estimate and data.
+    Equals np.linalg.norm(x[s] - x_hat[s]) / np.sqrt(N) if M=float('inf'), and dang close for even M=6 or even 2.
 
-    :param np.array[float] x: data that was differentiated
-    :param float dt: step size
-    :param np.array[float] x_hat: estimated (smoothed) x
-    :param np.array[float] dxdt_hat: estimated xdot
-    :param np.array[float] x_truth: true value of x, if known
-    :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
+    :param np.array[float] x: noisy data
+    :param np.array[float] x_hat: estimated smoothed signal, returned by differentiation algorithms in addition
+        to derivative
+    :param int padding: number of snapshots on either side of the array to ignore when calculating
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+    :param float M: Huber loss parameter in units of ~1.4*mean absolute deviation, intended to approximate
+        standard deviation robustly.
+
+    :return: **robust_rmse_x_hat** (float) -- RMS error between x_hat and data
+    """
+    if padding == 'auto': padding = max([1, int(0.025*len(x))])
+    s = slice(padding, len(x)-padding) # slice out data we want to measure
+    N = s.stop - s.start
+
+    sigma = stats.median_abs_deviation(x[s] - x_hat[s], scale='normal') # M is in units of this robust scatter metric
+    if sigma < 1e-6: sigma = 1 # guard against divide by zero
+    return np.sqrt(2*np.mean(utility.huber((x[s] - x_hat[s])/sigma, M))) * sigma
+
+
+def rmse(dxdt_truth, dxdt_hat, padding=0):
+    """True RMSE between vectors
+
+    :param np.array[float] dxdt_truth: known true derivative 
+    :param np.array[float] dxdt_hat: estimated derivative 
     :param int padding: number of snapshots on either side of the array to ignore when calculating
         the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
-    :return: tuple[float, float, float] containing\n
-            - **rms_rec_x** -- RMS error between the integral of dxdt_hat and x
-            - **rms_x** -- RMS error between x_hat and x_truth, returns None if x_truth is None
-            - **rms_dxdt** -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
+    :return: **true_rmse_dxdt** (float) -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """
-    if np.isnan(x_hat).any():
-        return np.nan, np.nan, np.nan
-    if padding == 'auto':
-        padding = int(0.025*len(x))
-        padding = max(padding, 1)
-    s = slice(padding, len(x)-padding) # slice out data we want to measure
+    if padding == 'auto': padding = max([1, int(0.025*len(dxdt_truth))])
+    s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
+    N = s.stop - s.start
 
-    # RMS of dxdt and x_hat
-    root = np.sqrt(s.stop - s.start)
-    rms_dxdt = np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / root if dxdt_truth is not None else None
-    rms_x = np.linalg.norm(x_hat[s] - x_truth[s]) / root if x_truth is not None else None
-
-    # RMS reconstructed x from integrating dxdt vs given raw x, available even in the absence of ground truth
-    rec_x = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x0 = utility.estimate_integration_constant(x, rec_x)
-    rec_x = rec_x + x0
-    rms_rec_x = np.linalg.norm(rec_x[s] - x[s]) / root
-
-    return rms_rec_x, rms_x, rms_dxdt
+    return np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / np.sqrt(N) if dxdt_truth is not None else None
 
 
-def error_correlation(dxdt_hat, dxdt_truth, padding=0):
-    """Calculate the error correlation (pearsons correlation coefficient) between the estimated
-    dxdt and true dxdt
+def error_correlation(dxdt_truth, dxdt_hat, padding=0):
+    """Calculate the error correlation (pearsons correlation coefficient) between vectors
 
-    :param np.array[float] dxdt_hat: estimated xdot
     :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
+    :param np.array[float] dxdt_hat: estimated xdot
     :param int padding: number of snapshots on either side of the array to ignore when calculating
         the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
 
     :return: (float) -- r-squared correlation coefficient
     """
-    if padding == 'auto':
-        padding = int(0.025*len(dxdt_hat))
-        padding = max(padding, 1)
+    if padding == 'auto': padding = max(1, int(0.025*len(dxdt_hat)))
     s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
-    errors = (dxdt_hat[s] - dxdt_truth[s])
-    r = stats.linregress(dxdt_truth[s] - np.mean(dxdt_truth[s]), errors)
-    return r.rvalue**2
+    
+    return stats.linregress(dxdt_truth[s], dxdt_hat[s] - dxdt_truth[s]).rvalue**2
 
 
 def total_variation(x, padding=0):
@@ -146,11 +143,7 @@ def total_variation(x, padding=0):
 
     :return: (float) -- total variation
     """
-    if np.isnan(x).any():
-        return np.nan
-    if padding == 'auto':
-        padding = int(0.025*len(x))
-        padding = max(padding, 1)
+    if padding == 'auto': padding = max(1, int(0.025*len(x)))
     x = x[padding:len(x)-padding]
     
     return np.linalg.norm(x[1:]-x[:-1], 1)/len(x) # normalized version of what cvxpy.tv does

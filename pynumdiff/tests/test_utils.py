@@ -101,8 +101,7 @@ def test_simulations(request):
         from matplotlib import pyplot
         fig, axes = pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)
 
-    for i,(sim,title) in enumerate(zip(
-        [pi_cruise_control, sine, triangle, pop_dyn, linear_autonomous, lorenz_x],
+    for i,(sim,title) in enumerate(zip([pi_cruise_control, sine, triangle, pop_dyn, linear_autonomous, lorenz_x],
         ["Cruise Control", "Sum of Sines", "Triangles", "Logistic Growth", "Linear Autonomous", "Lorenz First Dimension"])):
     
         y, x, dxdt = sim(duration=4, dt=0.01, noise_type='normal', noise_parameters=[0,0.1])

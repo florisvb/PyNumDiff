@@ -115,7 +115,7 @@ def rmse(dxdt_truth, dxdt_hat, padding=0):
     s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
     N = s.stop - s.start
 
-    return np.linalg.norm(dxdt_hat[s] - dxdt_truth[s]) / np.sqrt(N) if dxdt_truth is not None else None
+    return np.linalg.norm(dxdt_truth[s] - dxdt_hat[s]) / np.sqrt(N)
 
 
 def error_correlation(dxdt_truth, dxdt_hat, padding=0):

@@ -48,9 +48,9 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
     axes[1].legend(loc='lower right', fontsize=12)
 
     if show_error:
-        rms_dxdt = rmse(dxdt_truth, dxdt_hat)
+        rmse_dxdt = rmse(dxdt_truth, dxdt_hat)
         R_sqr = error_correlation(dxdt_truth, dxdt_hat)
-        axes[1].text(0.05, 0.95, f"RMSE = {rms_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
+        axes[1].text(0.05, 0.95, f"RMSE = {rmse_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
                      transform=axes[1].transAxes, fontsize=15, verticalalignment='top')
     
     return fig, axes
@@ -80,7 +80,7 @@ def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_h
 
 def robust_rme(x, x_hat, padding=0, M=6):
     """Robustified/Huberized Root Mean Error metric, used to determine fit between smooth estimate and data.
-    Equals np.linalg.norm(x[s] - x_hat[s]) / np.sqrt(N) if M=float('inf'), and dang close for even M=6 or even 2.
+    Equals np.linalg.norm(x[s] - x_hat[s]) / np.sqrt(N) if M=float('inf'), and dang close for M=6 or even 2.
 
     :param np.array[float] x: noisy data
     :param np.array[float] x_hat: estimated smoothed signal, returned by differentiation algorithms in addition

@@ -60,10 +60,10 @@ method_params_and_bounds = {
                   'pad_to_zero_dxdt': {True, False},
                   'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]}, # give numerical params in a list to scipy.optimize over them
                  {'high_freq_cutoff': (1e-5, 1-1e-5)}),
-    rbfdiff: ({'sigma': [1e-3, 1e-2, 1e-1, 1],
+    rbfdiff: ({'sigma': [1e-2, 1e-1, 1],
                 'lmbd': [1e-3, 1e-2, 1e-1]},
-              {'sigma': (1e-3, 1e3),
-                'lmbd': (1e-4, 0.5)}),
+              {'sigma': (1e-2, 1e3),
+                'lmbd': (1e-3, 0.5)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                'order': {1, 2, 3}}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
               {'gamma': (1e-4, 1e7)}),
@@ -87,23 +87,15 @@ method_params_and_bounds = {
            'forwardbackward': {True, False}},
                         {'q': (1e-10, 1e10),
                          'r': (1e-10, 1e10)}),
-    # robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-    #               'log_q': [1., 4, 8, 12], # decimal after first entry ensure this is treated as float type
-    #               'log_r': [-1., 1, 4, 8],
-    #         #'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
-    #         'meas_huberM': [0., 2, 6]}, # and 6 assumes basically no outliers -> l2 norm. Try (1 - norm.cdf(M))*2 to see outlier portion
-    #              {'log_q': (-1, 18),
-    #               'log_r': (-5, 18),
-    #         'proc_huberM': (0, 6),
-    #         'meas_huberM': (0, 6)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-                  'log_q': [1., 4, 8, 12], # decimal after first entry ensure this is treated as float type
-                  'log_r': [-1., 1, 4, 8],
-               #'qr_ratio': [10**k for k in range(-1, 16, 4)],
-                 'huberM': [0., 5, 10]}, # 0. so type is float. Good choices here really depend on the data scale
-                 {'log_q': (0, 18),
-                  'log_r': (-5, 10),
-                 'huberM': (0, 20)}), # really only want to use quadratic when nearby; 20sigma is a huge distance
+                  'log_q': [1., 4, 7, 10, 13, 16], # decimal after first entry ensure this is treated as float type
+                  'log_r': [-1., 2, 5, 8, 11],
+            'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
+            'meas_huberM': [0., 2, 6]}, # 6 assumes basically no outliers per outlier_portion = (1 - norm.cdf(M))*2
+                 {'log_q': (-5, 18),
+                  'log_r': (-5, 18),
+            'proc_huberM': (0, 6),
+            'meas_huberM': (0, 6)}),
     lineardiff: ({'kernel': 'gaussian',
                    'order': 3,
                    'gamma': [1e-1, 1, 10, 100],

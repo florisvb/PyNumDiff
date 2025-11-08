@@ -276,6 +276,10 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     norm case, because :math:`c_2` approaches :math:`\\frac{\\sqrt{2}}{M}`, cancelling the :math:`M` multiplying :math:`|\\cdot|`
     and leaving behind :math:`\\sqrt{2}`, the proper normalization.
 
+    Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
+    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{-1/2})`, but they are still independent enough that for
+    the purposes of optimization we cannot collapse them.
+
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
@@ -337,7 +341,7 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
                 else huber_const(meas_huberM)*cvxpy.sum(cvxpy.huber(meas_resids, meas_huberM)) # CVXPY quirk: norm(, 1) != sum(abs()) for matrices
     
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
-    try: problem.solve(solver=cvxpy.CLARABEL); print("CLARABEL succeeded")
+    try: problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
     
     if x_states.value is None: return np.full((A.shape[0], N), np.nan) # There can be solver failure, even without error

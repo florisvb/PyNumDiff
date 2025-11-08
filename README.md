@@ -83,8 +83,7 @@ The following heuristic works well for choosing `tvgamma`, where `cutoff_frequen
 
 Much more extensive usage is demonstrated in Jupyter notebooks:
 * Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/1_basic_tutorial.ipynb)
-* Parameter Optimization with known ground truth (only for demonstration purpose):  [2a_optimizing_parameters_with_dxdt_known.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2a_optimizing_parameters_with_dxdt_known.ipynb)
-* Parameter Optimization with unknown ground truth: [2b_optimizing_parameters_with_dxdt_unknown.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2b_optimizing_parameters_with_dxdt_unknown.ipynb)
+* Parameter Optimization:  [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2_optimizing_hyperparameters.ipynb)
 * Automatic method suggestion: [3_automatic_method_suggestion.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/3_automatic_method_suggestion.ipynb)
 
 ## Repo Structure

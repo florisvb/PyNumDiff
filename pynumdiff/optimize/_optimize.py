@@ -160,7 +160,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
 def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
     padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True):
-    """Find the optimal parameters for a given differentiation method.
+    """Find the optimal hyperparameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
     :param np.array[float] x: data to differentiate
@@ -170,8 +170,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     that yield a smooth derivative. Larger value results in a smoother derivative.
     :param dict search_space_updates: At the top of :code:`_optimize.py`, each method has a search space of parameters
                     settings structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The Cartesian
-                    product of values are used as initial starting points in optimization. If left None, the default search
-                    space is used.
+                    product of values are used as initial starting points in optimization. If left None, the default
+                    search space is used.
     :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
                     is not None, see _objective_function
     :param int padding: number of time steps to ignore at the beginning and end of the time series in the
@@ -179,12 +179,12 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     optimization to emphasize the accuracy of dxdt in the middle of the time series
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
     :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
-    :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations, but
-                    for experiments it is a better use of resources to pool at that higher level
+    :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations.
+                    For experiments, it is a usually a better use of resources to parallelize at that level, meaning
+                    each must run in its own process, since spawned processes are not allowed to further spawn.
 
-    :return: tuple[dict, float] of\n
-            - **opt_params** -- best parameter settings for the differentation method
-            - **opt_value** -- lowest value found for objective function
+    :return: - **opt_params** (dict) -- best parameter settings for the differentation method
+             - **opt_value** (float) -- lowest value found for objective function
     """
     if metric not in ['rmse','error_correlation']:
         raise ValueError('`metric` should either be `rmse` or `error_correlation`.')

@@ -1,11 +1,8 @@
 import numpy as np
 from pytest import skip
 
-from ..finite_difference import first_order as iterated_finite_difference
 from ..smooth_finite_difference import butterdiff
-from ..basis_fit import spectraldiff
-from ..polynomial_fit import polydiff, savgoldiff, splinediff
-from ..total_variation_regularization import velocity, acceleration, iterative_velocity
+from ..polynomial_fit import splinediff
 from ..kalman_smooth import rtsdiff
 from ..optimize import optimize
 from ..utils.simulate import pi_cruise_control

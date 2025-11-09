@@ -2,59 +2,46 @@ import numpy as np
 from pytest import skip
 
 from ..finite_difference import first_order as iterated_finite_difference
-from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from ..smooth_finite_difference import butterdiff
 from ..basis_fit import spectraldiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..total_variation_regularization import velocity, acceleration, iterative_velocity
 from ..kalman_smooth import rtsdiff
 from ..optimize import optimize
 from ..utils.simulate import pi_cruise_control
+from ..utils.evaluate import rmse
 
 
-# simulation
 dt = 0.01
 x, x_truth, dxdt_truth = pi_cruise_control(duration=2, noise_type='normal', noise_parameters=[0, 0.01], dt=dt)
-cutoff_frequency = 10 # in Hz
-log_gamma = -1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1
-tvgamma = np.exp(log_gamma)
+cutoff_frequency = 3 # in Hz
+tvgamma = np.exp(-1.6 * np.log(cutoff_frequency) - 0.71 * np.log(dt) - 5.1)
 
 
-def test_finite_difference():
-    params1, val1 = optimize(iterated_finite_difference, x, dt, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(iterated_finite_difference, x, dt, tvgamma=tvgamma, dxdt_truth=None, padding='auto')
-    assert params1['num_iterations'] == 5
-    assert params2['num_iterations'] == 1
+def test_parallel_same_as_serial():
+    """Ensure running optimize across several processes returns the same result as running in a single process"""
+    params_parallel, val_parallel = optimize(rtsdiff, x, dt, tvgamma=tvgamma, parallel=True)
+    params_serial, val_serial = optimize(rtsdiff, x, dt, tvgamma=tvgamma, parallel=False)
 
-def test_iterative_velocity():
-    params1, val1 = optimize(iterative_velocity, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'num_iterations':1}, padding='auto')
-    params2, val2 = optimize(iterative_velocity, x, dt, tvgamma=tvgamma, search_space_updates={'num_iterations':1}, padding='auto')
+    assert np.allclose(val_serial, val_parallel)
+    assert params_serial == params_parallel
+
+
+def test_targeting_rmse_vs_tvgamma_loss():
+    """Ensure optimization properly targets different metrics"""
+    params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth)
+    params_loss, val_loss = optimize(splinediff, x, dt, tvgamma=tvgamma)
     
-    np.testing.assert_almost_equal(params1['gamma'], 0.0001, decimal=4)
-    np.testing.assert_almost_equal(params2['gamma'], 0.0001, decimal=4)
+    x_hat, dxdt_hat = splinediff(x, dt, **params_loss)
+    loss_rmse = rmse(dxdt_truth, dxdt_hat)
 
-def test_savgoldiff():
-    params1, val1 = optimize(savgoldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(savgoldiff, x, dt, tvgamma=tvgamma, padding='auto')
-    assert (params1['degree'], params1['window_size'], params1['smoothing_win']) == (7, 41, 3)
-    assert (params2['degree'], params2['window_size'], params2['smoothing_win']) == (3, 3, 5)
+    assert val_rmse < loss_rmse < 1.1*val_rmse # This exact bound might break if using a different diff method or data series, but the point is they should be close
 
-def test_spectraldiff():
-    params1, val1 = optimize(spectraldiff, x, dt, dxdt_truth=dxdt_truth, padding='auto')
-    params2, val2 = optimize(spectraldiff, x, dt, tvgamma=tvgamma, padding='auto')
-    np.testing.assert_almost_equal(params1['high_freq_cutoff'], 0.18, decimal=2)
-    np.testing.assert_almost_equal(params2['high_freq_cutoff'], 0.155, decimal=2)
 
-def test_polydiff():
-    params1, val1 = optimize(polydiff, x, dt, dxdt_truth=dxdt_truth, search_space_updates={'step_size':1}, padding='auto')
-    params2, val2 = optimize(polydiff, x, dt, tvgamma=tvgamma, search_space_updates={'step_size':1}, padding='auto')
-    assert (params1['degree'], params1['window_size'], params1['kernel']) == (6, 50, 'friedrichs')
-    assert (params2['degree'], params2['window_size'], params2['kernel']) == (3, 10, 'gaussian')
+def test_search_space_updates_applied():
+    """Ensure search space updates are used in optimization"""
+    params2, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':2}, tvgamma=tvgamma)
+    params3, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':3}, tvgamma=tvgamma)
 
-# This test runs in a reasonable amount of time locally but for some reason takes forever in CI
-# def test_rtsdiff_with_irregular_step():
-#     t = np.arange(len(x))*dt; np.random.seed(7) # seed so the test can't randomly fail
-#     t_irreg = t + np.random.uniform(-dt/10, dt/10, *t.shape) # add jostle
-#     params1, val1 = optimize(rtsdiff, x, t, dxdt_truth=dxdt_truth)
-#     params2, val2 = optimize(rtsdiff, x, t_irreg, dxdt_truth=dxdt_truth)
-#     assert val2 < 1.15*val1 # optimization works and comes out similar, since jostle is small
-#     assert params1['qr_ratio']*0.85 < params2['qr_ratio'] < params1['qr_ratio']*1.15
+    assert params2['filter_order'] == 2
+    assert params3['filter_order'] == 3

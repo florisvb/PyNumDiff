@@ -230,7 +230,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                 categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
                 metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
             _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-            results = [_minimize(p) for p in starting_points]
+            results += [_minimize(p) for p in starting_points]
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x

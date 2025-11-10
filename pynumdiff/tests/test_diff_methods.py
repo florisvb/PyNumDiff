@@ -40,7 +40,7 @@ diff_methods_and_params = [
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
     (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
-    (butterdiff, {'filter_order':3, 'cutoff_freq':0.074}), (butterdiff, [3, 0.074]),
+    (butterdiff, {'filter_order':3, 'cutoff_freq':0.7}), (butterdiff, [3, 0.7]),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
     (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),

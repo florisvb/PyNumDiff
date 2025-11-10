@@ -170,12 +170,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     for _ in range(num_iterations):
         x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad", padlen=padlen) # applies forward and backward pass so zero phase
 
-    x_hat, dxdt_hat = finite_difference(x_hat, dt)
-
-    offset = np.mean(x) - np.mean(x_hat)
-    x_hat = x_hat + offset
-
-    return x_hat, dxdt_hat
+    return finite_difference(x_hat, dt)
 
 
 def splinediff(*args, **kwargs):

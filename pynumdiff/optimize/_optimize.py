@@ -97,7 +97,7 @@ method_params_and_bounds = {
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
     robustdiffclassic: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-                  'log_qr_ratio': [k for k in range(-1, 16, 4)],
+                  'log_qr_ratio': [float(k) for k in range(-1, 16, 4)],
                         'huberM': [0., 5, 20]}, # 0. so type is float. Good choices here really depend on the data scale
                  {'log_qr_ratio': (-1, 18),
                         'huberM': (0, 1e2)}), # really only want to use l2 norm when nearby

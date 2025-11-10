@@ -266,25 +266,25 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     :code:`convex_smooth`.
 
     Note that for Huber losses, :code:`M` is the radius where the Huber loss function turns from quadratic to linear. Because
-    all inputs to Huber are normalized by noise level, :code:`q` or :code:`r`, :code:`M` is in units of standard deviation.
-    In other words, this choice affects which portion of inputs are treated as outliers. For example, assuming Gaussian inliers,
-    the portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))`. The inverse of this is
-    :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`. As :math:`M \\to \\infty`, Huber becomes the 1/2-sum-of-squares
-    case, :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, and the normalization constant of the Huber loss approaches 1 as :math:`M`
-    increases. (See :math:`c_2` `in section 6 <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_, missing a
-    :math:`\\sqrt{\\cdot}` term there, see p2700). Similarly, as :code:`M` approaches 0, Huber reduces to the :math:`\\ell_1`
-    norm case, because :math:`c_2` approaches :math:`\\frac{\\sqrt{2}}{M}`, cancelling the :math:`M` multiplying :math:`|\\cdot|`
-    and leaving behind :math:`\\sqrt{2}`, the proper normalization.
+    all inputs to Huber are normalized by noise level, :math:`q^{1/2}` or :math:`r^{1/2}`, :code:`M` is in units of standard
+    deviation. In other words, this choice affects which portion of inputs are treated as outliers. For example, assuming
+    Gaussian inliers, the portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))`. The
+    inverse of this is :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`. As :math:`M \\to \\infty`, Huber becomes the
+    1/2-sum-of-squares case, :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, and the normalization constant of the Huber loss (See
+    :math:`c_2` `in section 6 <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_, missing a :math:`\\sqrt{\\cdot}`
+    term there, see p2700) approaches 1 as :math:`M` increases. Similarly, as :code:`M` approaches 0, Huber reduces to the
+    :math:`\\ell_1` norm case, because the normalization constant approaches :math:`\\frac{\\sqrt{2}}{M}`, cancelling the
+    :math:`M` multiplying :math:`|\\cdot|` and leaving behind :math:`\\sqrt{2}`, the proper :math:`\\ell_1` normalization.
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
-    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{-1/2})`, but they are still independent enough that for
+    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{-1/2})`, but these are still independent enough that for
     the purposes of optimization we cannot collapse them.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
-    :param float log_q: base 10 logarithm of the process noise level, so :code:`q = 10**log_q`
-    :param float log_r: base 10 logarithm of the measurement noise level, so :code:`r = 10**log_r`
+    :param float log_q: base 10 logarithm of the process noise variance, so :code:`q = 10**log_q`
+    :param float log_r: base 10 logarithm of the measurement noise variance, so :code:`r = 10**log_r`
     :param float proc_huberM: quadratic-to-linear transition point for process loss
     :param float meas_huberM: quadratic-to-linear transition point for measurement loss
 

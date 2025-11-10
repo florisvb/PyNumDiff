@@ -14,7 +14,7 @@ from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussia
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff, robustdiffclassic
 from ..linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -96,6 +96,11 @@ method_params_and_bounds = {
                   'log_r': (-5, 16),
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
+    robustdiffclassic: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
+                  'log_qr_ratio': [k for k in range(-1, 16, 4)],
+                        'huberM': [0., 5, 20]}, # 0. so type is float. Good choices here really depend on the data scale
+                 {'log_qr_ratio': (-1, 18),
+                        'huberM': (0, 1e2)}), # really only want to use l2 norm when nearby
     lineardiff: ({'kernel': 'gaussian',
                    'order': 3,
                    'gamma': [1e-1, 1, 10, 100],
@@ -117,7 +122,7 @@ for method in [constant_acceleration, constant_jerk]: # Deprecated, redundant me
 
 # This function has to be at the top level for multiprocessing but is only used by optimize.
 def _objective_function(point, func, x, dt, singleton_params, categorical_params, search_space_types,
-    dxdt_truth, metric, tvgamma, padding, cache):
+    dxdt_truth, metric, tvgamma, padding, cache, huberM):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
     This is mildly complicated, because "point" controls the settings of a differentiation function, but
     the method may have numerical and non-numerical parameters, and all such parameters are now passed by
@@ -152,14 +157,15 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         elif metric == 'error_correlation':
             ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = ec; return ec
-    else: # then minimize sqrt{2*Mean(Huber((x_hat- x)/sigma))}*sigma + gamma*TV(dxdt_hat)
-        # Huber M=2 means more than 95% of inliers (assuming Gaussianity) are treated with RMSE, while 
-        cost = evaluate.robust_rme(x, x_hat, padding=padding, M=2) + tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
+    else: # then minimize (RMSE(x_hat - x) || sqrt{2*Mean(Huber((x_hat- x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
+        # rubust_rme(,inf) = rmse(), so just use the simpler function in that case
+        cost = evaluate.rmse(x, x_hat, padding=padding) if huberM == float('inf') else evaluate.robust_rme(x, x_hat, padding=padding, M=huberM)
+        cost += tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
         cache[key] = cost; return cost
 
 
 def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
-    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True):
+    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=float('inf')):
     """Find the optimal hyperparameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
@@ -182,6 +188,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations.
                     For experiments, it is a usually a better use of resources to parallelize at that level, meaning
                     each must run in its own process, since spawned processes are not allowed to further spawn.
+    :param float huberM: For ground-truth-less situation, if :math:`M < \\infty`, use outlier-robust, Huber-based accuracy
+                    metric in loss function.
 
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function
@@ -220,7 +228,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same
                     _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
                         categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
-                        metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
+                        metric=metric, tvgamma=tvgamma, padding=padding, cache=cache, huberM=huberM)
                     _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
                     results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
     else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
@@ -228,7 +236,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
         for categorical_combo in categorical_combos:
             _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
                 categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
-                metric=metric, tvgamma=tvgamma, padding=padding, cache=cache)
+                metric=metric, tvgamma=tvgamma, padding=padding, cache=cache, huberM=huberM)
             _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
             results += [_minimize(p) for p in starting_points]
 

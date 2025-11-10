@@ -307,6 +307,10 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     return x_states[0], x_states[1]
 
 
+def robustdiffclassic(x, dt, order, log_qr_ratio, huberM):
+    return robustdiff(x, dt, order, 4, 4 - log_qr_ratio, huberM, huberM)
+
+
 def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     """Solve the optimization problem for robust smoothing using CVXPY. Note this currently assumes constant dt
     but could be extended to handle variable step sizes by finding discrete-time A and Q for requisite gaps.

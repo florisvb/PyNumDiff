@@ -1,8 +1,5 @@
-"""
-Unit tests for utility functions
-"""
+"""Unit tests for utility functions"""
 # pylint: skip-file
-
 import numpy as np
 from pynumdiff.utils import utility, evaluate
 from pynumdiff.utils.simulate import sine, triangle, pop_dyn, linear_autonomous, pi_cruise_control, lorenz_x

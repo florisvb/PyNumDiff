@@ -260,16 +260,16 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
 
 def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
-    :math:`\\argmin_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
+    :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
     loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is convex, so this method calls
-    :code:`convex_smooth`.
+    :code:`convex_smooth`, which in turn forms a sparse CVXPY problem and invokes CLARABEL.
 
     Note that for Huber losses, :code:`M` is the radius where the Huber loss function turns from quadratic to linear. Because
-    all inputs to Huber are normalized by noise level, :math:`q^{1/2}` or :math:`r^{1/2}`, :code:`M` is in units of standard
-    deviation. In other words, this choice affects which portion of inputs are treated as outliers. For example, assuming
-    Gaussian inliers, the portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))`. The
-    inverse of this is :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`. As :math:`M \\to \\infty`, Huber becomes the
+    all loss function inputs are normalized by noise level, :math:`q^{1/2}` or :math:`r^{1/2}`, :code:`M` is in units of inlier
+    standard deviation. In other words, this choice affects which portion of inliers might be treated as outliers. For example,
+    assuming Gaussian inliers, the portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))`.
+    The inverse of this is :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`. As :math:`M \\to \\infty`, Huber becomes the
     1/2-sum-of-squares case, :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, because the normalization constant of the Huber loss (See
     :math:`c_2` in `section 6 of this paper <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_, missing a
     :math:`\\sqrt{\\cdot}` term there, see p2700) approaches 1 as :math:`M` increases. Similarly, as :code:`M` approaches 0,

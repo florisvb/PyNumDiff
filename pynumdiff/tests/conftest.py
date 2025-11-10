@@ -1,4 +1,4 @@
-"""Pytest configuration for pynumdiff tests"""
+"""Pytest configuration for pynumdiff tests. This is what enables the --plot and --bounds flags to work."""
 import pytest
 from matplotlib import pyplot
 from collections import defaultdict

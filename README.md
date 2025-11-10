@@ -16,8 +16,8 @@ Python methods for numerical differentiation of noisy data, including multi-obje
         <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
-    <a href="https://zenodo.org/badge/latestdoi/159711175">
-        <img src="https://zenodo.org/badge/159711175.svg" alt="DOI"></a>
+    <a href="https://doi.org/10.5281/zenodo.6374098">
+        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6374098.svg" alt="DOI"></a>
     <a href="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5">
         <img src="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5/status.svg"></a>
 </p>

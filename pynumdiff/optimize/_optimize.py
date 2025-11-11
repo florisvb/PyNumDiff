@@ -152,8 +152,8 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     # Evaluate estimate according to a loss function
     if dxdt_truth is not None:
         if metric == 'rmse': # minimize ||dxdt_hat - dxdt_truth||_2
-            rms_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
-            cache[key] = rms_dxdt; return rms_dxdt
+            rmse_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
+            cache[key] = rmse_dxdt; return rmse_dxdt
         elif metric == 'error_correlation':
             ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = ec; return ec
@@ -163,7 +163,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         rec_x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
         rec_x_hat += utility.estimate_integration_constant(x, rec_x_hat, M=huberM)
         # rubust_rme(,M=inf) = rmse(), so just use the simpler function if M=inf
-        cost = evaluate.rmse(x, x_hat, padding=padding) if huberM == float('inf') else evaluate.robust_rme(x, x_hat, padding=padding, M=huberM)
+        cost = evaluate.rmse(x, rec_x_hat, padding=padding) if huberM == float('inf') else evaluate.robust_rme(x, rec_x_hat, padding=padding, M=huberM)
         cost += tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
         cache[key] = cost; return cost
 

@@ -92,7 +92,7 @@ def robust_rme(x, x_hat, padding=0, M=6):
 
     :return: **robust_rmse_x_hat** (float) -- RMS error between x_hat and data
     """
-    if padding == 'auto': padding = max([1, int(0.025*len(x))])
+    if padding == 'auto': padding = max(1, int(0.025*len(x)))
     s = slice(padding, len(x)-padding) # slice out data we want to measure
     N = s.stop - s.start
 
@@ -111,7 +111,7 @@ def rmse(dxdt_truth, dxdt_hat, padding=0):
 
     :return: **true_rmse_dxdt** (float) -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """
-    if padding == 'auto': padding = max([1, int(0.025*len(dxdt_truth))])
+    if padding == 'auto': padding = max(1, int(0.025*len(dxdt_truth)))
     s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
     N = s.stop - s.start
 

@@ -78,60 +78,60 @@ def plot_comparison(dt, dxdt_truth, dxdt_hat1, title1, dxdt_hat2, title2, dxdt_h
     fig.tight_layout()
 
 
-def robust_rme(x, x_hat, padding=0, M=6):
+def robust_rme(u, v, padding=0, M=6):
     """Robustified/Huberized Root Mean Error metric, used to determine fit between smooth estimate and data.
-    Equals np.linalg.norm(x[s] - x_hat[s]) / np.sqrt(N) if M=float('inf'), and dang close for M=6 or even 2.
+    Equals np.linalg.norm(u[s] - v[s]) / np.sqrt(N) if M=float('inf'), and dang close for M=6 or even 2.
 
-    :param np.array[float] x: noisy data
-    :param np.array[float] x_hat: estimated smoothed signal, returned by differentiation algorithms in addition
-        to derivative
+    :param np.array[float] u: e.g. noisy data
+    :param np.array[float] v: e.g. estimated smoothed signal, reconstructed from derivative
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of inputs
     :param float M: Huber loss parameter in units of ~1.4*mean absolute deviation, intended to approximate
         standard deviation robustly.
 
-    :return: **robust_rmse_x_hat** (float) -- RMS error between x_hat and data
+    :return: (float) -- Robust root mean error between u and v
     """
-    if padding == 'auto': padding = max(1, int(0.025*len(x)))
-    s = slice(padding, len(x)-padding) # slice out data we want to measure
+    if padding == 'auto': padding = max(1, int(0.025*len(u)))
+    s = slice(padding, len(u)-padding) # slice out data we want to measure
     N = s.stop - s.start
 
-    sigma = stats.median_abs_deviation(x[s] - x_hat[s], scale='normal') # M is in units of this robust scatter metric
+    sigma = stats.median_abs_deviation(u[s] - v[s], scale='normal') # M is in units of this robust scatter metric
     if sigma < 1e-6: sigma = 1 # guard against divide by zero
-    return np.sqrt(2*np.mean(utility.huber((x[s] - x_hat[s])/sigma, M))) * sigma
+    return np.sqrt(2*np.mean(utility.huber((u[s] - v[s])/sigma, M))) * sigma
 
 
-def rmse(dxdt_truth, dxdt_hat, padding=0):
+def rmse(u, v, padding=0):
     """True RMSE between vectors
 
-    :param np.array[float] dxdt_truth: known true derivative 
-    :param np.array[float] dxdt_hat: estimated derivative 
+    :param np.array[float] u: e.g. known true derivative 
+    :param np.array[float] v: e.g. estimated derivative 
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of inputs
 
-    :return: **true_rmse_dxdt** (float) -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
+    :return: **true_rmse** (float) -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """
-    if padding == 'auto': padding = max(1, int(0.025*len(dxdt_truth)))
-    s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
+    if padding == 'auto': padding = max(1, int(0.025*len(u)))
+    s = slice(padding, len(u)-padding) # slice out data we want to measure
     N = s.stop - s.start
 
-    return np.linalg.norm(dxdt_truth[s] - dxdt_hat[s]) / np.sqrt(N)
+    return np.linalg.norm(u[s] - v[s]) / np.sqrt(N)
 
 
-def error_correlation(dxdt_truth, dxdt_hat, padding=0):
-    """Calculate the error correlation (pearsons correlation coefficient) between vectors
+def error_correlation(u, v, padding=0):
+    """Calculate the error correlation (pearsons correlation coefficient) between the first vector and the
+    difference between the two vectors.
 
-    :param np.array[float] dxdt_truth: true value of dxdt, if known, optional
-    :param np.array[float] dxdt_hat: estimated xdot
+    :param np.array[float] u: e.g. true value of dxdt, if known, optional
+    :param np.array[float] v: e.g. estimated dxdt_hat
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'`, defaults to 2.5% of the size of x
+        the metric. If :code:`'auto'`, defaults to 2.5% of the size of inputs
 
     :return: (float) -- r-squared correlation coefficient
     """
-    if padding == 'auto': padding = max(1, int(0.025*len(dxdt_hat)))
-    s = slice(padding, len(dxdt_hat)-padding) # slice out data we want to measure
+    if padding == 'auto': padding = max(1, int(0.025*len(u)))
+    s = slice(padding, len(u)-padding) # slice out data we want to measure
     
-    return stats.linregress(dxdt_truth[s], dxdt_hat[s] - dxdt_truth[s]).rvalue**2
+    return stats.linregress(u[s], v[s] - u[s]).rvalue**2
 
 
 def total_variation(x, padding=0):

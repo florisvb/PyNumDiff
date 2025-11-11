@@ -103,16 +103,16 @@ def huber(x, M):
     return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
 
 
-def integrate_dxdt_hat(dxdt_hat, _t):
+def integrate_dxdt_hat(dxdt_hat, dt_or_t):
     """Wrapper for scipy.integrate.cumulative_trapezoid. Use 0 as first value so lengths match, see #88.
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
-    :param float _t: step size if given as a scalar or a vector of sample locations
+    :param float dt_or_t: step size if given as a scalar or a vector of sample locations
 
     :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """
-    return cumulative_trapezoid(dxdt_hat, initial=0)*_t if np.isscalar(_t) \
-            else cumulative_trapezoid(dxdt_hat, x=_t, initial=0)
+    return cumulative_trapezoid(dxdt_hat, initial=0)*dt_or_t if np.isscalar(dt_or_t) \
+            else cumulative_trapezoid(dxdt_hat, x=dt_or_t, initial=0)
 
 
 def estimate_integration_constant(x, x_hat, M=6):

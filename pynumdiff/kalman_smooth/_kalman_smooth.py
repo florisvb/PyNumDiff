@@ -8,11 +8,11 @@ try: import cvxpy
 except ImportError: pass
 
 
-def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
+def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     """Run the forward pass of a Kalman filter, with regular or irregular step size.
 
     :param np.array y: series of measurements, stacked along axis 0.
-    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or sample locations if given as an array of same length as :code:`x`.
     :param np.array xhat0: a priori guess of initial state at the time of the first measurement
     :param np.array P0: a priori guess of state covariance at the time of first measurement (often identity matrix)
@@ -39,7 +39,7 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
         P_pre = np.empty((N,m,m)) # _post = a posteriori combinations of all information available at a step
         P_post = np.empty((N,m,m))
     # determine some things ahead of the loop
-    equispaced = np.isscalar(_t)
+    equispaced = np.isscalar(dt_or_t)
     control = isinstance(B, np.ndarray) and isinstance(B, np.ndarray) # whether there is a control input
     if equispaced:
         An, Qn, Bn = A, Q, B # in this case only need to assign once
@@ -53,7 +53,7 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
             P_ = P0
         else:
             if not equispaced:
-                dt = _t[n] - _t[n-1]
+                dt = dt_or_t[n] - dt_or_t[n-1] # vector of t in this case
                 eM = expm(M * dt) # form discrete-time matrices
                 An = eM[:m,:m] # upper left block
                 Qn = eM[:m,m:] @ An.T # upper right block
@@ -77,10 +77,10 @@ def kalman_filter(y, _t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     return xhat_post if not save_P else (xhat_pre, xhat_post, P_pre, P_post)
 
 
-def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
+def rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
     """Perform Rauch-Tung-Striebel smoothing, using information from forward Kalman filtering.
 
-    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or sample locations if given as an array of same length as the state histories.
     :param np.array A: state transition matrix, in discrete time if constant dt, in continuous time if variable dt
     :param np.array xhat_pre: a priori estimates of xhat from a kalman_filter forward pass
@@ -96,10 +96,10 @@ def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True)
     xhat_smooth = np.empty(xhat_post.shape); xhat_smooth[-1] = xhat_post[-1] # preallocate arrays
     if compute_P_smooth: P_smooth = np.empty(P_post.shape); P_smooth[-1] = P_post[-1]
     
-    equispaced = np.isscalar(_t) # I'd rather not call isinstance in a loop when it's avoidable
+    equispaced = np.isscalar(dt_or_t) # to avoid calling this in the loop
     if equispaced: An = A # in this case only assign once, outside the loop
     for n in range(xhat_pre.shape[0]-2, -1, -1):
-        if not equispaced: An = expm(A * (_t[n+1] - _t[n])) # state transition from n to n+1, per the paper
+        if not equispaced: An = expm(A * (dt_or_t[n+1] - dt_or_t[n])) # state transition from n to n+1
         C_RTS = P_post[n] @ An.T @ np.linalg.inv(P_pre[n+1]) # the [n+1]th index holds _{n+1|n} info 
         xhat_smooth[n] = xhat_post[n] + C_RTS @ (xhat_smooth[n+1] - xhat_pre[n+1]) # The original authors use C, not to be confused
         if compute_P_smooth: P_smooth[n] = P_post[n] + C_RTS @ (P_smooth[n+1] - P_pre[n+1]) @ C_RTS.T # with the measurement matrix
@@ -107,12 +107,12 @@ def rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True)
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, _t, order, log_qr_ratio, forwardbackward):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
     :param np.array[float] x: data series to differentiate
-    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model
     :param log_qr_ratio: the log of the process noise level divided by the measurement noise level, because,
@@ -124,8 +124,8 @@ def rtsdiff(x, _t, order, log_qr_ratio, forwardbackward):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if not np.isscalar(_t) and len(x) != len(_t):
-        raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
+    if not np.isscalar(dt_or_t) and len(x) != len(dt_or_t):
+        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
     x = np.asarray(x) # to flexibly allow array-like inputs
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
@@ -138,13 +138,13 @@ def rtsdiff(x, _t, order, log_qr_ratio, forwardbackward):
     P0 = 100*np.eye(order+1) # See #110 for why this choice of P0
     xhat0 = np.zeros(A.shape[0]); xhat0[0] = x[0] # The first estimate is the first seen state. See #110
 
-    if np.isscalar(_t):
-        eM = expm(np.block([[A, Q],[np.zeros(A.shape), -A.T]]) * _t) # form discrete-time versions
+    if np.isscalar(dt_or_t):
+        eM = expm(np.block([[A, Q],[np.zeros(A.shape), -A.T]]) * dt_or_t) # form discrete-time versions
         A = eM[:order+1,:order+1]
         Q = eM[:order+1,order+1:] @ A.T
 
-    xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x, _t, xhat0, P0, A, Q, C, R) # noisy x are the "y" in Kalman-land
-    xhat_smooth = rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)  
+    xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x, dt_or_t, xhat0, P0, A, Q, C, R) # noisy x are the "y" in Kalman-land
+    xhat_smooth = rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)  
     x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
     dxdt_hat_forward = xhat_smooth[:, 1]
 
@@ -153,11 +153,11 @@ def rtsdiff(x, _t, order, log_qr_ratio, forwardbackward):
 
     xhat0[0] = x[-1] # starting from the other end of the signal
 
-    if np.isscalar(_t): A = np.linalg.inv(A) # discrete time dynamics are just the inverse
-    else: _t = _t[::-1] # in continuous time, reverse the time vector so dts go negative
+    if np.isscalar(dt_or_t): A = np.linalg.inv(A) # discrete time dynamics are just the inverse
+    else: dt_or_t = dt_or_t[::-1] # in continuous time, reverse the time vector so dts go negative
     
-    xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[::-1], _t, xhat0, P0, A, Q, C, R)
-    xhat_smooth = rts_smooth(_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
+    xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[::-1], dt_or_t, xhat0, P0, A, Q, C, R)
+    xhat_smooth = rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
     x_hat_backward = xhat_smooth[:, 0][::-1] # the result is backwards still, so reverse it
     dxdt_hat_backward = xhat_smooth[:, 1][::-1]
 

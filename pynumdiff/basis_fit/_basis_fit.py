@@ -73,14 +73,14 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     return x_hat, dxdt_hat
 
 
-def rbfdiff(x, _t, sigma=1, lmbd=0.01):
+def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
     """Find smoothed function and derivative estimates by fitting noisy data with radial-basis-functions. Naively,
     fill a matrix with basis function samples and solve a linear inverse problem against the data, but truncate tiny
     values to make columns sparse. Each basis function "hill" is topped with a "tower" of height :code:`lmbd` to reach
     noisy data samples, and the final smoothed reconstruction is found by razing these and only keeping the hills.
 
     :param np.array[float] x: data to differentiate
-    :param float or array[float] _t: This function supports variable step size. This parameter is either the constant
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param float sigma: controls width of radial basis functions
     :param float lmbd: controls smoothness
@@ -88,11 +88,11 @@ def rbfdiff(x, _t, sigma=1, lmbd=0.01):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if np.isscalar(_t):
-        t = np.arange(len(x))*_t
+    if np.isscalar(dt_or_t):
+        t = np.arange(len(x))*dt_or_t
     else: # support variable step size for this function
-        if len(x) != len(_t): raise ValueError("If `_t` is given as array-like, must have same length as `x`.")
-        t = _t
+        if len(x) != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        t = dt_or_t
 
     # The below does the approximate equivalent of this code, but sparsely in O(N sigma^2), since the rbf falls off rapidly
     # t_i, t_j = np.meshgrid(t,t)

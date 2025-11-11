@@ -169,7 +169,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
 
 def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
-    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=float('inf')):
+    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6):
     """Find the optimal hyperparameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
@@ -193,7 +193,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     For experiments, it is a usually a better use of resources to parallelize at that level, meaning
                     each must run in its own process, since spawned processes are not allowed to further spawn.
     :param float huberM: For ground-truth-less situation, if :math:`M < \\infty`, use outlier-robust, Huber-based accuracy
-                    metric in loss function.
+                    metric in loss function. :math:`M` is in units akin to standard deviation (see :code:`evaluate.robust_rme`),
+                    so transition from quadratic to linear regime for errors lying :math:`>M\\sigma` away from mean error.
 
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function

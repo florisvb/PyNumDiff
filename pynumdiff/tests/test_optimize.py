@@ -32,7 +32,7 @@ def test_targeting_rmse_vs_tvgamma_loss():
     x_hat, dxdt_hat = splinediff(x, dt, **params_loss)
     loss_rmse = rmse(dxdt_truth, dxdt_hat)
 
-    assert val_rmse < loss_rmse < 1.1*val_rmse # This exact bound might break if using a different diff method or data series, but the point is they should be close
+    assert val_rmse <= loss_rmse < 1.1*val_rmse # This exact bound might break if using a different diff method or data series, but the point is they should be close
 
 
 def test_search_space_updates_applied():

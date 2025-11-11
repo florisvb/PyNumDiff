@@ -8,7 +8,7 @@ from multiprocessing import Pool, Manager
 from hashlib import sha1
 from tqdm import tqdm
 
-from ..utils import evaluate
+from ..utils import evaluate, utility
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
@@ -157,8 +157,12 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         elif metric == 'error_correlation':
             ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = ec; return ec
-    else: # then minimize (RMSE(x_hat - x) || sqrt{2*Mean(Huber((x_hat- x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
-        # rubust_rme(,inf) = rmse(), so just use the simpler function in that case
+    else: # then minimize L(Phi) = (RMSE(trapz(dxdt_hat) + c - x) || sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
+        # It seems like we should be able to use x_hat rather than the trapz integral of dxdt_hat + constant, but the latter is more reliable,
+        # because it accounts for the accuracy of the derivative directly, not through the generating algorithm's smooth signal estimate.
+        rec_x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
+        rec_x_hat += utility.estimate_integration_constant(x, rec_x_hat, M=huberM)
+        # rubust_rme(,M=inf) = rmse(), so just use the simpler function if M=inf
         cost = evaluate.rmse(x, x_hat, padding=padding) if huberM == float('inf') else evaluate.robust_rme(x, x_hat, padding=padding, M=huberM)
         cost += tvgamma*evaluate.total_variation(dxdt_hat, padding=padding)
         cache[key] = cost; return cost

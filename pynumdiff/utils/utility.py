@@ -117,7 +117,9 @@ def integrate_dxdt_hat(dxdt_hat, _t):
 
 def estimate_integration_constant(x, x_hat, M=6):
     """Integration leaves an unknown integration constant. This function finds a best fit integration
-    constant given x and x_hat (the integral of dxdt_hat) by optimizing :math:`\\min_c ||x - \\hat{x} + c||_2`.
+    constant to correct the DC of :code:`x_hat` (the integral of dxdt_hat) by optimizing
+    :math:`\\min_c J(x - \\hat{x} + c)`, where :math:`J` is the Huber loss function or the :math:`\\ell_1`
+    or :math:`\\ell_2` norm.
 
     :param np.array[float] x: timeseries of measurements
     :param np.array[float] x_hat: smoothed estimate of x

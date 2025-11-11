@@ -339,12 +339,14 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     # Process terms: sum of J(proc_resids)
     objective = 0.5*cvxpy.sum_squares(proc_resids) if proc_huberM == float('inf') \
                 else np.sqrt(2)*cvxpy.sum(cvxpy.abs(proc_resids)) if proc_huberM < 1e-3 \
-                else huber_const(proc_huberM)*cvxpy.sum(cvxpy.huber(proc_resids, proc_huberM)) # 1/2 l2^2, l1, or Huber
+                else huber_const(proc_huberM)*cvxpy.sum(0.5*cvxpy.huber(proc_resids, proc_huberM)) # 1/2 l2^2, l1, or Huber
     # Measurement terms: sum of V(meas_resids)
     objective += 0.5*cvxpy.sum_squares(meas_resids) if meas_huberM == float('inf') \
                 else np.sqrt(2)*cvxpy.sum(cvxpy.abs(meas_resids)) if meas_huberM < 1e-3 \
-                else huber_const(meas_huberM)*cvxpy.sum(cvxpy.huber(meas_resids, meas_huberM)) # CVXPY quirk: norm(, 1) != sum(abs()) for matrices
-    
+                else huber_const(meas_huberM)*cvxpy.sum(0.5*cvxpy.huber(meas_resids, meas_huberM))
+    # CVXPY quirks: norm(, 1) != sum(abs()) for matrices. And huber() is defined as twice the magnitude of the canonical
+    # function https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber, so correct with a factor of 0.5.
+
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try: problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down

@@ -172,29 +172,27 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6):
     """Find the optimal hyperparameters for a given differentiation method.
 
-    :param function func: differentiation method to optimize parameters for, e.g. linear_model.savgoldiff
+    :param function func: differentiation method to optimize parameters for, e.g. kalman_smooth.rtsdiff
     :param np.array[float] x: data to differentiate
     :param float dt: step size
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
-    :param float tvgamma: Only used if :code:`dxdt_truth` is given. Regularization value used to select for parameters
+    :param float tvgamma: Only used if :code:`dxdt_truth` is *not* given. Regularization value used to select for parameters
                     that yield a smooth derivative. Larger value results in a smoother derivative.
-    :param dict search_space_updates: At the top of :code:`_optimize.py`, each method has a search space of parameters
-                    settings structured as :code:`{param1:[values], param2:[values], param3:value, ...}`. The Cartesian
-                    product of values are used as initial starting points in optimization. If left None, the default
-                    search space is used.
-    :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth`
-                    is not None, see _objective_function
-    :param int padding: number of time steps to ignore at the beginning and end of the time series in the
-                    optimization, or :code:`'auto'` to ignore 2.5% at each end. Larger value causes the
-                    optimization to emphasize the accuracy of dxdt in the middle of the time series
+    :param dict search_space_updates: Each method has a default search space of parameter settings, structured as
+                    :code:`{param1:[numerical, values], param2:{categorical, values}, param3:value, ...}` (defined in
+                    :code:`_optimize.py`). The Cartesian product of values are used as initial starting points in optimization.
+                    If left None, the default search space is used, if :code:`{param1:[different,values]}`, these are applied.
+    :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth` is given
+    :param int padding: number of steps to ignore at the beginning and end of the data series, or :code:`'auto'` to ignore
+                    2.5% at each end. Larger value causes the optimization to emphasize the accuracy in the series middle.
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
     :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
     :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations.
-                    For experiments, it is a usually a better use of resources to parallelize at that level, meaning
+                    For experiments, it is often a better use of resources to parallelize at that level, meaning
                     each must run in its own process, since spawned processes are not allowed to further spawn.
     :param float huberM: For ground-truth-less situation, if :math:`M < \\infty`, use outlier-robust, Huber-based accuracy
-                    metric in loss function. :math:`M` is in units akin to standard deviation (see :code:`evaluate.robust_rme`),
-                    so transition from quadratic to linear regime for errors lying :math:`>M\\sigma` away from mean error.
+                    metric in objective. :math:`M` is in units akin to standard deviation (see :code:`evaluate.robust_rme`),
+                    so transition from quadratic to linear regime for errors lying :math:`>\\!M\\sigma` away from mean error.
 
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function

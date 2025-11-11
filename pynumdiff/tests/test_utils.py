@@ -96,22 +96,23 @@ def test_simulations(request):
     """Just sprint through running them all to make sure they go. Optionally plot with flag."""
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
-        fig, axes = pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)
+        axes = [pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)[1] for i in range(3)]
 
-    for i,(sim,title) in enumerate(zip([pi_cruise_control, sine, triangle, pop_dyn, linear_autonomous, lorenz_x],
-        ["Cruise Control", "Sum of Sines", "Triangles", "Logistic Growth", "Linear Autonomous", "Lorenz First Dimension"])):
-    
-        y, x, dxdt = sim(duration=4, dt=0.01, noise_type='normal', noise_parameters=[0,0.1])
-        assert len(y) == len(x) == len(dxdt)
+    for j,dt in enumerate([0.005, 0.01, 0.02]):
+        for i,(sim,title) in enumerate(zip([pi_cruise_control, sine, triangle, pop_dyn, linear_autonomous, lorenz_x],
+            ["Cruise Control", "Sum of Sines", "Triangles", "Logistic Growth", "Linear Autonomous", "Lorenz First Dimension"])):
 
-        if request.config.getoption("--plot"):
-            t = np.arange(len(y))*0.01
-            ax = axes[i//3, i%3]
-            ax.plot(t, x, 'k--', linewidth=3, label=r"true $x$")
-            ax.plot(t, y, '.', color='blue', zorder=-100, markersize=5, label="noisy data")
-            if i//3 == 0: ax.set_xticklabels([])
-            ax.set_title(title, fontsize=18)
-            if i == 5: ax.legend(loc='lower right', fontsize=12)
+            y, x, dxdt = sim(duration=4, dt=dt, noise_type='normal', noise_parameters=[0,0.1], outliers=True)
+            assert len(y) == len(x) == len(dxdt) == 4/dt # duration/dt
+
+            if request.config.getoption("--plot"):
+                t = np.arange(len(y))*dt
+                ax = axes[j][i//3, i%3]
+                ax.plot(t, x, 'k--', linewidth=3, label=r"true $x$")
+                ax.plot(t, y, '.', color='blue', zorder=-100, markersize=5, label="noisy data")
+                if i//3 == 0: ax.set_xticklabels([])
+                ax.set_title(title, fontsize=18)
+                if i == 5: ax.legend(loc='lower right', fontsize=12)
 
 
 def test_robust_rme():

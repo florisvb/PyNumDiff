@@ -109,10 +109,10 @@ def triangle(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outlier
 
     pos = np.interp(t, reversal_ts, reversal_vals)
     _, vel = finitediff(pos, dt=simdt)
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
+    idx = np.arange(0, len(t), int(dt/simdt)) # downsample
+    noisy_pos = _add_noise(pos[idx], random_seed, noise_type, noise_parameters, outliers)
 
-    idx = np.arange(0, len(t), int(dt/simdt))
-    return noisy_pos[idx], pos[idx], vel[idx]
+    return noisy_pos, pos[idx], vel[idx]
 
 
 def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False, random_seed=1,
@@ -182,15 +182,15 @@ def linear_autonomous(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     xs = np.vstack(xs).T
     pos = xs[0,:]
 
-    smooth_pos, vel = finitediff(pos, simdt)
-    noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
-
+    pos, vel = finitediff(pos, simdt)
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart
-    return noisy_pos[1:][idx], smooth_pos[1:][idx], vel[1:][idx]
+    noisy_pos = _add_noise(pos[idx], random_seed, noise_type, noise_parameters, outliers)
+
+    return noisy_pos, pos[idx], vel[idx]
 
 
 def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers=False,
-               random_seed=1, dt=0.01):
+               random_seed=1, dt=0.01, simdt=0.01):
     """Create a toy example of linear proportional integral controller with nonlinear control inputs.
     Simulate proportional integral control of a car attempting to maintain constant velocity while going
     up and down hills. We assume the car has arbitrary power and can achieve whatever acceleration it wants;
@@ -215,7 +215,7 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
             - **vel** -- a true derivative information of the time series
     """
     # disturbance
-    t = np.arange(0, duration, dt)
+    t = np.arange(0, duration, simdt)
     slope = 0.01*(np.sin(2*np.pi*t) + 0.3*np.sin(4*2*np.pi*t + 0.5) + 1.2*np.sin(1.7*2*np.pi*t + 0.5))
 
     # parameters
@@ -226,33 +226,33 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     vd = 0.5 # desired velocity
 
     # Here state is [pos, vel, accel, cumulative pos error]
-    A = np.array([[1,  dt, (dt**2)/2, 0], # Taylor expand out to accel
-                  [0,   1,    dt,     0],
-                  [0, -fr,     0,    ki/(dt**2)], # (pos error) / dt^2 puts it in units of accel
-                  [0,   0,     0,     1]])
+    A = np.array([[1,  simdt, (simdt**2)/2,             0], # Taylor expand out to accel
+                  [0,      1,        simdt,             0],
+                  [0,    -fr,            0, ki/(simdt**2)], # (pos error) / dt^2 puts it in units of accel
+                  [0,      0,            0,             1]])
 
     # Here inputs are [slope, vel_desired - vel_estimated]
     B = np.array([[0,   0],
                   [0,   0],
-                  [-mg, kp/dt], # (vel error) / dt puts it in units of accel
-                  [0,   dt]])
+                  [-mg, kp/simdt], # (vel error) / dt puts it in units of accel
+                  [0,   simdt]])
 
     # run simulation
     states = [np.array([0, 0, 0, 0])] # x0 is all zeros
     controls = []
-    for i in range(len(slope)):
+    for i in range(len(t)):
         u = np.array([slope[i], vd - states[-1][1]]) # current vel is in 1st position of last state
-        xnew = A @ states[-1] + B @ u
-        states.append(xnew)
+        states.append(A @ states[-1] + B @ u)
         controls.append(u)
 
     states = np.vstack(states).T
     controls = np.vstack(controls).T
 
-    pos = states[0, :]
-    vel = states[1, :]
+    idx = slice(1, len(t)+1, int(dt/simdt)) if dt >= simdt else np.arange(1, len(t)+1, dt/simdt).astype(int) # upsampling allowed here
+    pos = states[0, idx]
+    vel = states[1, idx]
     noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
-
+    
     return noisy_pos, pos, vel
 
 

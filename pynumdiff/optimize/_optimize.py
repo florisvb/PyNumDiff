@@ -195,8 +195,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     if metric not in ['rmse','error_correlation']:
         raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
 
-    search_space, bounds = method_params_and_bounds[func]
-    search_space.update(search_space_updates) # for things not given, use defaults
+    default_search_space, bounds = method_params_and_bounds[func]
+    search_space = {**default_search_space, **search_space_updates} # applies updates without mutating default
 
     # No need to optimize over singletons, just pass them through
     singleton_params = {k:v for k,v in search_space.items() if not isinstance(v, (list, set))}

@@ -14,7 +14,7 @@ from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussia
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff, robustdiffclassic
+from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -96,11 +96,6 @@ method_params_and_bounds = {
                   'log_r': (-5, 16),
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    robustdiffclassic: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-                  'log_qr_ratio': [float(k) for k in range(-1, 16, 4)],
-                        'huberM': [0., 5, 20]}, # 0. so type is float. Good choices here really depend on the data scale
-                 {'log_qr_ratio': (-1, 18),
-                        'huberM': (0, 1e2)}), # really only want to use l2 norm when nearby
     lineardiff: ({'kernel': 'gaussian',
                    'order': 3,
                    'gamma': [1e-1, 1, 10, 100],

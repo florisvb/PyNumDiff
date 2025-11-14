@@ -1,10 +1,9 @@
 # Contributing to PyNumDiff
 
-Thank you for your interest in contributing to PyNumDiff! This document provides guidelines and instructions for contributing to the project. Following these guidelines helps communicate that you respect the time of the developers managing and developing this open-source project.
+Thank you for your interest in contributing to PyNumDiff! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
 - [How Can I Contribute?](#how-can-i-contribute)
 - [Development Setup](#development-setup)
 - [Code Style Guidelines](#code-style-guidelines)
@@ -12,22 +11,8 @@ Thank you for your interest in contributing to PyNumDiff! This document provides
 - [Pull Request Process](#pull-request-process)
 - [Reporting Bugs](#reporting-bugs)
 - [Proposing Features](#proposing-features)
-- [Commit Message Conventions](#commit-message-conventions)
-- [Questions?](#questions)
-
-## Code of Conduct
-
-This project adheres to a code of conduct that all contributors are expected to follow. Please be respectful and constructive in all interactions.
 
 ## How Can I Contribute?
-
-### Reporting Bugs
-
-If you find a bug, please report it by [opening an issue](https://github.com/florisvb/PyNumDiff/issues/new). See the [Reporting Bugs](#reporting-bugs) section for details.
-
-### Suggesting Enhancements
-
-Have an idea for a new feature or improvement? Please [open an issue](https://github.com/florisvb/PyNumDiff/issues/new) to discuss it. See the [Proposing Features](#proposing-features) section for details.
 
 ### Contributing Code
 
@@ -41,7 +26,7 @@ Have an idea for a new feature or improvement? Please [open an issue](https://gi
 
 ### Prerequisites
 
-- Python 3.7 or higher
+- Python 3.11 or higher
 - Git
 - (Optional) A virtual environment manager (venv, conda, etc.)
 
@@ -99,19 +84,17 @@ Have an idea for a new feature or improvement? Please [open an issue](https://gi
 
 ### Python Style Guide
 
-PyNumDiff follows [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guidelines. Here are the key points:
+There's no strict coding style enforced. The main guideline is to match the existing code style in the project. When contributing:
 
+- Match existing method signatures and docstring formats
+- Follow the naming conventions used in the existing codebase
 - Use 4 spaces for indentation (no tabs)
-- Maximum line length: 79 characters (soft limit) or 99 characters (hard limit)
-- Use meaningful variable and function names
-- Follow naming conventions:
-  - Functions and variables: `snake_case`
-  - Classes: `PascalCase`
-  - Constants: `UPPER_SNAKE_CASE`
 
 ### Code Quality
 
-The project uses `pylint` for code quality checks. Before submitting a PR:
+The project uses `pylint` for code quality checks. While linting hasn't been strictly enforced recently, it will be important for the planned JOSS (Journal of Open Source Software) submission, which has stricter requirements.
+
+To run linting checks:
 
 1. **Run pylint** on your changes:
    ```bash
@@ -122,8 +105,6 @@ The project uses `pylint` for code quality checks. Before submitting a PR:
    ```bash
    python linting.py
    ```
-
-3. **Fix any issues** reported by pylint before submitting your PR
 
 ### Editor Configuration
 
@@ -152,6 +133,11 @@ pytest -s --bounds
 - Follow the existing test structure
 - Ensure all tests pass before submitting a PR
 - Tests should be deterministic and not depend on external resources
+
+The test suite is organized into several test files:
+- `test_diff_methods`: Broadly tests for correctness and ability to actually differentiate
+- `test_utils`: Contains tests of miscellaneous functionality like simulations and evaluation metrics
+- `test_optimize`: Tests the hyperparameter optimization code
 
 ### Continuous Integration
 
@@ -189,7 +175,7 @@ The project uses GitHub Actions for continuous integration. All pull requests ar
    python linting.py
    ```
 
-7. **Commit your changes** with clear, descriptive commit messages (see [Commit Message Conventions](#commit-message-conventions))
+7. **Commit your changes** with clear, descriptive commit messages (see [Commit Messages](#commit-messages))
 
 ### Submitting a Pull Request
 
@@ -221,8 +207,7 @@ The project uses GitHub Actions for continuous integration. All pull requests ar
 
 ### PR Guidelines
 
-- Keep PRs focused on a single issue or feature
-- Keep PRs reasonably sized (if large, consider breaking into smaller PRs)
+- Smaller, focused PRs are generally easier to review
 - Ensure all CI checks pass
 - Request review from maintainers when ready
 - Be responsive to feedback
@@ -314,19 +299,11 @@ A clear and concise description of any alternative solutions or features you've 
 Add any other context or examples about the feature request here.
 ```
 
-## Commit Message Conventions
+## Commit Messages
 
-### Commit Message Format
-
-We follow a conventional commit message format:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
+We encourage descriptive commit messages that explain what changed and why. 
+Long, detailed commit messages are appreciated as they help others understand 
+the project's history.
 
 ### Types
 
@@ -335,43 +312,6 @@ We follow a conventional commit message format:
 - `docs`: Documentation only changes
 - `style`: Code style changes (formatting, missing semicolons, etc.)
 - `refactor`: Code refactoring without changing functionality
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks (dependencies, build config, etc.)
-
-### Examples
-
-```
-feat(optimize): add support for custom search spaces
-
-Allow users to specify custom parameter search spaces in the
-optimize function for better control over hyperparameter tuning.
-
-Fixes #123
-```
-
-```
-fix(differentiation): correct boundary condition handling
-
-Fixed an issue where boundary conditions were not properly
-handled for signals with variable step sizes.
-
-Closes #456
-```
-
-```
-docs(readme): update installation instructions
-
-Updated README with clearer installation steps for Windows users.
-```
-
-### Guidelines
-
-- Use the imperative mood ("add feature" not "added feature")
-- Keep the subject line under 50 characters
-- Capitalize the subject line
-- Do not end the subject line with a period
-- Use the body to explain what and why vs. how
-- Reference issues and PRs in the footer
 
 ## Questions?
 
@@ -390,4 +330,3 @@ If you have questions about contributing:
 - [pytest Documentation](https://docs.pytest.org/)
 
 Thank you for contributing to PyNumDiff! 🎉
-

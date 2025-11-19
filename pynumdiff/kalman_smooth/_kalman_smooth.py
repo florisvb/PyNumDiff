@@ -304,10 +304,10 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
     x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM, meas_huberM) # outsource solution of the convex optimization problem
-    return x_states[0], x_states[1]
+    return x_states[:,0], x_states[:,1]
 
 
-def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
+def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     """Solve the optimization problem for robust smoothing using CVXPY. Note this currently assumes constant dt
     but could be extended to handle variable step sizes by finding discrete-time A and Q for requisite gaps.
 
@@ -316,6 +316,8 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     :param np.array Q: discrete-time process noise covariance matrix
     :param np.array C: measurement matrix
     :param np.array R: measurement noise covariance matrix
+    :param np.array B: optional control matrix
+    :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param float proc_huberM: Huber loss parameter. :math:`M=0` reduces to :math:`\\sqrt{2}\\ell_1`.
     :param float meas_huberM: Huber loss parameter. :math:`M=\\infty` reduces to :math:`\\frac{1}{2}\\ell_2^2`.
     
@@ -323,6 +325,7 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     """
     N = len(y)
     x_states = cvxpy.Variable((A.shape[0], N)) # each column is [position, velocity, acceleration, ...] at step n
+    control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
 
     def huber_const(M): # from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
         a = 2*np.exp(-M**2 / 2)/M # huber_const smoothly transitions Huber between 1-norm and 2-norm squared cases
@@ -330,7 +333,7 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
         return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
 
     # It is extremely important to run time that CVXPY expressions be in vectorized form
-    proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1]) # all Q^(-1/2)(x_n - A x_{n-1})
+    proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T)) # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
     meas_resids = np.linalg.inv(sqrtm(R)) @ (y.reshape(C.shape[0],-1) - C @ x_states) # all R^(-1/2)(y_n - C x_n)
     # Process terms: sum of J(proc_resids)
     objective = 0.5*cvxpy.sum_squares(proc_resids) if proc_huberM == float('inf') \
@@ -348,4 +351,4 @@ def convex_smooth(y, A, Q, C, R, proc_huberM, meas_huberM):
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
     
     if x_states.value is None: return np.full((A.shape[0], N), np.nan) # There can be solver failure, even without error
-    return x_states.value
+    return x_states.value.T

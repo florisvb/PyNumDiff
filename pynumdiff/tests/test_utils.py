@@ -47,6 +47,34 @@ def test_convolutional_smoother():
     assert np.allclose(utility.convolutional_smoother(x, kernel_even, num_iterations=3), np.ones(len(x)))
 
 
+def test_peakdet(request):
+    """Verify peakdet finds peaks and valleys"""
+    t = np.arange(0, 10, 0.001)
+    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + 0.02*np.random.randn(10000)
+    maxtab, mintab = utility.peakdet(x, 0.5, t)
+
+    if request.config.getoption("--plot"):
+        from matplotlib import pyplot
+        pyplot.plot(t, x)
+        pyplot.plot(mintab[:,0], mintab[:,1], 'g*')
+        pyplot.plot(maxtab[:,0], maxtab[:,1], 'r*')
+        pyplot.title('peakdet validataion')
+        pyplot.show()
+
+    assert np.allclose(maxtab, [[0.447, 1.58575613], # these numbers validated by eye with --plot
+                                [1.818, 1.91349239],
+                                [3.316,-0.02740252],
+                                [4.976, 0.74512778],
+                                [6.338, 1.89861691],
+                                [7.765, 0.57577842],
+                                [9.402, 0.59450898]])
+    assert np.allclose(mintab, [[1.139, 0.31325728],
+                                [2.752,-1.12769567],
+                                [4.098,-2.00326946],
+                                [5.507,-0.31714122],
+                                [7.211,-0.59708324],
+                                [8.612,-1.7118216 ]])
+
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""
     def identity(x, dt): return x, 0 # should come back the same

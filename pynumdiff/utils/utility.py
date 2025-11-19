@@ -130,3 +130,54 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
         weight_sum[window] += w # save sum of weights for normalization at the end
 
     return x_hat/weight_sum, dxdt_hat/weight_sum
+
+
+def peakdet(x, delta, t=None):
+    """Find peaks and valleys of 1D array. A point is considered a maximum peak if it has the maximal
+    value, and was preceded (to the left) by a value lower by delta. Converted from MATLAB script at
+    http://billauer.co.il/peakdet.html Eli Billauer, 3.4.05 (Explicitly not copyrighted). This function
+    is released to the public domain; Any use is allowed.
+
+    :param np.array[float] x: array for which to find peaks and valleys
+    :param float delta: threshold for finding peaks and valleys. A point is considered a maximum peak
+        if it has the maximal value, and was preceded (to the left) by a value lower by delta.
+    :param np.array[float] t: optional domain points where data comes from, to make indices into locations
+
+    :return: tuple[np.array, np.array] of\n
+             - **maxtab** -- indices or locations (column 1) and values (column 2) of maxima
+             - **mintab** -- indices or locations (column 1) and values (column 2) of minima
+    """
+    maxtab = []
+    mintab = []
+    if t is None:
+        t = np.arange(len(x))
+    elif len(x) != len(t):
+        raise ValueError('Input vectors x and t must have same length')
+    if not (np.isscalar(delta) and delta > 0):
+        raise ValueError('Input argument delta must be a positive scalar')
+
+    mn, mx = np.inf, -1*np.inf
+    mnpos, mxpos = np.nan, np.nan
+    lookformax = True
+    for i in np.arange(len(x)):
+        this = x[i]
+        if this > mx:
+            mx = this
+            mxpos = t[i]
+        if this < mn:
+            mn = this
+            mnpos = t[i]
+        if lookformax:
+            if this < mx-delta:
+                maxtab.append((mxpos, mx))
+                mn = this
+                mnpos = t[i]
+                lookformax = False # now searching for a min
+        else:
+            if this > mn+delta:
+                mintab.append((mnpos, mn))
+                mx = this
+                mxpos = t[i]
+                lookformax = True # now searching for a max
+
+    return np.array(maxtab), np.array(mintab)

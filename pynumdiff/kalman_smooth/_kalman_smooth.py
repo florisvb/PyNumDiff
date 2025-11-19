@@ -303,7 +303,7 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     Q_d = eM[:order+1, order+1:] @ A_d.T
     if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
 
-    x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM, meas_huberM) # outsource solution of the convex optimization problem
+    x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
     return x_states[:,0], x_states[:,1]
 
 

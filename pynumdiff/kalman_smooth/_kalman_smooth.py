@@ -279,7 +279,9 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
     :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{-1/2})`, but these are still independent enough that for
-    the purposes of optimization we cannot collapse them.
+    the purposes of optimization we cannot collapse them. Nor can :code:`log_q` and :code:`log_r` be combined into
+    :code:`log_qr_ratio` as in RTS smoothing without the addition of a new absolute scale parameter, becausee :math:`q` and
+    :math:`r` interact with the distinct Huber :math:`M` parameters.
 
     :param np.array[float] x: data series to differentiate
     :param float dt: step size
@@ -350,5 +352,5 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     try: problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
     
-    if x_states.value is None: return np.full((A.shape[0], N), np.nan) # There can be solver failure, even without error
+    if x_states.value is None: return np.full((N, A.shape[0]), np.nan) # There can be solver failure, even without error
     return x_states.value.T

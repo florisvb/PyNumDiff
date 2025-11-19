@@ -11,7 +11,7 @@ except ImportError: pass
 def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     """Run the forward pass of a Kalman filter, with regular or irregular step size.
 
-    :param np.array y: series of measurements, stacked along axis 0.
+    :param np.array y: series of measurements, stacked in the direction of axis 0.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or sample locations if given as an array of same length as :code:`x`.
     :param np.array xhat0: a priori guess of initial state at the time of the first measurement
@@ -21,7 +21,7 @@ def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True
     :param np.array C: measurement matrix
     :param np.array R: measurement noise covariance
     :param np.array B: optional control matrix, in discrete time if constant dt, in continuous time if variable dt
-    :param np.array u: optional control input
+    :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
 
@@ -40,7 +40,7 @@ def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True
         P_post = np.empty((N,m,m))
     # determine some things ahead of the loop
     equispaced = np.isscalar(dt_or_t)
-    control = isinstance(B, np.ndarray) and isinstance(B, np.ndarray) # whether there is a control input
+    control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
     if equispaced:
         An, Qn, Bn = A, Q, B # in this case only need to assign once
     else:
@@ -61,7 +61,7 @@ def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True
                 if control:
                     eM = expm(Mc * dt)
                     Bn = eM[:m,m:] # upper right block 
-            xhat_ = An @ xhat + Bn @ u if control else An @ xhat # ending underscores denote an a priori prediction
+            xhat_ = An @ xhat + Bn @ u[n] if control else An @ xhat # ending underscores denote an a priori prediction
             P_ = An @ P @ An.T + Qn # the dense matrix multiplies here are the most expensive step
         
         xhat = xhat_.copy() # copies, lest modifications to these variables change the a priori estimates. See #122

@@ -52,9 +52,9 @@ method_params_and_bounds = {
              'window_size': (3, 1000),
            'smoothing_win': (3, 1000)}),
     splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
-                       's': [0.5, 0.9, 0.95, 1, 10, 100],
+                       's': [0.2, 0.5, 0.75, 0.9, 1, 10],
           'num_iterations': [1, 5, 10]},
-                      {'s': (1e-2, 1e6),
+                      {'s': (1e-2, 1e4),
           'num_iterations': (1, 10)}),
     spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
                   'pad_to_zero_dxdt': {True, False},

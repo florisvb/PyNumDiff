@@ -228,8 +228,8 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     # Here state is [pos, vel, accel, cumulative pos error]
     A = np.array([[1,  simdt, (simdt**2)/2,             0], # Taylor expand out to accel
                   [0,      1,        simdt,             0],
-                  [0,    -fr,            0, ki/(simdt**2)], # (pos error) / dt^2 puts it in units of accel
-                  [0,      0,            0,             1]])
+                  [0,  -fr-kp/simdt,     0, ki/(simdt**2)], # (pos error) / dt^2 puts it in units of accel
+                  [0,   -simdt,          0,             1]])
 
     # Here inputs are [slope, vel_desired - vel_estimated]
     B = np.array([[0,   0],
@@ -241,7 +241,7 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     states = [np.array([0, 0, 0, 0])] # x0 is all zeros
     controls = []
     for i in range(len(t)):
-        u = np.array([slope[i], vd - states[-1][1]]) # current vel is in 1st position of last state
+        u = np.array([slope[i], vd])
         states.append(A @ states[-1] + B @ u)
         controls.append(u)
 

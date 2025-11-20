@@ -18,7 +18,7 @@ jobs:
         run: | # some extra stuff here to make sure coverage works across multiprocessing
           pip install -e .[advanced,dev] coveralls
           export COVERAGE_PROCESS_START=.coveragerc
-          coverage --source=pynumdiff run -m pytest -s
+          coverage run --source=pynumdiff -m pytest -s
           coverage combine
           coverage xml
       - uses: coverallsapp/github-action@v2

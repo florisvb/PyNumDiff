@@ -8,7 +8,7 @@ except ImportError:
     from warnings import warn
     warn("tvrdiff, robustdiff, and lineardiff not available due to lack of convex solver. To use those, install CVXPY.")
 else: # executes if try is successful
-    from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, smooth_acceleration, jerk_sliding
+    from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, smooth_acceleration
     from .kalman_smooth import robustdiff, convex_smooth
     from .linear_model import lineardiff
 

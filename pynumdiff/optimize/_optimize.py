@@ -13,7 +13,7 @@ from ..finite_difference import finitediff, first_order, second_order, fourth_or
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff
-from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
+from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
 
@@ -110,7 +110,6 @@ for method in [mediandiff, gaussiandiff, friedrichsdiff]: # Deprecated methods
     method_params_and_bounds[method] = method_params_and_bounds[meandiff]
 for method in [acceleration, jerk]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[velocity]
-method_params_and_bounds[jerk_sliding] = method_params_and_bounds[smooth_acceleration]
 for method in [constant_acceleration, constant_jerk]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
 

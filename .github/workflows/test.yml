@@ -27,10 +27,6 @@ jobs:
               pynumdiff/_version.py
               pynumdiff/tests/*
               pynumdiff/utils/old_pi_cruise_control.py
-
-          [xml]
-          output = coverage.xml
-          relative_paths = true
           EOF
           export COVERAGE_PROCESS_START=.coveragerc
 

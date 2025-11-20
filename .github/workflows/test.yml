@@ -30,7 +30,7 @@ jobs:
           EOF
           export COVERAGE_PROCESS_START=.coveragerc
 
-          coverage run -m pytest -s
+          coverage run --source=pynumdiff -m pytest -s
           coverage combine
           coverage xml
       - uses: coverallsapp/github-action@v2

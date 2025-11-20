@@ -17,8 +17,14 @@ jobs:
       - name: tests and coverage
         run: | # some extra stuff here to make sure coverage works across multiprocessing
           pip install -e .[advanced,dev] coveralls
-          export COVERAGE_PROCESS_START=/dev/null
-          coverage run --parallel-mode --concurrency=multiprocessing --source=pynumdiff --omit="pynumdiff/_version.py,pynumdiff/tests/*,pynumdiff/utils/old_pi_cruise_control.py" -m pytest -s
+          touch .coveragerc
+          echo "[run]" > .coveragerc
+          echo "concurrency = multiprocessing" >> .coveragerc
+          echo "parallel = true" >> .coveragerc
+          echo "source = pynumdiff" >> .coveragerc
+          echo "omit = pynumdiff/_version.py,pynumdiff/tests/*,pynumdiff/utils/old_pi_cruise_control.py" >> .coveragerc
+          export COVERAGE_PROCESS_START=.coveragerc
+          coverage run -m pytest -s
           coverage combine
           coverage xml
       - uses: coverallsapp/github-action@v2

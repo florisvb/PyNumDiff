@@ -26,7 +26,7 @@ def test_parallel_same_as_serial():
 
 def test_targeting_rmse_vs_tvgamma_loss():
     """Ensure optimization properly targets different metrics"""
-    params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth)
+    params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth, parallel=False) # so coverage picks it up, because multiprocessing coverage is broken
     params_loss, val_loss = optimize(splinediff, x, dt, tvgamma=tvgamma)
     
     x_hat, dxdt_hat = splinediff(x, dt, **params_loss)

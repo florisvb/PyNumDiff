@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.13' # because cvxopt binaries for 3.14 don't yet exist, and building is terrible
       - name: tests and coverage
-        run: |
+        run: | # some extra stuff here to make sure coverage works across multiprocessing
           pip install -e .[advanced,dev] coveralls
           coverage run --source=pynumdiff --omit="pynumdiff/_version.py,pynumdiff/tests/*,pynumdiff/utils/old_pi_cruise_control.py" -m pytest -s
           coverage xml

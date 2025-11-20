@@ -6,3 +6,6 @@ omit =
 	pynumdiff/_version.py
 	pynumdiff/tests/*
 	pynumdiff/utils/old_pi_cruise_control.py
+
+[paths]
+source = .

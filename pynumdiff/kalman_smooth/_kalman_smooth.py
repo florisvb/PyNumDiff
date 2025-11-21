@@ -1,7 +1,6 @@
 import numpy as np
 from warnings import warn
 from scipy.linalg import expm, sqrtm
-from scipy.stats import norm
 from time import time
 try: import cvxpy
 except ImportError: pass

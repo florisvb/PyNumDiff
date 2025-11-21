@@ -2,7 +2,7 @@ import os, sys, copy
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
-from scipy.stats import median_abs_deviation
+from scipy.stats import median_abs_deviation, norm
 
 
 def hankel_matrix(x, num_delays, pad=False): # fixed delay step of 1
@@ -130,19 +130,19 @@ def estimate_integration_constant(x, x_hat, M=6):
 
     :param np.array[float] x: timeseries of measurements
     :param np.array[float] x_hat: smoothed estimate of x
-    :param float M: robustifies constant estimation using Huber loss. The default is intended to capture the idea
-        of "six sigma": Assuming Gaussian inliers and M in units of standard deviation, the portion of inliers
-        beyond the Huber loss' transition is only about 1.97e-9. M here is in units of scaled mean absolute deviation,
-        so scatter can be calculated and used to normalize data without being thrown off by outliers.
+    :param float M: constant estimation is robustified with the Huber loss. The default is intended to capture the idea
+        of "six sigma": Assuming Gaussian :code:`x - xhat` errors and :code:`M` in units of standard deviation, the
+        portion of inliers beyond the Huber loss' transition is only about 1.97e-9. :code:`M` here is in units of scaled
+        mean absolute deviation, so scatter can be calculated and used to normalize without being thrown off by outliers.
 
     :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
     """
-    if M == float('inf'): # calculates the constant to be mean(diff(x, x_hat)), equivalent to argmin_{x0} ||x_hat + x0 - x||_2^2
-        return np.mean(x - x_hat) # Solves the L2 distance minimization
-    elif M < 0.1: # small M looks like L1 loss, and Huber gets too flat to work well
+    sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
+    if M == float('inf') or sigma < 1e-6: # If no scatter, then no outliers, so use L2
+        return np.mean(x - x_hat) # Solves the L2 distance minimization, argmin_{x0} ||x_hat + x0 - x||_2^
+    elif M < 1e-2: # small M looks like L1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat) # Solves the L1 distance minimization
     else:
-        sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
         return minimize(lambda x0: np.sum(huber(x - (x_hat+x0), M*sigma)), # fn to minimize in 1st argument
             0, method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
 

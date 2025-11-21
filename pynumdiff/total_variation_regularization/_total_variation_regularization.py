@@ -1,5 +1,6 @@
 import numpy as np
 from warnings import warn
+from scipy.stats import median_abs_deviation
 
 from pynumdiff.total_variation_regularization import _chartrand_tvregdiff
 from pynumdiff.utils import utility
@@ -53,7 +54,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     return x_hat, dxdt_hat
 
 
-def tvrdiff(x, dt, order, gamma, solver=None):
+def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
     total variation regularized derivative. Other convex-solver-based methods in this module call this function.
 
@@ -61,17 +62,20 @@ def tvrdiff(x, dt, order, gamma, solver=None):
     :param float dt: step size
     :param int order: 1, 2, or 3, the derivative to regularize
     :param float gamma: regularization parameter
+    :param float huberM: Huber loss parameter, in units of scaled median absolute deviation of input data, :code:`x`.
+                    :math:`M = \\infty` reduces to :math:`\\ell_2` loss squared on first, fidelity cost term, and
+                    :math:`M = 0` reduces to :math:`\\ell_1` loss.
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
-                    In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
+                    If not given, fall back to CVXPY's default.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     # Normalize for numerical consistency with convex solver
-    mean = np.mean(x)
-    std = np.std(x)
-    if std == 0: std = 1 # safety guard
-    x = (x-mean)/std
+    mu = np.mean(x)
+    sigma = median_abs_deviation(x, scale='normal') # robust alternative to std()
+    if sigma == 0: sigma = 1 # safety guard
+    x = (x-mu)/sigma
 
     # Define the variables for the highest order derivative and the integration constants
     deriv_values = cvxpy.Variable(len(x)) # values of the order^th derivative, in which we're penalizing variation
@@ -84,10 +88,13 @@ def tvrdiff(x, dt, order, gamma, solver=None):
     for i in range(order):
         y = cvxpy.cumsum(y) + integration_constants[i]
 
+    # Compare the recursively integrated position to the noisy position. \ell_2 doesn't get scaled by 1/2 here,
+    # so cvxpy Huber is already the right scale, and \ell_1 should be scaled by 2\sqrt{2} to match.
+    fidelity_cost = cvxpy.sum_squares(y - x) if huberM == float('inf') \
+            else np.sqrt(8)*cvxpy.norm(y - x, 1) if huberM == 0 \
+            else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - x, huberM*sigma))
     # Set up and solve the optimization problem
-    prob = cvxpy.Problem(cvxpy.Minimize(
-        # Compare the recursively integrated position to the noisy position, and add TVR penalty
-        cvxpy.sum_squares(y - x) + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
+    prob = cvxpy.Problem(cvxpy.Minimize(fidelity_cost + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
     prob.solve(solver=solver)
 
     # Recursively integrate the final derivative values to get back to the function and derivative values
@@ -102,7 +109,7 @@ def tvrdiff(x, dt, order, gamma, solver=None):
     dxdt_hat = (dxdt_hat[:-1] + dxdt_hat[1:])/2
     dxdt_hat = np.hstack((dxdt_hat, 2*dxdt_hat[-1] - dxdt_hat[-2])) # last value = penultimate value [-1] + diff between [-1] and [-2]
 
-    return x_hat*std+mean, dxdt_hat*std # derivative is linear, so scale derivative by std
+    return x_hat*sigma+mu, dxdt_hat*sigma # derivative is linear, so scale derivative by scatter
 
 
 def velocity(x, dt, params=None, options=None, gamma=None, solver=None):

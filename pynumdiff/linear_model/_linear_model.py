@@ -12,17 +12,17 @@ try: import cvxpy
 except ImportError: pass
 
 
-def savgoldiff(*args, **kwargs):
+def savgoldiff(*args, **kwargs): # pragma: no cover
     warn("`savgoldiff` has moved to `polynomial_fit.savgoldiff` and will be removed from "
         + "`linear_model` in a future release.", DeprecationWarning)
     return _savgoldiff(*args, **kwargs)
 
-def polydiff(*args, **kwargs):
+def polydiff(*args, **kwargs): # pragma: no cover
     warn("`polydiff` has moved to `polynomial_fit.polydiff` and will be removed from "
         + "`linear_model` in a future release.", DeprecationWarning)
     return _polydiff(*args, **kwargs)
 
-def spectraldiff(*args, **kwargs):
+def spectraldiff(*args, **kwargs): # pragma: no cover
     warn("`spectraldiff` has moved to `basis_fit.spectraldiff` and will be removed from "
         + "`linear_model` in a future release.", DeprecationWarning)
     return _spectraldiff(*args, **kwargs)

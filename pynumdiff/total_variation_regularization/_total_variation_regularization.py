@@ -27,7 +27,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     :param str scale: This method has two different numerical options. From :code:`_chartrand_tvregdiff.py`:
         :code:`'large'` or :code:`'small'` (case insensitive).  Default is :code:`'small'`. :code:`'small'`
         has somewhat better boundary behavior, but becomes unwieldly for data larger than 1000 entries or so.
-        :code:`'large'` has simpler numerics but is more efficient for large-scale problems. :code:`'large'`
+        :code:`'large'` has simpler numerics and is more efficient for large-scale problems. :code:`'large'`
         is more readily modified for higher-order derivatives, since the implicit differentiation matrix is square.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
@@ -45,7 +45,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
 
     dxdt_hat = _chartrand_tvregdiff.TVRegDiff(x, num_iterations, gamma, dx=dt,
                                                 maxit=cg_maxiter, scale=scale,
-                                                ep=1e-6, u0=None, plotflag=False, diagflag=1)
+                                                ep=1e-6, u0=None, plotflag=False)
     x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
     x0 = utility.estimate_integration_constant(x, x_hat)
     x_hat = x_hat + x0

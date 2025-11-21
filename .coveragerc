@@ -1,0 +1,12 @@
+[run]
+omit =
+	pynumdiff/_version.py
+	pynumdiff/tests/*
+	pynumdiff/utils/old_pi_cruise_control.py
+
+[report]
+# uses regex to match lines; lines that head a block or function exclude that whole thing
+exclude_lines =
+	if __name__ == .__main__.:
+	^def plot
+	^def plot_comparison

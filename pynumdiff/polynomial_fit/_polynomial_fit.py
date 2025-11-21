@@ -5,7 +5,7 @@ from warnings import warn
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt_or_t, params=None, options={}, degree=3, s=None, num_iterations=1):
+def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iterations=1):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
 
@@ -13,7 +13,7 @@ def splinediff(x, dt_or_t, params=None, options={}, degree=3, s=None, num_iterat
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
+    :param dict options: (**deprecated**, prefer :code:`num_iterations`) a dictionary of {'iterate': (bool)}
     :param int degree: polynomial degree of the spline. A kth degree spline can be differentiated k times.
     :param float s: positive smoothing factor used to choose the number of knots. Number of knots will be increased
         until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
@@ -26,8 +26,8 @@ def splinediff(x, dt_or_t, params=None, options={}, degree=3, s=None, num_iterat
         warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and " +
             "`num_iterations` instead.", DeprecationWarning)
         degree, s = params[0:2]
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[2]
+        if options != None:
+            if 'iterate' in options and options['iterate']: num_iterations = params[2]
 
     if np.isscalar(dt_or_t):
         t = np.arange(len(x))*dt_or_t

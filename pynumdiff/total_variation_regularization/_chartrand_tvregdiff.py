@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # pylint: skip-file
 
 # u = TVRegDiff( data, iter, alph, u0, scale, ep, dx, plotflag, diagflag );
@@ -14,13 +13,13 @@
 #
 #       iter        Number of iterations to run the main loop.  A stopping
 #                   condition based on the norm of the gradient vector g
-#                   below would be an easy modification.  No default value.
+#                   below would be an easy modification. No default value.
 #
-#       alph        Regularization parameter.  This is the main parameter
-#                   to fiddle with.  Start by varying by orders of
+#       alph        Regularization parameter. This is the main parameter
+#                   to fiddle with. Start by varying by orders of
 #                   magnitude until reasonable results are obtained.  A
 #                   value to the nearest power of 10 is usally adequate.
-#                   No default value.  Higher values increase
+#                   No default value. Higher values increase
 #                   regularization strenght and improve conditioning.
 #
 #       u0          Initialization of the iteration.  Default value is the
@@ -31,29 +30,29 @@
 #                   conditioning issues when the linear system is solved.
 #
 #       scale       'large' or 'small' (case insensitive).  Default is
-#                   'small'.  'small' has somewhat better boundary
+#                   'small'. 'small' has somewhat better boundary
 #                   behavior, but becomes unwieldly for data larger than
-#                   1000 entries or so.  'large' has simpler numerics but
+#                   1000 entries or so. 'large' has simpler numerics but
 #                   is more efficient for large-scale problems.  'large' is
 #                   more readily modified for higher-order derivatives,
 #                   since the implicit differentiation matrix is square.
 #
 #       ep          Parameter for avoiding division by zero.  Default value
-#                   is 1e-6.  Results should not be very sensitive to the
-#                   value.  Larger values improve conditioning and
+#                   is 1e-6. Results should not be very sensitive to the
+#                   value. Larger values improve conditioning and
 #                   therefore speed, while smaller values give more
 #                   accurate results with sharper jumps.
 #
 #       dx          Grid spacing, used in the definition of the derivative
-#                   operators.  Default is the reciprocal of the data size.
+#                   operators. Default is the reciprocal of the data size.
 #
 #       plotflag    Flag whether to display plot at each iteration.
-#                   Default is 1 (yes).  Useful, but adds significant
+#                   Default is 1 (yes). Useful, but adds significant
 #                   running time.
 #
 #       diagflag    Flag whether to display diagnostics at each
-#                   iteration.  Default is 1 (yes).  Useful for diagnosing
-#                   preconditioning problems.  When tolerance is not met,
+#                   iteration. Default is False. Useful for diagnosing
+#                   preconditioning problems. When tolerance is not met,
 #                   an early iterate being best is more worrying than a
 #                   large relative residual.
 #
@@ -145,60 +144,30 @@
 #########################################################
 
 import sys
-
-try:
-    import numpy as np
-    import scipy as sp
-    from scipy import sparse
-    from scipy.sparse import linalg as splin
-except ImportError:
-    sys.exit("Numpy and Scipy must be installed for TVRegDiag to work - "
-             "aborting")
-
-_has_matplotlib = True
-
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    _has_matplotlib = False
-    print("Matplotlib is not installed - plotting functionality disabled")
-
-# Utility function.
-
-
-def chop(v):
-    return v[1:]
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy as sp
+from scipy import sparse
+from scipy.sparse import linalg as splin
 
 
 def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
-              plotflag=_has_matplotlib, diagflag=1, maxit=None):
-    if maxit is None:
-        maxit = len(data)
-
-    # code starts here
-    # Make sure we have a column vector
+              plotflag=True, diagflag=False, maxit=None):
+    # Input checking
     data = np.array(data)
-    if (len(data.shape) != 1):
-        print("Error - data is not a column vector")
-        return
-    # Get the data size.
+    if (len(data.shape) != 1): raise ValueError("Data is must be a column vector")
+    if maxit is None: maxit = len(data)
     n = len(data)
-
-    # Default checking. (u0 is done separately within each method.)
-    if dx is None:
-        dx = 1.0 / n
+    if dx is None: dx = 1.0 / n
 
     # Different methods for small- and large-scale problems.
-    if (scale.lower() == 'small'):
-
+    if scale.lower() == 'small':
         # Construct differentiation matrix.
         c = np.ones(n + 1) / dx
         D = sparse.spdiags([-c, c], [0, 1], n, n + 1)
 
-        DT = D.transpose()
-
         # Construct antidifferentiation operator and its adjoint.
-        def A(x): return chop(np.cumsum(x) - 0.5 * (x + x[0])) * dx
+        def A(x): return (np.cumsum(x) - 0.5 * (x + x[0]))[1:] * dx
 
         def AT(w): return (sum(w) * np.ones(n + 1) -
                            np.transpose(np.concatenate(([sum(w) / 2.0],
@@ -206,23 +175,19 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
                                                         w / 2.0)))) * dx
 
         # Default initialization is naive derivative
-
-        if u0 is None:
-            u0 = np.concatenate(([0], np.diff(data), [0]))
-
+        if u0 is None: u0 = np.concatenate(([0], np.diff(data), [0]))
         u = u0
         # Since Au( 0 ) = 0, we need to adjust.
         ofst = data[0]
         # Precompute.
-        ATb = AT(ofst - data)        # input: size n
+        ATb = AT(ofst - data) # input: size n
 
         # Main loop.
         for ii in range(1, itern+1):
             # Diagonal matrix of weights, for linearizing E-L equation.
             Q = sparse.spdiags(1. / (np.sqrt((D * u)**2 + ep)), 0, n, n)
             # Linearized diffusion matrix, also approximation of Hessian.
-            L = dx * DT * Q * D
-
+            L = dx * D.T * Q * D
 
             # Gradient of functional.
             g = AT(A(u)) + ATb + alph * L * u
@@ -235,34 +200,20 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             def linop(v): return (alph * L * v + AT(A(v)))
             linop = splin.LinearOperator((n + 1, n + 1), linop)
 
+            [s, info_i] = sparse.linalg.cg(linop, g, x0=None, rtol=rtol, maxiter=maxit, callback=None, M=P, atol=0)
             if diagflag:
-                [s, info_i] = sparse.linalg.cg(
-                    linop, g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
-                    M=P, atol=0)
-                #print('iteration {0:4d}: relative change = {1:.3e}, '
-                #      'gradient norm = {2:.3e}\n'.format(ii,
-                #                                         np.linalg.norm(
-                #                                             s[0]) /
-                #                                         np.linalg.norm(u),
-                #                                         np.linalg.norm(g)))
-                #if (info_i > 0):
-                #    print("WARNING - convergence to tolerance not achieved!")
-                #elif (info_i < 0):
-                #    print("WARNING - illegal input or breakdown")
-            else:
-                [s, info_i] = sparse.linalg.cg(
-                    linop, g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
-                    M=P, atol=0)
+                print('iteration {0:4d}: relative change = {1:.3e}, gradient norm = {2:.3e}\n'.format(
+                    ii, np.linalg.norm(s[0])/np.linalg.norm(u), np.linalg.norm(g)))
+                if (info_i > 0): print("WARNING - convergence to tolerance not achieved!")
+                elif (info_i < 0): print("WARNING - illegal input or breakdown")
+
             # Update solution.
             u = u - s
             # Display plot.
-            if plotflag:
-                plt.plot(u)
-                plt.show()
-        u = u[0:-1]
+            if plotflag: plt.plot(u); plt.show()
+        u = u[:-1]
         
-    elif (scale.lower() == 'large'):
-        
+    elif scale.lower() == 'large':
         # Construct antidifferentiation operator and its adjoint.
         def A(v): return np.cumsum(v)
 
@@ -275,12 +226,10 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
         mask = np.ones((n, n))
         mask[-1, -1] = 0.0
         D = sparse.dia_matrix(D.multiply(mask))
-        DT = D.transpose()
         # Since Au( 0 ) = 0, we need to adjust.
         data = data - data[0]
         # Default initialization is naive derivative.
-        if u0 is None:
-            u0 = np.concatenate(([0], np.diff(data)))
+        if u0 is None: u0 = np.concatenate(([0], np.diff(data)))
         u = u0
         # Precompute.
         ATd = AT(data)
@@ -290,7 +239,7 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             # Diagonal matrix of weights, for linearizing E-L equation.
             Q = sparse.spdiags(1. / np.sqrt((D*u)**2.0 + ep), 0, n, n)
             # Linearized diffusion matrix, also approximation of Hessian.
-            L = DT*Q*D
+            L = D.T*Q*D
             # Gradient of functional.
             g = AT(A(u)) - ATd
             g = g + alph * L * u
@@ -305,57 +254,34 @@ def TVRegDiff(data, itern, alph, u0=None, scale='small', ep=1e-6, dx=None,
             def linop(v): return (alph * L * v + AT(A(v)))
             linop = splin.LinearOperator((n, n), linop)
 
-            print(maxit)
+            [s, info_i] = sparse.linalg.cg(linop, -g, x0=None, rtol=rtol, maxiter=maxit, callback=None, M=(R.T @ R), atol=0)
             if diagflag:
-                [s, info_i] = sparse.linalg.cg(
-                    linop, -g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
-                    M=np.dot(R.transpose(), R), atol=0)
-                print('iteration {0:4d}: relative change = {1:.3e}, '
-                      'gradient norm = {2:.3e}\n'.format(ii,
-                                                         np.linalg.norm(s[0]) /
-                                                         np.linalg.norm(u),
-                                                         np.linalg.norm(g)))
-                if (info_i > 0):
-                    print("WARNING - convergence to tolerance not achieved!")
-                elif (info_i < 0):
-                    print("WARNING - illegal input or breakdown")
+                print('iteration {0:4d}: relative change = {1:.3e}, gradient norm = {2:.3e}\n'.format(
+                    ii, np.linalg.norm(s[0])/np.linalg.norm(u), np.linalg.norm(g)))
+                if (info_i > 0): print("WARNING - convergence to tolerance not achieved!")
+                elif (info_i < 0): print("WARNING - illegal input or breakdown")
 
-            else:
-                [s, info_i] = sparse.linalg.cg(
-                    linop, -g, x0=None, rtol=rtol, maxiter=maxit, callback=None,
-                    M=np.dot(R.transpose(), R), atol=0)
             # Update current solution
             u = u + s
             # Display plot.
-            if plotflag:
-                plt.plot(u/dx)
-                plt.show()
-
+            if plotflag: plt.plot(u/dx); plt.show()
         u = u/dx
 
     return u
 
-# Small testing script
-
-
-if __name__ == "__main__":
-
+if __name__ == "__main__": # Small testing script
     dx = 0.05
     x0 = np.arange(0, 2.0*np.pi, dx)
 
     testf = np.sin(x0)
+    testf += np.random.normal(0.0, 0.04, x0.shape)
 
-    testf = testf + np.random.normal(0.0, 0.04, x0.shape)
+    deriv_sm = TVRegDiff(testf, 1, 5e-2, dx=dx, ep=1e-1, scale='small', plotflag=False, diagflag=True)
+    deriv_lrg = TVRegDiff(testf, 100, 1e-1, dx=dx, ep=1e-2, scale='large', plotflag=False, diagflag=True)
 
-    deriv_sm = TVRegDiff(testf, 1, 5e-2, dx=dx,
-                         ep=1e-1, scale='small', plotflag=0)
-    deriv_lrg = TVRegDiff(testf, 100, 1e-1, dx=dx,
-                          ep=1e-2, scale='large', plotflag=0)
-
-    if (_has_matplotlib):
-        plt.plot(np.cos(x0), label='Analytical', c=(0,0,0))
-        plt.plot(np.gradient(testf, dx), label='numpy.gradient')
-        plt.plot(deriv_sm, label='TVRegDiff (small)')
-        plt.plot(deriv_lrg, label='TVRegDiff (large)')
-        plt.legend()
-        plt.show()
+    plt.plot(np.cos(x0), label='Analytical', c=(0,0,0))
+    plt.plot(np.gradient(testf, dx), label='numpy.gradient')
+    plt.plot(deriv_sm, label='TVRegDiff (small)')
+    plt.plot(deriv_lrg, label='TVRegDiff (large)')
+    plt.legend()
+    plt.show()

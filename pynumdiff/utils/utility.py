@@ -102,6 +102,13 @@ def huber(x, M):
     absx = np.abs(x)
     return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
 
+def huber_const(M):
+    """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
+    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt"""
+    a = 2*np.exp(-M**2 / 2)/M
+    b = np.sqrt(2*np.pi)*(2*norm.cdf(M) - 1)
+    return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
+
 
 def integrate_dxdt_hat(dxdt_hat, dt_or_t):
     """Wrapper for scipy.integrate.cumulative_trapezoid. Use 0 as first value so lengths match, see #88.
@@ -136,8 +143,7 @@ def estimate_integration_constant(x, x_hat, M=6):
         return np.median(x - x_hat) # Solves the L1 distance minimization
     else:
         sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
-        if sigma < 1e-6: sigma = 1 # guard against divide by zero
-        return minimize(lambda x0: np.mean(huber((x - (x_hat+x0))/sigma, M)), # fn to minimize in 1st argument
+        return minimize(lambda x0: np.sum(huber(x - (x_hat+x0), M*sigma)), # fn to minimize in 1st argument
             0, method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
 
 

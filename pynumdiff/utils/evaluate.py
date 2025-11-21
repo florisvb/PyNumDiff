@@ -93,11 +93,9 @@ def robust_rme(u, v, padding=0, M=6):
     """
     if padding == 'auto': padding = max(1, int(0.025*len(u)))
     s = slice(padding, len(u)-padding) # slice out data we want to measure
-    N = s.stop - s.start
 
     sigma = stats.median_abs_deviation(u[s] - v[s], scale='normal') # M is in units of this robust scatter metric
-    if sigma < 1e-6: sigma = 1 # guard against divide by zero
-    return np.sqrt(2*np.mean(utility.huber((u[s] - v[s])/sigma, M))) * sigma
+    return np.sqrt(2*np.mean(utility.huber(u[s] - v[s], M*sigma)))
 
 
 def rmse(u, v, padding=0):

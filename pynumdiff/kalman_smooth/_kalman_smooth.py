@@ -3,9 +3,10 @@ from warnings import warn
 from scipy.linalg import expm, sqrtm
 from scipy.stats import norm
 from time import time
-
 try: import cvxpy
 except ImportError: pass
+
+from pynumdiff.utils.utility import huber_const
 
 
 def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
@@ -278,7 +279,7 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     proper :math:`\\ell_1` normalization.
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
-    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{-1/2})`, but these are still independent enough that for
+    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{1/2})`, but these are still independent enough that for
     the purposes of optimization we cannot collapse them. Nor can :code:`log_q` and :code:`log_r` be combined into
     :code:`log_qr_ratio` as in RTS smoothing without the addition of a new absolute scale parameter, becausee :math:`q` and
     :math:`r` interact with the distinct Huber :math:`M` parameters.
@@ -328,11 +329,6 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     N = len(y)
     x_states = cvxpy.Variable((A.shape[0], N)) # each column is [position, velocity, acceleration, ...] at step n
     control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
-
-    def huber_const(M): # from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
-        a = 2*np.exp(-M**2 / 2)/M # huber_const smoothly transitions Huber between 1-norm and 2-norm squared cases
-        b = np.sqrt(2*np.pi)*(2*norm.cdf(M) - 1)
-        return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
 
     # It is extremely important to run time that CVXPY expressions be in vectorized form
     proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T)) # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))

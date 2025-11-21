@@ -173,7 +173,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     return finite_difference(x_hat, dt)
 
 
-def splinediff(*args, **kwargs):
+def splinediff(*args, **kwargs): # pragma: no cover
     warn("`splindiff` has moved to `polynomial_fit.splinediff` and will be removed from "
         + "`smooth_finite_difference` in a future release.", DeprecationWarning)
     return _splinediff(*args, **kwargs)

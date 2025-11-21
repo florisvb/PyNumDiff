@@ -65,8 +65,10 @@ method_params_and_bounds = {
               {'sigma': (1e-2, 1e3),
                 'lmbd': (1e-3, 0.5)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-               'order': {1, 2, 3}}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-              {'gamma': (1e-4, 1e7)}),
+               'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
+              'huberM': [0., 1, 2, 3, 6]},
+              {'gamma': (1e-4, 1e7),
+              'huberM': (0, 6)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]}, # Deprecated method
                {'gamma': (1e-4, 1e7)}),
     iterative_velocity: ({'scale': 'small', # Rare to optimize this one, because it's longer-running than convex version

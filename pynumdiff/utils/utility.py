@@ -130,10 +130,10 @@ def estimate_integration_constant(x, x_hat, M=6):
 
     :param np.array[float] x: timeseries of measurements
     :param np.array[float] x_hat: smoothed estimate of x
-    :param float M: constant estimation is robustified with the Huber loss. The default is intended to capture the idea
-        of "six sigma": Assuming Gaussian :code:`x - xhat` errors and :code:`M` in units of standard deviation, the
-        portion of inliers beyond the Huber loss' transition is only about 1.97e-9. :code:`M` here is in units of scaled
-        mean absolute deviation, so scatter can be calculated and used to normalize without being thrown off by outliers.
+    :param float M: constant estimation is robustified with the Huber loss. :code:`M` here is in units of scaled
+        mean absolute deviation of residuals, so scatter can be calculated and used to normalize without being
+        thrown off by outliers. The default is intended to capture the idea of "six sigma": Assuming Gaussian
+        :code:`x - xhat` errors, the portion of inliers beyond the Huber loss' transition is only about 1.97e-9.
 
     :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
     """

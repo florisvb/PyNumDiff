@@ -7,6 +7,7 @@ omit =
 [report]
 # uses regex to match lines; lines that head a block or function exclude that whole thing
 exclude_lines =
+	pragma: no cover
 	if __name__ == .__main__.:
 	if diagflag:
 	if options != None:

@@ -139,9 +139,9 @@ def estimate_integration_constant(x, x_hat, M=6):
     """
     sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
     if M == float('inf') or sigma < 1e-3: # If no scatter, then no outliers, so use L2
-        return np.mean(x - x_hat) # Solves the L2 distance minimization, argmin_{x0} ||x_hat + x0 - x||_2^
-    elif M < 1e-3: # small M looks like L1 loss, and Huber gets too flat to work well
-        return np.median(x - x_hat) # Solves the L1 distance minimization
+        return np.mean(x - x_hat) # Solves the l2 distance minimization, argmin_{x0} ||x_hat + x0 - x||_2^2
+    elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
+        return np.median(x - x_hat) # Solves the l1 distance minimization, argmin_{x0} ||x_hat + x0 - x||_1
     else:
         return minimize(lambda x0: np.sum(huber(x - (x_hat+x0), M*sigma)), # fn to minimize in 1st argument
             0, method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar

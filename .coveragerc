@@ -8,5 +8,11 @@ omit =
 # uses regex to match lines; lines that head a block or function exclude that whole thing
 exclude_lines =
 	if __name__ == .__main__.:
+	if diagflag:
+	if options != None:
 	^def plot
 	^def plot_comparison
+	^def suggest_method
+	def _lorenz_xyz_odeint
+	^except ImportError:
+	

@@ -6,7 +6,7 @@ from ..finite_difference import first_order, second_order, fourth_order
 from ..linear_model import lineardiff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, jerk_sliding
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
@@ -57,7 +57,6 @@ diff_methods_and_params = [
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (jerk_sliding, {'gamma':1, 'window_size':15}), (jerk_sliding, [1], {'window_size':15}),
     (lineardiff, {'order':3, 'gamma':5, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 5, 11], {'solver':'CLARABEL'})
     ]
 
@@ -193,12 +192,6 @@ error_bounds = {
                           [(0, 0), (1, 0), (0, -1), (1, 0)],
                           [(1, 1), (2, 2), (1, 1), (2, 2)],
                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    jerk_sliding: [[(-25, -25), (-16, -17), (0, -1), (1, 0)],
-                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
-                   [(-14, -14), (-14, -14), (0, -1), (0, 0)],
-                   [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                   [(1, 0), (2, 2), (1, 0), (2, 2)],
-                   [(1, 1), (3, 3), (1, 1), (3, 3)]],
     constant_velocity: [[(-25, -25), (-25, -25), (0, -1), (1, 1)],
                         [(-4, -5), (-3, -3), (0, -1), (1, 1)],
                         [(-3, -3), (0, 0), (0, -1), (1, 1)],

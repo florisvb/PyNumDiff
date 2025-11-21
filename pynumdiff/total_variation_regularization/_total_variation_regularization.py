@@ -89,7 +89,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
         y = cvxpy.cumsum(y) + integration_constants[i]
 
     # Compare the recursively integrated position to the noisy position. \ell_2 doesn't get scaled by 1/2 here,
-    # so cvxpy Huber is already the right scale, and \ell_1 should be scaled by 2\sqrt{2} to match.
+    # so cvxpy's doubled Huber is already the right scale, and \ell_1 should be scaled by 2\sqrt{2} to match.
     fidelity_cost = cvxpy.sum_squares(y - x) if huberM == float('inf') \
             else np.sqrt(8)*cvxpy.norm(y - x, 1) if huberM == 0 \
             else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - x, huberM*sigma))

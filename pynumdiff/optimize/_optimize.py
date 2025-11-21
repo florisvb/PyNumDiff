@@ -66,7 +66,7 @@ method_params_and_bounds = {
                 'lmbd': (1e-3, 0.5)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
-              'huberM': [0., 1, 2, 3, 6]},
+              'huberM': [0., 1, 2, 6]}, # comb lower values more finely, because the scale of sigma is mad(x), bigger than mad(y-x) residuals
               {'gamma': (1e-4, 1e7),
               'huberM': (0, 6)}),
     velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]}, # Deprecated method

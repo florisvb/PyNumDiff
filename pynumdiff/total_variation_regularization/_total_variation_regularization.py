@@ -62,7 +62,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
     :param float dt: step size
     :param int order: 1, 2, or 3, the derivative to regularize
     :param float gamma: regularization parameter
-    :param float huberM: Huber loss parameter, in units of scaled median absolute deviation of input data, :code:`x`.
+    :param float huberM: Huber loss parameter, in units of scaled median absolute deviation of input data.
                     :math:`M = \\infty` reduces to :math:`\\ell_2` loss squared on first, fidelity cost term, and
                     :math:`M = 0` reduces to :math:`\\ell_1` loss, which seeks sparse residuals.
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.

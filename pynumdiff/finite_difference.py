@@ -1,4 +1,5 @@
-"""This is handy for this module https://web.media.mit.edu/~crtaylor/calculator.html"""
+"""This module implements some common finite difference schemes.
+This is handy for this module https://web.media.mit.edu/~crtaylor/calculator.html"""
 import numpy as np
 from pynumdiff.utils import utility
 from warnings import warn

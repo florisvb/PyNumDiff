@@ -1,3 +1,4 @@
+"""Methods based on fitting data with polynomials"""
 import numpy as np
 import scipy
 from warnings import warn

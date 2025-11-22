@@ -1,4 +1,3 @@
-"""Optimization"""
 import scipy.optimize
 import numpy as np
 from itertools import product
@@ -8,14 +7,14 @@ from multiprocessing import Pool, Manager
 from hashlib import sha1
 from tqdm import tqdm
 
-from ..utils import evaluate, utility
-from ..finite_difference import finitediff, first_order, second_order, fourth_order
-from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
-from ..polynomial_fit import polydiff, savgoldiff, splinediff
-from ..basis_fit import spectraldiff, rbfdiff
-from ..total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
-from ..linear_model import lineardiff
+from .utils import evaluate, utility
+from .finite_difference import finitediff, first_order, second_order, fourth_order
+from .smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from .polynomial_fit import polydiff, savgoldiff, splinediff
+from .basis_fit import spectraldiff, rbfdiff
+from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+from .kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
+from .linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {

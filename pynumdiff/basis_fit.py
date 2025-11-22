@@ -1,3 +1,4 @@
+"""Methods based on fitting basis functions to data"""
 import numpy as np
 from warnings import warn
 from scipy import sparse

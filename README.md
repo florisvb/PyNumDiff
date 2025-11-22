@@ -34,7 +34,7 @@ PyNumDiff is a Python package that implements various methods for computing nume
 6. generalized Kalman smoothing
 7. local approximation with linear model
 
-For a full list, see `pynumdiff/__init__.py`, or explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
+For a full list, explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
 
 Most of these methods have multiple parameters, so we take a principled approach and propose a multi-objective optimization framework for choosing parameters that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
 
@@ -75,7 +75,7 @@ params, val = optimize(somethingdiff, x, dt, tvgamma=tvgamma, # smoothness hyper
 print('Optimal parameters: ', params)
 x_hat, dxdt_hat = somethingdiff(x, dt, **params)
 ```
-If no `search_space_updates` is given, a default search space is used. See the top of `_optimize.py`.
+If no `search_space_updates` is given, a default search space is used. See the top of `optimize.py`.
 
 The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep: `tvgamma=np.exp(-1.6*np.log(cutoff_frequency)-0.71*np.log(dt)-5.1)`. Larger values of `tvgamma` produce smoother derivatives. The value of `tvgamma` is largely universal across methods, making it easy to compare method results. Be aware the optimization is a fairly heavy process.
 

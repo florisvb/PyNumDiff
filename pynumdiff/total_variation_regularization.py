@@ -1,12 +1,11 @@
+"""This module implements some common total variation regularization methods."""
 import numpy as np
 from warnings import warn
 from scipy.stats import median_abs_deviation
-
-from pynumdiff.total_variation_regularization import _chartrand_tvregdiff
-from pynumdiff.utils import utility
-
 try: import cvxpy
 except ImportError: pass
+
+from pynumdiff.utils import _chartrand_tvregdiff, utility
 
 
 def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):

@@ -10,4 +10,3 @@ total_variation_regularization
 .. autofunction:: pynumdiff.total_variation_regularization.jerk
 .. autofunction:: pynumdiff.total_variation_regularization.iterative_velocity
 .. autofunction:: pynumdiff.total_variation_regularization.smooth_acceleration
-.. autofunction:: pynumdiff.total_variation_regularization.jerk_sliding

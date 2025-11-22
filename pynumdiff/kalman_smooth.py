@@ -1,3 +1,4 @@
+"""This module implements constant-derivative model-based smoothers based on Kalman filtering and its generalization."""
 import numpy as np
 from warnings import warn
 from scipy.linalg import expm, sqrtm

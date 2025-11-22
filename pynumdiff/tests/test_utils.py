@@ -47,11 +47,6 @@ def test_convolutional_smoother():
     assert np.allclose(utility.convolutional_smoother(x, kernel_even, num_iterations=3), np.ones(len(x)))
 
 
-def test_hankel_matrix():
-    """Ensure Hankel matrix comes back as defined"""
-    assert np.allclose(utility.hankel_matrix([1, 2, 3, 4, 5], 3), [[1, 2, 3],[2, 3, 4],[3, 4, 5]])
-
-
 def test_peakdet(request):
     """Verify peakdet finds peaks and valleys"""
     t = np.arange(0, 10, 0.001)

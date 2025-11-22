@@ -64,7 +64,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
     :param float gamma: regularization parameter
     :param float huberM: Huber loss parameter, in units of scaled median absolute deviation of input data, :code:`x`.
                     :math:`M = \\infty` reduces to :math:`\\ell_2` loss squared on first, fidelity cost term, and
-                    :math:`M = 0` reduces to :math:`\\ell_1` loss.
+                    :math:`M = 0` reduces to :math:`\\ell_1` loss, which seeks sparse residuals.
     :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
                     If not given, fall back to CVXPY's default.
 
@@ -92,7 +92,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
     # so cvxpy's doubled Huber is already the right scale, and \ell_1 should be scaled by 2\sqrt{2} to match.
     fidelity_cost = cvxpy.sum_squares(y - x) if huberM == float('inf') \
             else np.sqrt(8)*cvxpy.norm(y - x, 1) if huberM == 0 \
-            else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - x, huberM*sigma))
+            else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - x, huberM)) # data is already scaled, so M rather than M*sigma
     # Set up and solve the optimization problem
     prob = cvxpy.Problem(cvxpy.Minimize(fidelity_cost + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
     prob.solve(solver=solver)

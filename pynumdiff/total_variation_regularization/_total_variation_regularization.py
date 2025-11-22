@@ -75,34 +75,34 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None):
     mu = np.mean(x)
     sigma = median_abs_deviation(x, scale='normal') # robust alternative to std()
     if sigma == 0: sigma = 1 # safety guard
-    x = (x-mu)/sigma
+    y = (x-mu)/sigma
 
     # Define the variables for the highest order derivative and the integration constants
-    deriv_values = cvxpy.Variable(len(x)) # values of the order^th derivative, in which we're penalizing variation
+    deriv_values = cvxpy.Variable(len(y)) # values of the order^th derivative, in which we're penalizing variation
     integration_constants = cvxpy.Variable(order) # constants of integration that help get us back to x
 
     # Recursively integrate the highest order derivative to get back to the position. This is a first-
     # order scheme, but it's very fast and tends to do not markedly worse than 2nd order. See #116
-    # I also tried a trapezoidal integration rule here, and it works no better. See #116 too
-    y = deriv_values
+    # I also tried a trapezoidal integration rule here, and it works no better. See #116 too.
+    hx = deriv_values # variables are integrated to produce the signal estimate variables, \hat{x} in the math
     for i in range(order):
-        y = cvxpy.cumsum(y) + integration_constants[i]
+        hx = cvxpy.cumsum(hx) + integration_constants[i] # cumsum is like integration assuming dt = 1
 
     # Compare the recursively integrated position to the noisy position. \ell_2 doesn't get scaled by 1/2 here,
     # so cvxpy's doubled Huber is already the right scale, and \ell_1 should be scaled by 2\sqrt{2} to match.
-    fidelity_cost = cvxpy.sum_squares(y - x) if huberM == float('inf') \
-            else np.sqrt(8)*cvxpy.norm(y - x, 1) if huberM == 0 \
-            else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - x, huberM)) # data is already scaled, so M rather than M*sigma
+    fidelity_cost = cvxpy.sum_squares(y - hx) if huberM == float('inf') \
+            else np.sqrt(8)*cvxpy.norm(y - hx, 1) if huberM == 0 \
+            else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - hx, huberM)) # data is already scaled, so M rather than M*sigma
     # Set up and solve the optimization problem
     prob = cvxpy.Problem(cvxpy.Minimize(fidelity_cost + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
     prob.solve(solver=solver)
 
     # Recursively integrate the final derivative values to get back to the function and derivative values
-    y = deriv_values.value
+    v = deriv_values.value
     for i in range(order-1): # stop one short to get the first derivative
-        y = np.cumsum(y) + integration_constants.value[i]
-    dxdt_hat = y/dt # y only holds the dx values; to get deriv scale by dt
-    x_hat = np.cumsum(y) + integration_constants.value[order-1] # smoothed data
+        v = np.cumsum(v) + integration_constants.value[i]
+    dxdt_hat = v/dt # v only holds the dx values; to get deriv scale by dt
+    x_hat = np.cumsum(v) + integration_constants.value[order-1] # smoothed data
 
     # Due to the first-order nature of the derivative, it has a slight lag. Average together every two values
     # to better center the answer. But this leaves us one-short, so devise a good last value.

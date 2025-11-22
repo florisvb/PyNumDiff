@@ -29,7 +29,6 @@ def integrate_dxdt_hat(dxdt_hat, dt_or_t):
     return cumulative_trapezoid(dxdt_hat, initial=0)*dt_or_t if np.isscalar(dt_or_t) \
             else cumulative_trapezoid(dxdt_hat, x=dt_or_t, initial=0)
 
-
 def estimate_integration_constant(x, x_hat, M=6):
     """Integration leaves an unknown integration constant. This function finds a best fit integration
     constant to correct the DC of :code:`x_hat` (the integral of dxdt_hat) by optimizing

@@ -121,7 +121,7 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
-                In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
+                If not given, fall back to CVXPY's default.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x

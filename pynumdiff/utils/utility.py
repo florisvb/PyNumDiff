@@ -6,13 +6,23 @@ from scipy.stats import median_abs_deviation, norm
 
 
 def huber(x, M):
-    """Huber loss function, for outlier-robust applications, `see here <https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber>`_"""
+    """Huber loss function, for outlier-robust applications,
+    `see here <https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber>`_
+
+    :param np.array[float] x: data points on which to evaluate the Huber function pointwise
+    :param float M: where the loss turns from quadratic to linear
+    :return: (np.array[float]) -- pointwise evaluations of the Huber function
+    """
     absx = np.abs(x)
     return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
 
 def huber_const(M):
     """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
-    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt"""
+    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
+
+    :param float M: Huber parameter, where the function turns from quadratic to linear
+    :return: (float) -- appropriate scale factor to normalize the Huber function
+    """
     a = 2*np.exp(-M**2 / 2)/M
     b = np.sqrt(2*np.pi)*(2*norm.cdf(M) - 1)
     return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
@@ -55,18 +65,27 @@ def estimate_integration_constant(x, x_hat, M=6):
 
 
 def mean_kernel(window_size):
-    """A uniform boxcar of total integral 1"""
+    """A uniform boxcar of total integral 1
+    :param int window_size: the width of the return value
+    :return: **kernel** (np.array[float]) -- samples of the kernel function
+    """
     return np.ones(window_size)/window_size
 
 def gaussian_kernel(window_size):
-    """A truncated gaussian"""
+    """A truncated gaussian
+    :param int window_size: the width of the return value
+    :return: **kernel** (np.array[float]) -- samples of the kernel function
+    """
     sigma = window_size / 6.
     t = np.linspace(-2.7*sigma, 2.7*sigma, window_size)
     ker = 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2)) # gaussian function itself
     return ker / np.sum(ker)
 
 def friedrichs_kernel(window_size):
-    """A bump function"""
+    """A bump function
+    :param int window_size: the width of the return value
+    :return: **kernel** (np.array[float]) -- samples of the kernel function
+    """
     x = np.linspace(-0.999, 0.999, window_size)
     ker = np.exp(-1/(1-x**2))
     return ker / np.sum(ker)
@@ -104,8 +123,7 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
     :param bool pass_weights: whether weights should be passed to func via update to kwargs
     :param dict kwargs: passed to func
 
-    :return: tuple[np.array, np.array] of\n
-             - **x_hat** -- estimated (smoothed) x
+    :return: - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
@@ -148,8 +166,7 @@ def peakdet(x, delta, t=None):
         if it has the maximal value, and was preceded (to the left) by a value lower by delta.
     :param np.array[float] t: optional domain points where data comes from, to make indices into locations
 
-    :return: tuple[np.array, np.array] of\n
-             - **maxtab** -- indices or locations (column 1) and values (column 2) of maxima
+    :return: - **maxtab** -- indices or locations (column 1) and values (column 2) of maxima
              - **mintab** -- indices or locations (column 1) and values (column 2) of minima
     """
     maxtab = []

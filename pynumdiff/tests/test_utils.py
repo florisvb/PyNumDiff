@@ -26,7 +26,7 @@ def test_estimate_integration_constant():
             (np.ones(5)*10, np.ones(5)*5 + 0.01*np.random.randn(5), 5), # with some noise
             (np.array([0]), np.array([1]), -1), # singleton case
             (np.vstack([np.arange(5)]*5), np.vstack([np.arange(5) + c for c in range(5)]), -np.arange(5).reshape(-1,1)), # multidimensional case
-            (np.ones((5,5)), np.vstack([np.arange(5) + c for c in range(5)]), -np.arange(1,6).reshape(-1,1))]:
+            (np.ones((7,5)), np.vstack([np.arange(5) + c for c in range(7)]), -np.arange(1,8).reshape(-1,1))]: # nonsquare case
         x0 = utility.estimate_integration_constant(x, x_hat, axis=-1)
         assert np.allclose(x0, c, rtol=1e-3)
 

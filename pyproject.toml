@@ -7,7 +7,7 @@ name = "pynumdiff"
 dynamic = ["version"]
 description = "pynumdiff: numerical derivatives in python"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 maintainers = [
   {name = "Floris van Breugel", email = "fvanbreugel@unr.edu"},
   {name = "Pavel Komarov", email = "pvlkmrv@uw.edu"},

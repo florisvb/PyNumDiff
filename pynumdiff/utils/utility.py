@@ -58,7 +58,7 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
              :math:`\\mathbf{\\hat{x}}` with :math:`\\mathbf{x}`
     """
     s = list(x_hat.shape); s[axis] = 1; s = tuple(s) # proper shape for multidimensional integration constants
-    sigma = median_abs_deviation(x - x_hat, axis=axis, scale='normal') # M is in units of this robust scatter metric
+    sigma = median_abs_deviation(x - x_hat, axis=axis, scale='normal').reshape(s) # M is in units of this robust scatter metric
     if M == float('inf') or np.all(sigma < 1e-3): # If no scatter, then no outliers, so use L2
         return np.mean(x - x_hat, axis=axis).reshape(s) # Solves the l2 distance minimization, argmin_c ||x_hat + c - x||_2^2
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well

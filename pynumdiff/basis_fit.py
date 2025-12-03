@@ -1,6 +1,6 @@
 """Methods based on fitting basis functions to data"""
-import numpy as np
 from warnings import warn
+import numpy as np
 from scipy import sparse
 
 from pynumdiff.utils import utility
@@ -23,14 +23,14 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
             "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
-        if options != None:
+        if options is not None:
             if 'even_extension' in options: even_extension = options['even_extension']
             if 'pad_to_zero_dxdt' in options: pad_to_zero_dxdt = options['pad_to_zero_dxdt']
-    elif high_freq_cutoff == None:
+    elif high_freq_cutoff is None:
         raise ValueError("`high_freq_cutoff` must be given.")
 
     L = len(x)
@@ -105,7 +105,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
 
     cutoff = np.sqrt(-2 * sigma**2 * np.log(1e-4))
     rows, cols, vals, dvals = [], [], [], []
-    for n in range(len(t)):
+    for n in range(len(t)): # pylint: disable=consider-using-enumerate
         # Only consider points within a cutoff. Gaussian drops below eps at distance ~ sqrt(-2*sigma^2 log eps)
         l = np.searchsorted(t, t[n] - cutoff) # O(log N) to find indices of points within cutoff
         r = np.searchsorted(t, t[n] + cutoff) # finds index where new value should be inserted

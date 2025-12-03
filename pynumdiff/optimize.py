@@ -1,10 +1,11 @@
-import scipy.optimize
-import numpy as np
+"""Optimization functionality"""
+from hashlib import sha1
 from itertools import product
 from functools import partial
 from warnings import filterwarnings, warn
 from multiprocessing import Pool, Manager
-from hashlib import sha1
+import scipy.optimize
+import numpy as np
 from tqdm import tqdm
 
 from .utils import evaluate, utility
@@ -149,7 +150,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         if metric == 'rmse': # minimize ||dxdt_hat - dxdt_truth||_2
             rmse_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = rmse_dxdt; return rmse_dxdt
-        elif metric == 'error_correlation':
+        if metric == 'error_correlation':
             ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
             cache[key] = ec; return ec
     else: # then minimize L(Phi) = (RMSE(trapz(dxdt_hat) + c - x) || sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
@@ -230,7 +231,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
                     results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
     else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
-        cache = dict()
+        cache = {} # dict
         for categorical_combo in categorical_combos:
             _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
                 categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
@@ -241,7 +242,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x
     # results are going to be floats, but that may not be allowed, so convert back to a dict
-    opt_params = {k:(v if search_space_types[k] == float else 
+    opt_params = {k:(v if search_space_types[k] == float else
                     int(np.round(v)) if search_space_types[k] == int else
                     v > 0.5) for k,v in zip(search_space_types, opt_point)}
     opt_params.update(singleton_params)

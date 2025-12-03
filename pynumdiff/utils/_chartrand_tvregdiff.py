@@ -1,5 +1,3 @@
-# pylint: skip-file
-
 # u = TVRegDiff( data, iter, alph, u0, scale, ep, dx, plotflag, diagflag );
 #
 # Rick Chartrand (rickc@lanl.gov), Apr. 10, 2011

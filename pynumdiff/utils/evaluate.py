@@ -27,7 +27,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
         xlim = [t[0], t[-1]]
 
     fig, axes = plt.subplots(1, 2, figsize=(18, 6), constrained_layout=True)
-    
+
     axes[0].plot(t, x_truth, '--', color='black', linewidth=3, label=r"true $x$")
     axes[0].plot(t, x, '.', color='blue', zorder=-100, markersize=markersize, label=r"noisy data")
     axes[0].plot(t, x_hat, color='red', label=r"estimated $\hat{x}$")
@@ -52,7 +52,7 @@ def plot(x, dt, x_hat, dxdt_hat, x_truth, dxdt_truth, xlim=None, show_error=True
         R_sqr = error_correlation(dxdt_truth, dxdt_hat)
         axes[1].text(0.05, 0.95, f"RMSE = {rmse_dxdt:.2f}\n$R^2$ = {R_sqr:.2g}",
                      transform=axes[1].transAxes, fontsize=15, verticalalignment='top')
-    
+
     return fig, axes
 
 
@@ -128,7 +128,7 @@ def error_correlation(u, v, padding=0):
     """
     if padding == 'auto': padding = max(1, int(0.025*len(u)))
     s = slice(padding, len(u)-padding) # slice out data we want to measure
-    
+
     return stats.linregress(u[s], v[s] - u[s]).rvalue**2
 
 
@@ -143,5 +143,5 @@ def total_variation(x, padding=0):
     """
     if padding == 'auto': padding = max(1, int(0.025*len(x)))
     x = x[padding:len(x)-padding]
-    
+
     return np.linalg.norm(x[1:]-x[:-1], 1)/len(x) # normalized version of what cvxpy.tv does

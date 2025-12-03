@@ -1,8 +1,8 @@
 """This module implements some common finite difference schemes.
 This is handy for this module https://web.media.mit.edu/~crtaylor/calculator.html"""
+from warnings import warn
 import numpy as np
 from pynumdiff.utils import utility
-from warnings import warn
 
 
 def finitediff(x, dt, num_iterations=1, order=2, axis=0):
@@ -87,7 +87,7 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
     warn("`first_order` in past releases was actually calculating a second-order FD. Use `second_order` to achieve " +
         "approximately the same behavior. Note that odd-order methods have asymmetrical stencils, which causes " +
         "horizontal drift in the answer, especially when iterating.", DeprecationWarning)
-    if params != None and 'iterate' in options:
+    if params is not None and 'iterate' in options:
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
         num_iterations = params[0] if isinstance(params, list) else params
 

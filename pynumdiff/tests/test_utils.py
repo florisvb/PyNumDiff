@@ -1,6 +1,7 @@
 """Unit tests for utility functions"""
-# pylint: skip-file
 import numpy as np
+from matplotlib import pyplot
+
 from pynumdiff.utils import utility, evaluate
 from pynumdiff.utils.simulate import sine, triangle, pop_dyn, linear_autonomous, pi_cruise_control, lorenz_x
 np.random.seed(42) # The answer to life, the universe, and everything
@@ -59,7 +60,6 @@ def test_peakdet(request):
     maxtab, mintab = utility.peakdet(x, 0.5, t)
 
     if request.config.getoption("--plot"):
-        from matplotlib import pyplot
         pyplot.plot(t, x)
         pyplot.plot(mintab[:,0], mintab[:,1], 'g*')
         pyplot.plot(maxtab[:,0], maxtab[:,1], 'r*')
@@ -95,7 +95,6 @@ def test_slide_function():
 def test_simulations(request):
     """Just sprint through running them all to make sure they go. Optionally plot with flag."""
     if request.config.getoption("--plot"):
-        from matplotlib import pyplot
         axes = [pyplot.subplots(2, 3, figsize=(18,7), constrained_layout=True)[1] for i in range(3)]
 
     for j,dt in enumerate([0.005, 0.01, 0.02]):

@@ -1,4 +1,4 @@
-import os, sys, copy
+"""Simple, short, reusable helper functions"""
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize

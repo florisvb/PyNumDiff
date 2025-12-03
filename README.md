@@ -101,7 +101,6 @@ See the README in the `notebooks/` folder for a full guide to all demos and expe
 - `CITATION.cff` is citation information for the Journal of Open-Source Software (JOSS) paper associated with this project.
 - `LICENSE.txt` allows free usage of this project.
 - `README.md` is the text you're reading, hello.
-- `linting.py` is a script to run `pylint`.
 - `pyproject.toml` governs how this package is set up and installed, including dependencies.
 
 ## Citation

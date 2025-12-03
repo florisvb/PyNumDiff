@@ -1,7 +1,6 @@
 """Apply smoothing method before finite difference."""
-import numpy as np
-import scipy.signal
 from warnings import warn
+import scipy.signal
 
 # included code
 from pynumdiff.finite_difference import second_order as finite_difference
@@ -53,7 +52,7 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
@@ -78,7 +77,7 @@ def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
@@ -104,7 +103,7 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
@@ -130,7 +129,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
@@ -157,7 +156,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `filter_order`, " +
             "`cutoff_freq`, and `num_iterations` instead.", DeprecationWarning)
         filter_order, cutoff_freq = params[0:2]
@@ -174,7 +173,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     return finite_difference(x_hat, dt)
 
 
-def splinediff(*args, **kwargs): # pragma: no cover
+def splinediff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
     warn("`splindiff` has moved to `polynomial_fit.splinediff` and will be removed from "
         + "`smooth_finite_difference` in a future release.", DeprecationWarning)
     return _splinediff(*args, **kwargs)

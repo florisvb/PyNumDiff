@@ -10,7 +10,7 @@ exclude_lines =
 	pragma: no cover
 	if __name__ == .__main__.:
 	if diagflag:
-	if options != None:
+	if options is not None:
 	^def plot
 	^def plot_comparison
 	^def suggest_method

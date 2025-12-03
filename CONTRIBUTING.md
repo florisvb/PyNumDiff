@@ -41,7 +41,7 @@ Here are some things you might include:
 
 ## Addressing Issues
 
-Look for issues labeled `good first issue` if you're new to the project. Talk to us, and we can suggest things that need to be donem, of varying levels of code and research difficulty.
+Look for issues labeled `good first issue` if you're new to the project. Talk to us, and we can suggest things that need to be done, of varying levels of code and research difficulty.
 
 ### Research
 

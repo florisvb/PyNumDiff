@@ -231,7 +231,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                     _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
                     results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
     else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
-        cache = {}
+        cache = {} # dict
         for categorical_combo in categorical_combos:
             _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
                 categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,

@@ -2,7 +2,7 @@ import numpy as np
 from pytest import mark
 from warnings import warn
 
-from ..finite_difference import first_order, second_order, fourth_order
+from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..linear_model import lineardiff
 from ..basis_fit import spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
@@ -235,25 +235,16 @@ error_bounds = {
 @mark.parametrize("diff_method_and_params", diff_methods_and_params) # things like splinediff, with their parameters
 @mark.parametrize("test_func_and_deriv", test_funcs_and_derivs) # analytic functions, with their true derivatives
 def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # request gives access to context
+    """Ensure differentiation methods find accurate derivatives"""
     # unpack
     diff_method, params = diff_method_and_params[:2]
     if len(diff_method_and_params) == 3: options = diff_method_and_params[2] # optionally pass old-style `options` dict
     i, latex_name, f, df = test_func_and_deriv
 
-    # some methods rely on cvxpy, and we'd like to allow use of pynumdiff without convex optimization
-    if diff_method in [lineardiff, velocity, acceleration, jerk, smooth_acceleration, robustdiff]:
-        try: import cvxpy
-        except: warn(f"Cannot import cvxpy, skipping {diff_method} test."); return
-
     # sample the true function and true derivative, and make noisy samples
-    if diff_method in [spline_irreg_step, rbfdiff, rtsdiff]: # list that can handle variable dt
-        x = f(t_irreg)
-        dxdt = df(t_irreg)
-        _t = t_irreg
-    else:
-        x = f(t)
-        dxdt = df(t)
-        _t = dt
+    x = f(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
+    dxdt = df(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
+    _t = dt if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else t_irreg
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
@@ -305,3 +296,69 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
             # methods that get super duper close can converge to different very small limits on different runs
             if 1e-18 < l2_error < 10**(log_l2_bound - 1) or 1e-18 < linf_error < 10**(log_linf_bound - 1):
                 print(f"Improvement detected for method {diff_method.__name__}")
+
+
+T1, T2 = np.meshgrid(np.linspace(-1, 1, 101), np.linspace(-1, 1, 101)) # a 101 x 101 grid
+dt2 = 0.02 # distance between samples in the 2D T grids
+x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
+
+# When one day all or most methods support multidimensionality, and the legacy way of calling methods is
+# gone, diff_methods_and_params can be used for the multidimensionality test as well
+multidim_methods_and_params = [(finitediff, {})]
+
+# Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
+# and only in the absence of noise, since the other test covers that. Instead, because multidimensional
+# derivatives can be combined in interesting fashions, we find d^2 / dt_1 dt_2 and the Laplacian,
+# d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf) distances. 
+multidim_error_bounds = {
+    finitediff: [(0, -1), (1, -1)]
+}
+
+@mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
+def test_multidimensionality(multidim_method_and_params, request):
+    """Ensure methods with an axis parameter can successfully differentiate in independent directions"""
+    diff_method, params = multidim_method_and_params
+
+    # d^2 / dt_1 dt_2
+    analytic_d2 = 3 * T1 * np.pi * np.cos(3/2 * np.pi * T2)
+    dxdt1 = diff_method(x, dt2, **params, axis=0)[1]
+    computed_d2 = diff_method(dxdt1, dt2, **params, axis=1)[1]
+    l2_error_d2 = np.linalg.norm(analytic_d2 - computed_d2) # Frobenius norm (2 norm of vectorized array)
+    linf_error_d2 = np.max(np.abs(analytic_d2 - computed_d2))
+
+    # Laplacian
+    analytic_laplacian = 2 * np.sin(3/2 * np.pi * T2) - 9/4 * np.pi**2 * T1**2 * np.sin(3/2 * np.pi * T2)
+    dxdt2 = diff_method(x, dt2, **params, axis=1)[1]
+    computed_laplacian = diff_method(dxdt1, dt2, **params, axis=0)[1] + diff_method(dxdt2, dt2, **params, axis=1)[1]
+    l2_error_lap = np.linalg.norm(analytic_laplacian - computed_laplacian)
+    linf_error_lap = np.max(np.abs(analytic_laplacian - computed_laplacian))
+    
+    if request.config.getoption("--bounds"):
+        print([(int(np.ceil(np.log10(l2_error_d2))), int(np.ceil(np.log10(linf_error_d2)))), (int(np.ceil(np.log10(l2_error_lap))), int(np.ceil(np.log10(linf_error_lap))))])
+    else:
+        (log_l2_bound_d2, log_linf_bound_d2), (log_l2_bound_lap, log_linf_bound_lap) = multidim_error_bounds[diff_method]
+        assert l2_error_d2 < 10**log_l2_bound_d2
+        assert linf_error_d2 < 10**log_linf_bound_d2
+
+    if request.config.getoption("--plot"):
+        from matplotlib import pyplot
+        fig = pyplot.figure(figsize=(12, 5), constrained_layout=True)
+        ax1 = fig.add_subplot(1, 3, 1, projection='3d')
+        ax1.plot_surface(T1, T2, x, cmap='viridis', alpha=0.5)
+        ax1.set_title(r'original function, $x$')
+        ax1.set_xlabel(r'$t_1$')
+        ax1.set_ylabel(r'$t_2$')
+        ax2 = fig.add_subplot(1, 3, 2, projection='3d')
+        ax2.plot_surface(T1, T2, analytic_d2, cmap='viridis', alpha=0.5)
+        ax2.set_title(r'$\frac{\partial^2 x}{\partial t_1 \partial t_2}$')
+        ax2.set_xlabel(r'$t_1$')
+        ax2.set_ylabel(r'$t_2$')
+        ax3 = fig.add_subplot(1, 3, 3, projection='3d')
+        surf = ax3.plot_surface(T1, T2, analytic_laplacian, cmap='viridis', alpha=0.5, label='analytic')
+        ax3.set_title(r'$\frac{\partial^2}{\partial t_1^2} + \frac{\partial^2}{\partial t_2^2}$')
+        ax3.set_xlabel(r'$t_1$')
+        ax3.set_ylabel(r'$t_2$')
+
+        ax2.plot_wireframe(T1, T2, computed_d2)
+        ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
+        legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))

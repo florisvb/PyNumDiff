@@ -28,18 +28,19 @@ def huber_const(M):
     return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
 
 
-def integrate_dxdt_hat(dxdt_hat, dt_or_t):
+def integrate_dxdt_hat(dxdt_hat, dt_or_t, axis=0):
     """Wrapper for scipy.integrate.cumulative_trapezoid. Use 0 as first value so lengths match, see #88.
 
     :param np.array[float] dxdt_hat: estimate derivative of timeseries
     :param float dt_or_t: step size if given as a scalar or a vector of sample locations
+    :param int axis: data dimension along which to integrate
 
     :return: **x_hat** (np.array[float]) -- integral of dxdt_hat
     """
-    return cumulative_trapezoid(dxdt_hat, initial=0)*dt_or_t if np.isscalar(dt_or_t) \
-            else cumulative_trapezoid(dxdt_hat, x=dt_or_t, initial=0)
+    return cumulative_trapezoid(dxdt_hat, initial=0, axis=axis)*dt_or_t if np.isscalar(dt_or_t) \
+            else cumulative_trapezoid(dxdt_hat, x=dt_or_t, initial=0, axis=axis)
 
-def estimate_integration_constant(x, x_hat, M=6):
+def estimate_integration_constant(x, x_hat, M=6, axis=0):
     """Integration leaves an unknown integration constant. This function finds a best fit integration
     constant to correct the DC of :code:`x_hat` (the integral of dxdt_hat) by optimizing
     :math:`\\min_c J(x - \\hat{x} + c)`, where :math:`J` is the Huber loss function or the :math:`\\ell_1`
@@ -51,17 +52,20 @@ def estimate_integration_constant(x, x_hat, M=6):
         mean absolute deviation of residuals, so scatter can be calculated and used to normalize without being
         thrown off by outliers. The default is intended to capture the idea of "six sigma": Assuming Gaussian
         :code:`x - xhat` errors, the portion of inliers beyond the Huber loss' transition is only about 1.97e-9.
+    :param int axis: data dimension along which integration was performed
 
-    :return: **integration constant** (float) -- initial condition that best aligns x_hat with x
+    :return: **integration constant** (float or np.array[float]) -- initial condition(s) to best align
+             :math:`\\mathbf{\\hat{x}}` with :math:`\\mathbf{x}`
     """
-    sigma = median_abs_deviation(x - x_hat, scale='normal') # M is in units of this robust scatter metric
-    if M == float('inf') or sigma < 1e-3: # If no scatter, then no outliers, so use L2
-        return np.mean(x - x_hat) # Solves the l2 distance minimization, argmin_{x0} ||x_hat + x0 - x||_2^2
+    s = list(x_hat.shape); s[axis] = 1; s = tuple(s) # proper shape for multidimensional integration constants
+    sigma = median_abs_deviation(x - x_hat, axis=axis, scale='normal') # M is in units of this robust scatter metric
+    if M == float('inf') or np.all(sigma < 1e-3): # If no scatter, then no outliers, so use L2
+        return np.mean(x - x_hat, axis=axis).reshape(s) # Solves the l2 distance minimization, argmin_c ||x_hat + c - x||_2^2
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
-        return np.median(x - x_hat) # Solves the l1 distance minimization, argmin_{x0} ||x_hat + x0 - x||_1
+        return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        return minimize(lambda x0: np.sum(huber(x - (x_hat+x0), M*sigma)), # fn to minimize in 1st argument
-            0, method='SLSQP').x[0] # result is a vector, even if initial guess is just a scalar
+        return minimize(lambda c: np.sum(huber(x_hat + c.reshape(s) - x, M*sigma)), # fn to minimize in 1st argument
+            np.zeros(np.prod(s)), method='SLSQP').x.reshape(s) # initial guess is zeros; vector result must be reshaped
 
 
 def mean_kernel(window_size):

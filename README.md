@@ -82,15 +82,16 @@ The following heuristic works well for choosing `tvgamma`, where `cutoff_frequen
 ### Notebook examples
 
 Much more extensive usage is demonstrated in Jupyter notebooks:
-* Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/1_basic_tutorial.ipynb)
-* Parameter Optimization:  [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/2_optimizing_hyperparameters.ipynb)
-* Automatic method suggestion: [3_automatic_method_suggestion.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/examples/3_automatic_method_suggestion.ipynb)
+* Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
+* Parameter Optimization:  [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2_optimizing_hyperparameters.ipynb)
+
+See the README in the `notebooks/` folder for a full guide to all demos and experiments.
 
 ## Repo Structure
 
 - `.github/workflows` contains `.yaml` that configures our GitHub Actions continuous integration (CI) runs.
 - `docs/` contains `make` files and `.rst` files to govern the way `sphinx` builds documentation, either locally by navigating to this folder and calling `make html` or in the cloud by `readthedocs.io`.
-- `examples/` contains Jupyter notebooks that demonstrate some usage of the library.
+- `notebooks/` contains Jupyter notebooks that demonstrate some usage of the library.
 - `pynumdiff/` contains the source code. For a full list of modules and further navigation help, see the readme in this subfolder.
 - `.coveragerc` governs `coverage` runs, listing files and functions/lines that should be excluded, e.g. plotting code.
 - `.editorconfig` ensures tabs are displayed as 4 characters wide.

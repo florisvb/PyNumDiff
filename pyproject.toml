@@ -7,7 +7,7 @@ name = "pynumdiff"
 dynamic = ["version"]
 description = "pynumdiff: numerical derivatives in python"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 maintainers = [
   {name = "Floris van Breugel", email = "fvanbreugel@unr.edu"},
   {name = "Pavel Komarov", email = "pvlkmrv@uw.edu"},
@@ -18,7 +18,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering"
@@ -55,3 +54,5 @@ docs = [
 
 [tool.setuptools_scm]
 write_to = "pynumdiff/_version.py"
+[tool.setuptools]
+packages = ["pynumdiff"]

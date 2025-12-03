@@ -5,7 +5,7 @@ from pynumdiff.utils import utility
 from warnings import warn
 
 
-def finitediff(x, dt, num_iterations=1, order=2):
+def finitediff(x, dt, num_iterations=1, order=2, axis=0):
     """Perform iterated finite difference of a given order. This serves as the common backing function for
     all other methods in this module.
     
@@ -14,6 +14,7 @@ def finitediff(x, dt, num_iterations=1, order=2):
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
     :param int order: 1, 2, or 4, controls which finite differencing scheme to employ
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -21,13 +22,14 @@ def finitediff(x, dt, num_iterations=1, order=2):
     if num_iterations < 1: raise ValueError("num_iterations must be >0")
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
 
+    x = np.moveaxis(x, axis, 0) # move the axis of interest to the front to simplify differencing indexing
     x_hat = np.asarray(x) # allows for array-like. Preserve reference to x, for finding the final constant of integration
     dxdt_hat = np.zeros(x.shape) # preallocate reusable memory
 
     # For all but the last iteration, do the differentate->integrate smoothing loop, being careful with endpoints
     for i in range(num_iterations-1):
         if order == 1:
-            dxdt_hat[:-1] = np.diff(x_hat)
+            dxdt_hat[:-1] = np.diff(x_hat, axis=0)
             dxdt_hat[-1] = dxdt_hat[-2] # using stencil -1,0 vs stencil 0,1 you get an expression for the same value
         elif order == 2:
             dxdt_hat[1:-1] = (x_hat[2:] - x_hat[:-2])/2 # second-order center-difference formula
@@ -40,13 +42,13 @@ def finitediff(x, dt, num_iterations=1, order=2):
             dxdt_hat[0] = x_hat[1] - x_hat[0]
             dxdt_hat[-1] = x_hat[-1] - x_hat[-2] # use first-order endpoint formulas so as not to amplify noise. See #104
 
-        x_hat = utility.integrate_dxdt_hat(dxdt_hat, 1) # estimate new x_hat by integrating derivative
+        x_hat = utility.integrate_dxdt_hat(dxdt_hat, 1, axis=0) # estimate new x_hat by integrating derivative
         # We can skip dividing by dt here and pass dt=1, because the integration multiplies dt back in.
         # No need to find integration constant until the very end, because we just differentiate again.
         # Note that I also tried integrating with Simpson's rule here, and it seems to do worse. See #104
 
     if order == 1:
-        dxdt_hat[:-1] = np.diff(x_hat)
+        dxdt_hat[:-1] = np.diff(x_hat, axis=0)
         dxdt_hat[-1] = dxdt_hat[-2] # using stencil -1,0 vs stencil 0,1 you get an expression for the same value
     elif order == 2:
         dxdt_hat[1:-1] = x_hat[2:] - x_hat[:-2] # second-order center-difference formula
@@ -63,9 +65,9 @@ def finitediff(x, dt, num_iterations=1, order=2):
     dxdt_hat /= dt # don't forget to scale by dt, can't skip it this time
 
     if num_iterations > 1: # We've lost a constant of integration in the above
-        x_hat += utility.estimate_integration_constant(x, x_hat)
+        x_hat += utility.estimate_integration_constant(x, x_hat, axis=0)
 
-    return x_hat, dxdt_hat
+    return np.moveaxis(x_hat, 0, axis), np.moveaxis(dxdt_hat, 0, axis) # reorder axes back to original
 
 
 def first_order(x, dt, params=None, options={}, num_iterations=1):

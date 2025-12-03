@@ -11,19 +11,24 @@ def test_integrate_dxdt_hat():
     dt = 0.1
     for dxdt,expected in [(np.ones(10), np.arange(0, 1, dt)), # constant derivative
             (np.linspace(0, 1, 11), [0, 0.005, 0.02, 0.045, 0.08, 0.125, 0.18, 0.245, 0.32, 0.405, 0.5]), # linear derivative
-            (np.array([1.0]), [0])]: # edge case of just one entry
-        x_hat = utility.integrate_dxdt_hat(dxdt, dt)
-        assert np.allclose(x_hat, expected)
+            (np.array([1.0]), [0]), # edge case of just one entry
+            (np.ones((5,5)), dt*np.vstack([np.arange(5)]*5))]: # multidimensional case
+        x_hat = utility.integrate_dxdt_hat(dxdt, dt, axis=-1)
         assert len(x_hat) == len(dxdt)
+        assert np.allclose(x_hat, expected)
+    x_hat = utility.integrate_dxdt_hat([0, 2, 3, 5], [0, 2, 3, 5]) # y = x at irregular spacing
+    assert np.allclose(x_hat, [0, 2, 4.5, 12.5])
 
 
 def test_estimate_integration_constant():
     """For known simple functions, make sure the initial condition is as expected"""
-    for x,x_hat,c in [(np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0]), 1), # Perfect alignment case, xhat shifted by 1
-            (np.ones(5)*10, np.ones(5)*5, 5),
-            (np.array([0]), np.array([1]), -1)]:
-        x0 = utility.estimate_integration_constant(x, x_hat)
-        assert np.allclose(x0, float(c), rtol=1e-3)
+    for x,x_hat,c in [(np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0]), 1), # pure offset
+            (np.ones(5)*10, np.ones(5)*5 + 0.01*np.random.randn(5), 5), # with some noise
+            (np.array([0]), np.array([1]), -1), # singleton case
+            (np.vstack([np.arange(5)]*5), np.vstack([np.arange(5) + c for c in range(5)]), -np.arange(5).reshape(-1,1)), # multidimensional case
+            (np.ones((7,5)), np.vstack([np.arange(5) + c for c in range(7)]), -np.arange(1,8).reshape(-1,1))]: # nonsquare case
+        x0 = utility.estimate_integration_constant(x, x_hat, axis=-1)
+        assert np.allclose(x0, c, rtol=1e-3)
 
     x_hat = np.sin(np.arange(400)*0.01)
     x = x_hat + np.random.normal(0, 0.1, 400) + 1 # shift data by 1
@@ -61,19 +66,19 @@ def test_peakdet(request):
         pyplot.title('peakdet validataion')
         pyplot.show()
 
-    assert np.allclose(maxtab, [[0.447, 1.58575613], # these numbers validated by eye with --plot
-                                [1.818, 1.91349239],
-                                [3.316,-0.02740252],
-                                [4.976, 0.74512778],
-                                [6.338, 1.89861691],
-                                [7.765, 0.57577842],
-                                [9.402, 0.59450898]])
-    assert np.allclose(mintab, [[1.139, 0.31325728],
-                                [2.752,-1.12769567],
-                                [4.098,-2.00326946],
-                                [5.507,-0.31714122],
-                                [7.211,-0.59708324],
-                                [8.612,-1.7118216 ]])
+    assert np.allclose(maxtab, [[0.475, 1.58696894], # these numbers validated by eye with --plot
+                                [1.813, 1.91418201],
+                                [3.311, -0.02749755],
+                                [4.971, 0.74687989],
+                                [6.333, 1.89776084],
+                                [7.76, 0.57366611],
+                                [9.397, 0.59379866]])
+    assert np.allclose(mintab, [[1.134, 0.31086976],
+                                [2.747, -1.13032479],
+                                [4.093, -2.00466846],
+                                [5.502, -0.31428495],
+                                [7.206, -0.5993835],
+                                [8.607,-1.71266074]])
 
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""

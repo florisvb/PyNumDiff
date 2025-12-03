@@ -54,3 +54,5 @@ docs = [
 
 [tool.setuptools_scm]
 write_to = "pynumdiff/_version.py"
+[tool.setuptools]
+packages = ["pynumdiff"]

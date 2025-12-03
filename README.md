@@ -85,7 +85,6 @@ Much more extensive usage is demonstrated in Jupyter notebooks:
 * Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
 * Parameter Optimization:  [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2_optimizing_hyperparameters.ipynb)
 
-
 See the README in the `notebooks/` folder for a full guide to all demos and experiments.
 
 ## Repo Structure

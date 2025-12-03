@@ -1,5 +1,5 @@
+"""Unit tests of optimizer"""
 import numpy as np
-from pytest import skip
 
 from ..smooth_finite_difference import butterdiff
 from ..polynomial_fit import splinediff
@@ -28,7 +28,7 @@ def test_targeting_rmse_vs_tvgamma_loss():
     """Ensure optimization properly targets different metrics"""
     params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth, parallel=False) # so coverage picks it up, because multiprocessing coverage is broken
     params_loss, val_loss = optimize(splinediff, x, dt, tvgamma=tvgamma)
-    
+
     x_hat, dxdt_hat = splinediff(x, dt, **params_loss)
     loss_rmse = rmse(dxdt_truth, dxdt_hat)
 

@@ -1,8 +1,7 @@
 """This module implements constant-derivative model-based smoothers based on Kalman filtering and its generalization."""
-import numpy as np
 from warnings import warn
+import numpy as np
 from scipy.linalg import expm, sqrtm
-from time import time
 try: import cvxpy
 except ImportError: pass
 
@@ -47,7 +46,7 @@ def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True
     else:
         M = np.block([[A, Q],[np.zeros(A.shape), -A.T]]) # If variable dt, we'll exponentiate this a bunch
         if control: Mc = np.block([[A, B],[np.zeros((A.shape[0], 2*A.shape[1]))]])
-    
+
     for n in range(N):
         if n == 0: # first iteration is a special case, involving less work
             xhat_ = xhat0
@@ -61,10 +60,10 @@ def kalman_filter(y, dt_or_t, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True
                 if dt < 0: Qn = np.abs(Qn) # eigenvalues go negative if reverse time, but noise shouldn't shrink
                 if control:
                     eM = expm(Mc * dt)
-                    Bn = eM[:m,m:] # upper right block 
+                    Bn = eM[:m,m:] # upper right block
             xhat_ = An @ xhat + Bn @ u[n] if control else An @ xhat # ending underscores denote an a priori prediction
             P_ = An @ P @ An.T + Qn # the dense matrix multiplies here are the most expensive step
-        
+
         xhat = xhat_.copy() # copies, lest modifications to these variables change the a priori estimates. See #122
         P = P_.copy()
         if not np.isnan(y[n]): # handle missing data
@@ -96,12 +95,12 @@ def rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=
     """
     xhat_smooth = np.empty(xhat_post.shape); xhat_smooth[-1] = xhat_post[-1] # preallocate arrays
     if compute_P_smooth: P_smooth = np.empty(P_post.shape); P_smooth[-1] = P_post[-1]
-    
+
     equispaced = np.isscalar(dt_or_t) # to avoid calling this in the loop
     if equispaced: An = A # in this case only assign once, outside the loop
     for n in range(xhat_pre.shape[0]-2, -1, -1):
         if not equispaced: An = expm(A * (dt_or_t[n+1] - dt_or_t[n])) # state transition from n to n+1
-        C_RTS = P_post[n] @ An.T @ np.linalg.inv(P_pre[n+1]) # the [n+1]th index holds _{n+1|n} info 
+        C_RTS = P_post[n] @ An.T @ np.linalg.inv(P_pre[n+1]) # the [n+1]th index holds _{n+1|n} info
         xhat_smooth[n] = xhat_post[n] + C_RTS @ (xhat_smooth[n+1] - xhat_pre[n+1]) # The original authors use C, not to be confused
         if compute_P_smooth: P_smooth[n] = P_post[n] + C_RTS @ (P_smooth[n+1] - P_pre[n+1]) @ C_RTS.T # with the measurement matrix
 
@@ -145,7 +144,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
         Q = eM[:order+1,order+1:] @ A.T
 
     xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x, dt_or_t, xhat0, P0, A, Q, C, R) # noisy x are the "y" in Kalman-land
-    xhat_smooth = rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)  
+    xhat_smooth = rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
     x_hat_forward = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
     dxdt_hat_forward = xhat_smooth[:, 1]
 
@@ -156,7 +155,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
 
     if np.isscalar(dt_or_t): A = np.linalg.inv(A) # discrete time dynamics are just the inverse
     else: dt_or_t = dt_or_t[::-1] # in continuous time, reverse the time vector so dts go negative
-    
+
     xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[::-1], dt_or_t, xhat0, P0, A, Q, C, R)
     xhat_smooth = rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
     x_hat_backward = xhat_smooth[:, 0][::-1] # the result is backwards still, so reverse it
@@ -186,13 +185,13 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # boilerplate backwards compatibility code
+    if params is not None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
-        if options != None:
+        if options is not None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r == None or q == None:
+    elif r is None or q is None:
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_velocity` is deprecated. Call `rtsdiff` with order 1 instead.", DeprecationWarning)
@@ -216,13 +215,13 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # boilerplate backwards compatibility code
+    if params is not None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
-        if options != None:
+        if options is not None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r == None or q == None:
+    elif r is None or q is None:
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_acceleration` is deprecated. Call `rtsdiff` with order 2 instead.", DeprecationWarning)
@@ -246,13 +245,13 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # boilerplate backwards compatibility code
+    if params is not None: # boilerplate backwards compatibility code
         warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
-        if options != None:
+        if options is not None:
             if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r == None or q == None:
+    elif r is None or q is None:
         raise ValueError("`q` and `r` must be given.")
 
     warn("`constant_jerk` is deprecated. Call `rtsdiff` with order 3 instead.", DeprecationWarning)
@@ -299,7 +298,7 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
-    
+
     # convert to discrete time using matrix exponential
     eM = expm(np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]]) * dt) # Note this could handle variable dt, similar to rtsdiff
     A_d = eM[:order+1, :order+1]
@@ -347,6 +346,6 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
     try: problem.solve(solver=cvxpy.CLARABEL)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
-    
+
     if x_states.value is None: return np.full((N, A.shape[0]), np.nan) # There can be solver failure, even without error
     return x_states.value.T

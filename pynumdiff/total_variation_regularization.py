@@ -1,6 +1,6 @@
 """This module implements some common total variation regularization methods."""
-import numpy as np
 from warnings import warn
+import numpy as np
 from scipy.stats import median_abs_deviation
 try: import cvxpy
 except ImportError: pass
@@ -33,14 +33,14 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, " +
             "`gamma`, `cg_maxiter`, and `scale` instead.", DeprecationWarning)
         num_iterations, gamma = params
-        if options != None:
+        if options is not None:
             if 'cg_maxiter' in options: cg_maxiter = options['cg_maxiter']
             if 'scale' in options: scale = options['scale']
-    elif num_iterations == None or gamma == None:
+    elif num_iterations is None or gamma is None:
         raise ValueError("`num_iterations` and `gamma` must be given.")
 
     dxdt_hat = _chartrand_tvregdiff.TVRegDiff(x, num_iterations, gamma, dx=dt,
@@ -126,13 +126,13 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
-        if options != None:
+        if options is not None:
             if 'solver' in options: solver = options['solver']
-    elif gamma == None:
+    elif gamma is None:
         raise ValueError("`gamma` must be given.")
 
     warn("`velocity` is deprecated. Call `tvrdiff` with order 1 instead.", DeprecationWarning)
@@ -154,13 +154,13 @@ def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
-        if options != None:
+        if options is not None:
             if 'solver' in options: solver = options['solver']
-    elif gamma == None:
+    elif gamma is None:
         raise ValueError("`gamma` must be given.")
 
     warn("`acceleration` is deprecated. Call `tvrdiff` with order 2 instead.", DeprecationWarning)
@@ -182,13 +182,13 @@ def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
-        if options != None:
+        if options is not None:
             if 'solver' in options: solver = options['solver']
-    elif gamma == None:
+    elif gamma is None:
         raise ValueError("`gamma` must be given.")
 
     warn("`jerk` is deprecated. Call `tvrdiff` with order 3 instead.", DeprecationWarning)
@@ -212,13 +212,13 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params != None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
             "and `solver` instead.", DeprecationWarning)
         gamma, window_size = params
-        if options != None:
+        if options is not None:
             if 'solver' in options: solver = options['solver']
-    elif gamma == None or window_size == None:
+    elif gamma is None or window_size is None:
         raise ValueError("`gamma` and `window_size` must be given.")
 
     _, dxdt_hat = tvrdiff(x, dt, 2, gamma, solver=solver)

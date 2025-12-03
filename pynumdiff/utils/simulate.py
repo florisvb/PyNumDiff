@@ -144,7 +144,7 @@ def pop_dyn(duration=4, noise_type='normal', noise_parameters=(0, 0.5), outliers
     for _ in t[1:]:
         pos.append(pos[-1] + simdt*vel[-1])
         vel.append(r*pos[-1]*(1-pos[-1]/K)) # logistic growth
-    
+
     idx = slice(0, len(t), int(dt/simdt)) # downsample so things are dt apart
     pos = np.array(pos[idx])
     vel = np.array(vel[idx])
@@ -252,7 +252,7 @@ def pi_cruise_control(duration=4, noise_type='normal', noise_parameters=(0, 0.5)
     pos = states[0, idx]
     vel = states[1, idx]
     noisy_pos = _add_noise(pos, random_seed, noise_type, noise_parameters, outliers)
-    
+
     return noisy_pos, pos, vel
 
 

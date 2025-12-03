@@ -1,6 +1,6 @@
+"""Unit tests of core differentiation functionality"""
 import numpy as np
 from pytest import mark
-from warnings import warn
 
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..linear_model import lineardiff
@@ -309,7 +309,7 @@ multidim_methods_and_params = [(finitediff, {})]
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
 # and only in the absence of noise, since the other test covers that. Instead, because multidimensional
 # derivatives can be combined in interesting fashions, we find d^2 / dt_1 dt_2 and the Laplacian,
-# d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf) distances. 
+# d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf) distances.
 multidim_error_bounds = {
     finitediff: [(0, -1), (1, -1)]
 }
@@ -332,13 +332,15 @@ def test_multidimensionality(multidim_method_and_params, request):
     computed_laplacian = diff_method(dxdt1, dt2, **params, axis=0)[1] + diff_method(dxdt2, dt2, **params, axis=1)[1]
     l2_error_lap = np.linalg.norm(analytic_laplacian - computed_laplacian)
     linf_error_lap = np.max(np.abs(analytic_laplacian - computed_laplacian))
-    
+
     if request.config.getoption("--bounds"):
         print([(int(np.ceil(np.log10(l2_error_d2))), int(np.ceil(np.log10(linf_error_d2)))), (int(np.ceil(np.log10(l2_error_lap))), int(np.ceil(np.log10(linf_error_lap))))])
     else:
         (log_l2_bound_d2, log_linf_bound_d2), (log_l2_bound_lap, log_linf_bound_lap) = multidim_error_bounds[diff_method]
         assert l2_error_d2 < 10**log_l2_bound_d2
         assert linf_error_d2 < 10**log_linf_bound_d2
+        assert l2_error_lap < 10**log_l2_bound_lap
+        assert linf_error_lap < 10**log_linf_bound_lap
 
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
@@ -354,7 +356,7 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax2.set_xlabel(r'$t_1$')
         ax2.set_ylabel(r'$t_2$')
         ax3 = fig.add_subplot(1, 3, 3, projection='3d')
-        surf = ax3.plot_surface(T1, T2, analytic_laplacian, cmap='viridis', alpha=0.5, label='analytic')
+        ax3.plot_surface(T1, T2, analytic_laplacian, cmap='viridis', alpha=0.5, label='analytic')
         ax3.set_title(r'$\frac{\partial^2}{\partial t_1^2} + \frac{\partial^2}{\partial t_2^2}$')
         ax3.set_xlabel(r'$t_1$')
         ax3.set_ylabel(r'$t_2$')

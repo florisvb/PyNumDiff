@@ -100,10 +100,10 @@ def polydiff(x, dt, params=None, options=None, degree=None, window_size=None, st
     return utility.slide_function(_polydiff, x, dt, kernel, degree, stride=step_size, pass_weights=True)
 
 
-def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, smoothing_win=None):
+def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, smoothing_win=None, axis=0):
     """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It uses
     scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit,
-    but slightly noisier, and much faster.
+    but slightly noisier and much faster.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
@@ -113,6 +113,7 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     :param int window_size: size of the sliding window, must be odd (if not, 1 is added)
     :param int smoothing_win: size of the window used for gaussian smoothing, a good default is
         window_size, but smaller for high frequnecy data
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -130,12 +131,12 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
         warn("Kernel window size should be odd. Added 1 to length.")
     smoothing_win = min(smoothing_win, len(x)-1)
 
-    dxdt_hat = scipy.signal.savgol_filter(x, window_size, degree, deriv=1)/dt
+    dxdt_hat = scipy.signal.savgol_filter(x, window_size, degree, deriv=1, axis=axis)/dt
 
     kernel = utility.gaussian_kernel(smoothing_win)
-    dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel)
+    dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, axis=axis)
 
-    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-    x_hat += utility.estimate_integration_constant(x, x_hat)
+    x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt, axis=axis)
+    x_hat += utility.estimate_integration_constant(x, x_hat, axis=axis)
 
     return x_hat, dxdt_hat

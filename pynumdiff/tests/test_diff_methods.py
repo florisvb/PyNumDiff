@@ -308,6 +308,7 @@ multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
+    (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -317,7 +318,8 @@ multidim_methods_and_params = [
 multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
-    finitediff: [(0, -1), (1, -1)]
+    finitediff: [(0, -1), (1, -1)],
+    savgoldiff: [(0, -1), (1, 1)]
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)

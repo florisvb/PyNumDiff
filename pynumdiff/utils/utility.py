@@ -3,6 +3,7 @@ import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
 from scipy.stats import median_abs_deviation, norm
+from scipy.ndimage import convolve1d
 
 
 def huber(x, M):
@@ -95,21 +96,20 @@ def friedrichs_kernel(window_size):
     return ker / np.sum(ker)
 
 
-def convolutional_smoother(x, kernel, num_iterations=1):
+def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     """Perform smoothing by convolving x with a kernel.
 
     :param np.array[float] x: 1D data
     :param np.array[float] kernel: kernel to use in convolution
     :param int num_iterations: number of iterations, >=1
+    :param int axis: data dimension along which convolution is performed
     
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
-    pad_width = len(kernel)//2
     x_hat = x
 
     for i in range(num_iterations):
-        x_padded = np.pad(x_hat, pad_width, mode='symmetric') # pad with repetition of the edges
-        x_hat = np.convolve(x_padded, kernel, 'valid')[:len(x)] # 'valid' slices out only full-overlap spots
+        x_hat = convolve1d(x_hat, kernel, axis=axis, mode='reflect') # 'reflect' pads the signal with repeats
 
     return x_hat
 

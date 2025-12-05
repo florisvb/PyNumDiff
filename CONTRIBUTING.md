@@ -1,13 +1,6 @@
 # Contributing to PyNumDiff
 
-Thank you for your interest in contributing to PyNumDiff! This document provides guidelines and instructions for contributing to the project.
-
-## Project Structure
-
-- `pynumdiff/` - Main source code, tests in subfolder
-- `notebooks/` - Jupyter notebook examples and experiments
-- `docs/` - Documentation source files
-- `.github/workflows/` - GitHub Actions CI configuration
+Thank you for your interest in contributing to PyNumDiff! To get a sense of the project structure, poke around, and digest the pertinent READMEs.
 
 ## Opening Issues
 
@@ -49,6 +42,8 @@ Some issues will require going and digging into alternative methods of different
 
 ### Contributing Code
 
+Bear in mind that smaller, focused PRs are generally easier to review. We encourage descriptive commit messages that explain what changed and why. Long, detailed commit messages are appreciated as they help others understand the project's history.
+
 1. Fork the repository (button on the main repo page)
 2. Clone down your version (`git clone https://github.com/YOUR_USERNAME/PyNumDiff.git`)
 3. Set its upstream to point to this version so you can easily pull our changes (`git remote add upstream https://github.com/florisvb/PyNumDiff.git`)
@@ -62,8 +57,6 @@ Some issues will require going and digging into alternative methods of different
 11. We'll review, leave comments, kick around further change ideas, and merge.
 
 No strict coding style is enforced, although we consider docstrings to be very important. The project uses `pylint` for code quality checks (`pylint pynumdiff`), because we're trying to meet a high bar so the JOSS (Journal of Open Source Software) likes us.
-
-Bear in mind that smaller, focused PRs are generally easier to review. We encourage descriptive commit messages that explain what changed and why. Long, detailed commit messages are appreciated as they help others understand the project's history.
 
 Once you push, GitHub Actions will kick off our continuous integration job, which runs the tests, including:
 - `test_diff_methods`: Broadly tests for correctness and ability to actually differentiate

@@ -52,7 +52,7 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 somethingdiff(x, dt, **kwargs)
 ```
 
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `dt_or_t` and can receive either a constant step size or an array of values to denote sample locations.
+where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `dt_or_t` and can receive either a constant step size or an array of values to denote sample locations. Some methods support multidimensional data, in which case there is an `axis` argument to control the dimension differentiated along.
 
 You can set the hyperparameters:
 ```python

@@ -3,12 +3,12 @@ from warnings import warn
 import scipy.signal
 
 # included code
-from pynumdiff.finite_difference import second_order as finite_difference
+from pynumdiff.finite_difference import finitediff
 from pynumdiff.polynomial_fit import splinediff as _splinediff # patch through
 from pynumdiff.utils import utility
 
 
-def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1):
+def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis=0):
     """Differentiate by applying a smoothing kernel to the signal, then performing 2nd-order finite difference.
     :code:`meandiff`, :code:`mediandiff`, :code:`gaussiandiff`, and :code:`friedrichsdiff` call this function.
 
@@ -18,23 +18,25 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1):
         :code:`'friedrichs'`}
     :param int window_size: filtering kernel size
     :param int num_iterations: how many times to apply mean smoothing
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if kernel in ['mean', 'gaussian', 'friedrichs']:
         kernel = getattr(utility, f"{kernel}_kernel")(window_size)
-        x_hat = utility.convolutional_smoother(x, kernel, num_iterations)
+        x_hat = utility.convolutional_smoother(x, kernel, num_iterations, axis=axis)
     elif kernel == 'median':
         if not window_size % 2: window_size += 1 # make sure window_size is odd, else medfilt throws error
+        s = [1]*x.ndim; s[axis] = window_size
 
         x_hat = x
         for _ in range(num_iterations):
-            x_hat = scipy.signal.medfilt(x_hat, window_size)
+            x_hat = scipy.signal.medfilt(x_hat, s)
     else:
         raise ValueError("filter_type must be mean, median, gaussian, or friedrichs")
 
-    return finite_difference(x_hat, dt)
+    return finitediff(x_hat, dt, order=2, axis=axis)
 
 
 def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
@@ -140,7 +142,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
     return kerneldiff(x, dt, kernel='friedrichs', window_size=window_size, num_iterations=num_iterations)
 
 
-def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, num_iterations=1):
+def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0):
     """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by second order finite difference
 
     :param np.array[float] x: data to differentiate
@@ -152,6 +154,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     :param float cutoff_freq: cutoff frequency :math:`\\in [0, 1]`. For a discrete vector, the
         value is normalized to the range 0-1, where 1 is the Nyquist frequency.
     :param int num_iterations: how many times to apply smoothing
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -166,11 +169,11 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
     b, a = scipy.signal.butter(filter_order, cutoff_freq)
 
     x_hat = x
-    padlen = len(x)-1 if len(x) < 9 else None
+    padlen = x.shape[axis]-1 if x.shape[axis] < 9 else None
     for _ in range(num_iterations):
-        x_hat = scipy.signal.filtfilt(b, a, x_hat, method="pad", padlen=padlen) # applies forward and backward pass so zero phase
+        x_hat = scipy.signal.filtfilt(b, a, x_hat, axis=axis, method="pad", padlen=padlen) # applies forward and backward pass so zero phase
 
-    return finite_difference(x_hat, dt)
+    return finitediff(x_hat, dt, order=2, axis=axis)
 
 
 def splinediff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring

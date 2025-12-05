@@ -2,13 +2,13 @@
 import numpy as np
 from pytest import mark
 
+from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
-from ..linear_model import lineardiff
-from ..basis_fit import spectraldiff, rbfdiff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
+from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
-from ..smooth_finite_difference import mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
@@ -34,13 +34,13 @@ test_funcs_and_derivs = [
 
 # Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
-    (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
-    (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (meandiff, {'window_size':3, 'num_iterations':2}), (meandiff, [3, 2], {'iterate':True}),
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
     (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
     (butterdiff, {'filter_order':3, 'cutoff_freq':0.7}), (butterdiff, [3, 0.7]),
+    (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
+    (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
     (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
@@ -150,7 +150,7 @@ error_bounds = {
                         [(0, 0), (1, 1), (0, 0), (1, 1)],
                         [(1, 0), (2, 2), (1, 0), (2, 2)],
                         [(1, 0), (3, 3), (1, 0), (3, 3)]],
-    spectraldiff: [[(-15, -15), (-14, -15), (0, -1), (0, 0)],
+    spectraldiff: [[(-15, -15), (-14, -14), (0, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (1, 1), (1, 1), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
@@ -304,13 +304,19 @@ x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
 
 # When one day all or most methods support multidimensionality, and the legacy way of calling methods is
 # gone, diff_methods_and_params can be used for the multidimensionality test as well
-multidim_methods_and_params = [(finitediff, {})]
+multidim_methods_and_params = [
+    (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
+    (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
+    (finitediff, {}),
+]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
 # and only in the absence of noise, since the other test covers that. Instead, because multidimensional
 # derivatives can be combined in interesting fashions, we find d^2 / dt_1 dt_2 and the Laplacian,
 # d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf) distances.
 multidim_error_bounds = {
+    kerneldiff: [(2, 1), (3, 2)],
+    butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)]
 }
 
@@ -364,3 +370,4 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax2.plot_wireframe(T1, T2, computed_d2)
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
+        fig.suptitle(f'{diff_method.__name__}', fontsize=16)

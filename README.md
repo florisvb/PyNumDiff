@@ -16,8 +16,8 @@ Python methods for numerical differentiation of noisy data, including multi-obje
         <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
-    <a href="https://doi.org/10.5281/zenodo.6374098">
-        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6374098.svg" alt="DOI"></a>
+    <!--a href="https://doi.org/10.5281/zenodo.6374098">
+        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6374098.svg" alt="DOI"></a-->
     <a href="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5">
         <img src="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5/status.svg"></a>
 </p>
@@ -34,7 +34,7 @@ PyNumDiff is a Python package that implements various methods for computing nume
 6. generalized Kalman smoothing
 7. local approximation with linear model
 
-For a full list, explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
+For a full list, explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/), or read section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090).
 
 Most of these methods have multiple parameters, so we take a principled approach and propose a multi-objective optimization framework for choosing parameters that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
 
@@ -121,6 +121,19 @@ See CITATION.cff file as well as the following references.
       title = {PyNumDiff: A Python package for numerical differentiation of noisy time-series data},
       journal = {Journal of Open Source Software}
     }
+
+### Collection of numerical differentiation methods:
+
+    @misc{komarov2025taxonomynumericaldifferentiationmethods,
+      title={A Taxonomy of Numerical Differentiation Methods},
+      author={Pavel Komarov and Floris van Breugel and J. Nathan Kutz},
+      year={2025},
+      eprint={2512.09090},
+      archivePrefix={arXiv},
+      primaryClass={math.NA},
+      url={https://arxiv.org/abs/2512.09090}
+    }
+
 
 ### Optimization algorithm:
 

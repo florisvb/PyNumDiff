@@ -107,7 +107,7 @@ def rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, _recurse=True):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
@@ -127,6 +127,18 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
     if not np.isscalar(dt_or_t) and len(x) != len(dt_or_t):
         raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
     x = np.asarray(x) # to flexibly allow array-like inputs
+
+    # Recursive sequence to handle multi-dimensional data. We apply the smoother separately to
+    # each 1D slice along the given axis, and then stack the results back together. 
+    # The _recurse flag is to avoid infinite recursion.
+    if x.ndim > 1 and _recurse:
+        packed = np.apply_along_axis(
+            lambda v: np.stack(rtsdiff(v, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, _recurse=False), axis=0),
+            axis, x
+        )
+        x_hat = np.take(packed, 0, axis=axis)
+        dxdt_hat = np.take(packed, 1, axis=axis)
+        return x_hat, dxdt_hat
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
     r = q/(10**log_qr_ratio)

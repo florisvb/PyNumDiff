@@ -373,3 +373,55 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+
+
+def test_polydiff_nan_inputs():
+    """polydiff should handle NaN (missing data) in x without returning all NaNs (issue #173)"""
+    np.random.seed(0)
+    t_uniform = np.linspace(0, 3, 61)
+    x_clean = np.sin(3 * t_uniform)
+
+    # Introduce NaN gaps at a few positions
+    x_nan = x_clean.copy()
+    x_nan[10:15] = np.nan  # a run of 5 consecutive NaNs
+    x_nan[40] = np.nan     # a single NaN
+
+    x_hat, dxdt_hat = polydiff(x_nan, t_uniform[1] - t_uniform[0], degree=3, window_size=11)
+
+    # Results must be finite everywhere (NaNs were imputed by polynomial interpolation)
+    assert np.all(np.isfinite(x_hat)), "x_hat contains non-finite values"
+    assert np.all(np.isfinite(dxdt_hat)), "dxdt_hat contains non-finite values"
+
+    # And still reasonably close to the true values at non-NaN positions outside the gap
+    outside_gap = np.ones(len(t_uniform), dtype=bool)
+    outside_gap[8:17] = False  # exclude a margin around the gap
+    outside_gap[38:42] = False
+    assert np.max(np.abs(x_hat[outside_gap] - x_clean[outside_gap])) < 0.1
+
+
+def test_polydiff_variable_step():
+    """polydiff should accept an array of time locations and produce accurate derivatives (issue #173)"""
+    np.random.seed(1)
+    # Nonuniform time spacing: base uniform with random jitter
+    dt = 0.05
+    t_uniform = np.arange(0, 3, dt)
+    jitter = np.random.uniform(-dt/3, dt/3, len(t_uniform))
+    t_irreg = np.sort(t_uniform + jitter)  # keep sorted
+
+    # Test 1: variable-step mode recovers derivative for data on irregular grid
+    x_irreg = 2 * t_irreg + 1  # affine: exact derivative is 2 everywhere
+    _, dxdt_hat_irreg = polydiff(x_irreg, t_irreg, degree=2, window_size=11)
+    assert np.max(np.abs(dxdt_hat_irreg - 2.0)) < 0.1, "Variable-step polydiff dxdt inaccurate"
+
+    # Test 2: scalar-dt mode (uniform spacing) still works correctly on uniform data
+    x_uniform = 2 * t_uniform + 1
+    _, dxdt_hat_uniform = polydiff(x_uniform, dt, degree=2, window_size=11)
+    assert np.max(np.abs(dxdt_hat_uniform - 2.0)) < 0.1, "Uniform-step polydiff dxdt inaccurate"
+
+    # Test 3: variable-step gives better accuracy than assuming uniform spacing when data is nonuniform
+    _, dxdt_hat_wrong_dt = polydiff(x_irreg, dt, degree=2, window_size=11)
+    # The variable-step version should be significantly more accurate in the interior
+    interior = slice(5, -5)
+    err_irreg = np.max(np.abs(dxdt_hat_irreg[interior] - 2.0))
+    err_wrong = np.max(np.abs(dxdt_hat_wrong_dt[interior] - 2.0))
+    assert err_irreg < err_wrong, "Variable-step should be more accurate than wrong uniform dt"

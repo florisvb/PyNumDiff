@@ -114,13 +114,15 @@ def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     return x_hat
 
 
-def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **kwargs):
+def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False, **kwargs):
     """Slide a smoothing derivative function across a timeseries with specified window size, and
     combine the results according to kernel weights.
 
     :param callable func: name of the function to slide
     :param np.array[float] x: data to differentiate
-    :param float dt: step size
+    :param float or np.array[float] dt_or_t: constant step size (scalar) or array of sample
+        locations (same length as x). When given as an array, the actual time values for each
+        window are passed to func, enabling support for nonuniform spacing.
     :param np.array[float] kernel: values to weight the sliding window
     :param list args: passed to func
     :param int stride: step size for slide (e.g. 1 means slide by 1 step)
@@ -132,6 +134,9 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
     """
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
+
+    scalar_dt = np.isscalar(dt_or_t)
+    t = None if scalar_dt else np.asarray(dt_or_t)
 
     x_hat = np.zeros(x.shape)
     dxdt_hat = np.zeros(x.shape)
@@ -150,8 +155,12 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
         w = kernel if (end-start) == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
         if pass_weights: kwargs['weights'] = w
 
+        # When t is an array, pass the actual time values for the window so func can handle
+        # nonuniform spacing; otherwise pass dt as before (backward compatible).
+        dt_window = dt_or_t if scalar_dt else t[window]
+
         # run the function on the window and add weighted results to cumulative answers
-        x_window_hat, dxdt_window_hat = func(x[window], dt, *args, **kwargs)
+        x_window_hat, dxdt_window_hat = func(x[window], dt_window, *args, **kwargs)
         x_hat[window] += w * x_window_hat
         dxdt_hat[window] += w * dxdt_window_hat
         weight_sum[window] += w # save sum of weights for normalization at the end

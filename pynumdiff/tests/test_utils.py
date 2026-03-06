@@ -82,14 +82,19 @@ def test_peakdet(request):
 
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""
-    def identity(x, dt): return x, 0 # should come back the same
+    def identity(x, dt_or_t): return x, 0 # should come back the same
 
-    x = np.arange(100)
+    x = np.arange(100, dtype=float)
     kernel = utility.gaussian_kernel(9)
 
+    # Scalar dt: existing behavior should be unchanged
     x_hat, dxdt_hat = utility.slide_function(identity, x, 0.1, kernel, stride=2)
-
     assert np.allclose(x, x_hat)
+
+    # Array t: func receives a t-slice instead of scalar dt; identity still returns x unchanged
+    t = np.linspace(0, 10, 100)
+    x_hat_t, _ = utility.slide_function(identity, x, t, kernel, stride=2)
+    assert np.allclose(x, x_hat_t)
 
 
 def test_simulations(request):

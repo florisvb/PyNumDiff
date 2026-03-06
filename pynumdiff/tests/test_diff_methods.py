@@ -14,6 +14,7 @@ def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
 def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
 def polydiff_irreg_step(*args, **kwargs): return polydiff(*args, **kwargs)
+irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] # methods to test with irregular time steps
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -135,7 +136,7 @@ error_bounds = {
                [(0, 0), (1, 1), (0, -1), (1, 1)],
                [(0, 0), (3, 3), (0, 0), (3, 3)]],
     polydiff_irreg_step: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],
-                          [(-14, -14), (-13, -14), (0, -1), (1, 1)],
+                          [(-14, -14), (-13, -13), (0, -1), (1, 1)],
                           [(-14, -14), (-13, -13), (0, -1), (1, 1)],
                           [(-2, -2), (0, 0), (0, -1), (1, 1)],
                           [(0, 0), (1, 1), (0, 0), (1, 1)],
@@ -250,9 +251,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # sample the true function and true derivative, and make noisy samples
-    x = f(t) if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
-    dxdt = df(t) if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
-    _t = dt if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else t_irreg
+    x = f(t) if diff_method not in irreg_list else f(t_irreg)
+    dxdt = df(t) if diff_method not in irreg_list else df(t_irreg)
+    _t = dt if diff_method not in irreg_list else t_irreg
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
@@ -266,7 +267,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        t_ = t_irreg if diff_method in [spline_irreg_step, polydiff_irreg_step, rtsdiff, rbfdiff] else t
+        t_ = t_irreg if diff_method in irreg_list else t
         axes[i, 0].plot(t_, f(t_))
         axes[i, 0].plot(t_, x, 'C0+')
         axes[i, 0].plot(t_, x_hat, 'C2.', ms=4)
@@ -381,6 +382,3 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
-
-
-

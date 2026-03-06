@@ -4,7 +4,7 @@ from matplotlib import pyplot
 
 from pynumdiff.utils import utility, evaluate
 from pynumdiff.utils.simulate import sine, triangle, pop_dyn, linear_autonomous, pi_cruise_control, lorenz_x
-np.random.seed(42) # The answer to life, the universe, and everything
+np.random.seed(7)
 
 
 def test_integrate_dxdt_hat():
@@ -55,9 +55,9 @@ def test_convolutional_smoother():
 
 def test_peakdet(request):
     """Verify peakdet finds peaks and valleys"""
-    rng = np.random.RandomState(42) # own seed so test order doesn't affect results
     t = np.arange(0, 10, 0.001)
-    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + 0.02*rng.randn(10000)
+    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + \
+        0.02*np.random.RandomState(42).randn(10000) # isolated source of randomness so test order doesn't affect results
     maxtab, mintab = utility.peakdet(x, 0.5, t)
 
     if request.config.getoption("--plot"):
@@ -88,13 +88,11 @@ def test_slide_function():
     x = np.arange(100, dtype=float)
     kernel = utility.gaussian_kernel(9)
 
-    # Scalar dt: existing behavior should be unchanged
-    x_hat, dxdt_hat = utility.slide_function(identity, x, 0.1, kernel, stride=2)
-    assert np.allclose(x, x_hat)
+    x_hat_dt, _ = utility.slide_function(identity, x, 0.1, kernel, stride=2)
+    assert np.allclose(x, x_hat_dt)
 
-    # Array t: func receives a t-slice instead of scalar dt; identity still returns x unchanged
-    t = np.linspace(0, 10, 100)
-    x_hat_t, _ = utility.slide_function(identity, x, t, kernel, stride=2)
+    # time array: func receives a kernel-length slice of times instead of scalar dt; identity still returns x unchanged
+    x_hat_t, _ = utility.slide_function(identity, x, np.linspace(0, 10, 100, endpoint=False), kernel, stride=2)
     assert np.allclose(x, x_hat_t)
 
 

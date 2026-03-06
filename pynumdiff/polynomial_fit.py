@@ -51,11 +51,10 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     kernel='friedrichs'):
     """Fit polynomials to the data, and differentiate the polynomials.
 
-    :param np.array[float] x: data to differentiate. May contain NaN values (missing data);
-        NaNs are excluded from fitting and imputed by polynomial interpolation.
-    :param float or np.array[float] dt_or_t: This function supports variable step size. This
-        parameter is either the constant :math:`\\Delta t` if given as a single float, or data
-        locations if given as an array of same length as :code:`x`.
+    :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
+        fitting and imputed by polynomial interpolation.
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
+        :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list[int] params: (**deprecated**, prefer :code:`degree` and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`step_size` and :code:`kernel`)
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
@@ -86,15 +85,9 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
         warn("Kernel window size should be odd. Added 1 to length.")
 
     def _polydiff(x, dt_or_t, degree, weights=None):
-        # Build time array: either from scalar dt or from passed array of locations
-        if np.isscalar(dt_or_t):
-            t = np.arange(len(x)) * dt_or_t
-        else:
-            t = np.asarray(dt_or_t)
-
-        # Filter out NaN values so polyfit doesn't fail on missing data
-        mask = ~np.isnan(x)
-        if not np.any(mask): return np.full_like(x, np.nan), np.full_like(x, np.nan) # all NaN window
+        t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
+        mask = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
+        if not np.any(mask): warn("Window of all NaNs encountered. `polyfit` will fail. Choose a wider `window_size`?")
 
         r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
         dr = np.polyder(r) # power rule already implemented for us
@@ -104,8 +97,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
         return x_hat, dxdt_hat
 
-    if not window_size:
-        return _polydiff(x, dt_or_t, degree)
+    if not window_size: return _polydiff(x, dt_or_t, degree)
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
     return utility.slide_function(_polydiff, x, dt_or_t, kernel, degree, stride=step_size, pass_weights=True)

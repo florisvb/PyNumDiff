@@ -111,7 +111,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
-    :param np.array[float] x: data series to differentiate
+    :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are excluded from
+        fitting and imputed by dynamical model evolution. 
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model

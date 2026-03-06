@@ -47,12 +47,14 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
     return x_hat, dxdt_hat
 
 
-def polydiff(x, dt, params=None, options=None, degree=None, window_size=None, step_size=1,
+def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=None, step_size=1,
     kernel='friedrichs'):
     """Fit polynomials to the data, and differentiate the polynomials.
 
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
+    :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
+        fitting and imputed by polynomial interpolation.
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
+        :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list[int] params: (**deprecated**, prefer :code:`degree` and :code:`window_size`)
     :param dict options: (**deprecated**, prefer :code:`step_size` and :code:`kernel`)
             a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
@@ -82,10 +84,12 @@ def polydiff(x, dt, params=None, options=None, degree=None, window_size=None, st
         window_size += 1
         warn("Kernel window size should be odd. Added 1 to length.")
 
-    def _polydiff(x, dt, degree, weights=None):
-        t = np.arange(len(x))*dt
+    def _polydiff(x, dt_or_t, degree, weights=None):
+        t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
+        mask = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
+        if not np.any(mask): warn("Window of all NaNs encountered. `polyfit` will fail. Choose a wider `window_size`?")
 
-        r = np.polyfit(t, x, degree, w=weights) # polyfit returns highest order first
+        r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
         dr = np.polyder(r) # power rule already implemented for us
 
         dxdt_hat = np.polyval(dr, t) # evaluate the derivative and original polynomials at points t
@@ -93,11 +97,10 @@ def polydiff(x, dt, params=None, options=None, degree=None, window_size=None, st
 
         return x_hat, dxdt_hat
 
-    if not window_size:
-        return _polydiff(x, dt, degree)
+    if not window_size: return _polydiff(x, dt_or_t, degree)
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-    return utility.slide_function(_polydiff, x, dt, kernel, degree, stride=step_size, pass_weights=True)
+    return utility.slide_function(_polydiff, x, dt_or_t, kernel, degree, stride=step_size, pass_weights=True)
 
 
 def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, smoothing_win=None, axis=0):

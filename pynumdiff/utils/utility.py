@@ -157,10 +157,10 @@ def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False
 
         # When t is an array, pass the actual time values for the window so func can handle
         # nonuniform spacing; otherwise pass dt as before (backward compatible).
-        dt_window = dt_or_t if scalar_dt else t[window]
+        dt_or_t_window = dt_or_t if scalar_dt else t[window]
 
         # run the function on the window and add weighted results to cumulative answers
-        x_window_hat, dxdt_window_hat = func(x[window], dt_window, *args, **kwargs)
+        x_window_hat, dxdt_window_hat = func(x[window], dt_or_t_window, *args, **kwargs)
         x_hat[window] += w * x_window_hat
         dxdt_hat[window] += w * dxdt_window_hat
         weight_sum[window] += w # save sum of weights for normalization at the end

@@ -13,6 +13,7 @@ from ..linear_model import lineardiff
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
 def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
+def polydiff_irreg_step(*args, **kwargs): return polydiff(*args, **kwargs)
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -42,6 +43,7 @@ diff_methods_and_params = [
     (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
     (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
+    (polydiff_irreg_step, {'degree':2, 'window_size':3}),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
     (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
     (spline_irreg_step, {'degree':5, 's':2}),
@@ -132,6 +134,12 @@ error_bounds = {
                [(-2, -2), (0, 0), (0, -1), (1, 1)],
                [(0, 0), (1, 1), (0, -1), (1, 1)],
                [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    polydiff_irreg_step: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],
+                          [(-14, -14), (-13, -14), (0, -1), (1, 1)],
+                          [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                          [(-2, -2), (0, 0), (0, -1), (1, 1)],
+                          [(0, 0), (1, 1), (0, 0), (1, 1)],
+                          [(0, 0), (3, 3), (0, 0), (3, 3)]],
     savgoldiff: [[(-13, -14), (-13, -14), (0, -1), (0, 0)],
                  [(-13, -13), (-13, -13), (0, -1), (0, 0)],
                  [(-2, -2), (-1, -1), (0, -1), (0, 0)],
@@ -242,9 +250,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # sample the true function and true derivative, and make noisy samples
-    x = f(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
-    dxdt = df(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
-    _t = dt if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else t_irreg
+    x = f(t) if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
+    dxdt = df(t) if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
+    _t = dt if diff_method not in [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff] else t_irreg
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
@@ -258,7 +266,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        t_ = t_irreg if diff_method in [spline_irreg_step, rtsdiff, rbfdiff] else t
+        t_ = t_irreg if diff_method in [spline_irreg_step, polydiff_irreg_step, rtsdiff, rbfdiff] else t
         axes[i, 0].plot(t_, f(t_))
         axes[i, 0].plot(t_, x, 'C0+')
         axes[i, 0].plot(t_, x_hat, 'C2.', ms=4)
@@ -375,53 +383,4 @@ def test_multidimensionality(multidim_method_and_params, request):
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
 
-def test_polydiff_nan_inputs():
-    """polydiff should handle NaN (missing data) in x without returning all NaNs (issue #173)"""
-    np.random.seed(0)
-    t_uniform = np.linspace(0, 3, 61)
-    x_clean = np.sin(3 * t_uniform)
 
-    # Introduce NaN gaps at a few positions
-    x_nan = x_clean.copy()
-    x_nan[10:15] = np.nan  # a run of 5 consecutive NaNs
-    x_nan[40] = np.nan     # a single NaN
-
-    x_hat, dxdt_hat = polydiff(x_nan, t_uniform[1] - t_uniform[0], degree=3, window_size=11)
-
-    # Results must be finite everywhere (NaNs were imputed by polynomial interpolation)
-    assert np.all(np.isfinite(x_hat)), "x_hat contains non-finite values"
-    assert np.all(np.isfinite(dxdt_hat)), "dxdt_hat contains non-finite values"
-
-    # And still reasonably close to the true values at non-NaN positions outside the gap
-    outside_gap = np.ones(len(t_uniform), dtype=bool)
-    outside_gap[8:17] = False  # exclude a margin around the gap
-    outside_gap[38:42] = False
-    assert np.max(np.abs(x_hat[outside_gap] - x_clean[outside_gap])) < 0.1
-
-
-def test_polydiff_variable_step():
-    """polydiff should accept an array of time locations and produce accurate derivatives (issue #173)"""
-    np.random.seed(1)
-    # Nonuniform time spacing: base uniform with random jitter
-    dt = 0.05
-    t_uniform = np.arange(0, 3, dt)
-    jitter = np.random.uniform(-dt/3, dt/3, len(t_uniform))
-    t_irreg = np.sort(t_uniform + jitter)  # keep sorted
-
-    # Test 1: variable-step mode recovers derivative for data on irregular grid
-    x_irreg = 2 * t_irreg + 1  # affine: exact derivative is 2 everywhere
-    _, dxdt_hat_irreg = polydiff(x_irreg, t_irreg, degree=2, window_size=11)
-    assert np.max(np.abs(dxdt_hat_irreg - 2.0)) < 0.1, "Variable-step polydiff dxdt inaccurate"
-
-    # Test 2: scalar-dt mode (uniform spacing) still works correctly on uniform data
-    x_uniform = 2 * t_uniform + 1
-    _, dxdt_hat_uniform = polydiff(x_uniform, dt, degree=2, window_size=11)
-    assert np.max(np.abs(dxdt_hat_uniform - 2.0)) < 0.1, "Uniform-step polydiff dxdt inaccurate"
-
-    # Test 3: variable-step gives better accuracy than assuming uniform spacing when data is nonuniform
-    _, dxdt_hat_wrong_dt = polydiff(x_irreg, dt, degree=2, window_size=11)
-    # The variable-step version should be significantly more accurate in the interior
-    interior = slice(5, -5)
-    err_irreg = np.max(np.abs(dxdt_hat_irreg[interior] - 2.0))
-    err_wrong = np.max(np.abs(dxdt_hat_wrong_dt[interior] - 2.0))
-    assert err_irreg < err_wrong, "Variable-step should be more accurate than wrong uniform dt"

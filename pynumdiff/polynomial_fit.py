@@ -94,11 +94,9 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
         # Filter out NaN values so polyfit doesn't fail on missing data
         mask = ~np.isnan(x)
-        if not np.any(mask): # all NaN window — return NaNs
-            return np.full_like(x, np.nan, dtype=float), np.full_like(x, np.nan, dtype=float)
-        w = weights[mask] if weights is not None else None
+        if not np.any(mask): return np.full_like(x, np.nan), np.full_like(x, np.nan) # all NaN window
 
-        r = np.polyfit(t[mask], x[mask], degree, w=w) # polyfit returns highest order first
+        r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
         dr = np.polyder(r) # power rule already implemented for us
 
         dxdt_hat = np.polyval(dr, t) # evaluate the derivative and original polynomials at points t

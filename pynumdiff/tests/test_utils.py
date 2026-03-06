@@ -55,8 +55,9 @@ def test_convolutional_smoother():
 
 def test_peakdet(request):
     """Verify peakdet finds peaks and valleys"""
+    rng = np.random.RandomState(42) # own seed so test order doesn't affect results
     t = np.arange(0, 10, 0.001)
-    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + 0.02*np.random.randn(10000)
+    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + 0.02*rng.randn(10000)
     maxtab, mintab = utility.peakdet(x, 0.5, t)
 
     if request.config.getoption("--plot"):
@@ -66,19 +67,19 @@ def test_peakdet(request):
         pyplot.title('peakdet validataion')
         pyplot.show()
 
-    assert np.allclose(maxtab, [[0.475, 1.58696894], # these numbers validated by eye with --plot
-                                [1.813, 1.91418201],
-                                [3.311, -0.02749755],
-                                [4.971, 0.74687989],
-                                [6.333, 1.89776084],
-                                [7.76, 0.57366611],
-                                [9.397, 0.59379866]])
-    assert np.allclose(mintab, [[1.134, 0.31086976],
-                                [2.747, -1.13032479],
-                                [4.093, -2.00466846],
-                                [5.502, -0.31428495],
-                                [7.206, -0.5993835],
-                                [8.607,-1.71266074]])
+    assert np.allclose(maxtab, [[0.478, 1.59725055], # these numbers validated by eye with --plot
+                                [1.8, 1.91003085],
+                                [3.319, -0.04597348],
+                                [4.997, 0.74477798],
+                                [6.35, 1.89578662],
+                                [7.783, 0.57274039],
+                                [9.429, 0.58636224]])
+    assert np.allclose(mintab, [[1.101, 0.30335672],
+                                [2.744, -1.12418367],
+                                [4.077, -2.00297377],
+                                [5.587, -0.31253041],
+                                [7.14, -0.58622913],
+                                [8.608, -1.71228973]])
 
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""

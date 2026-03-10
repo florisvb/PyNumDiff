@@ -319,7 +319,6 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
             eM = expm(M * dt)
             A_d[i] = eM[:order+1, :order+1] # extract discrete time A matrix
             Q_d[i] = eM[:order+1, order+1:] @ A_d[i].T # extract discrete time Q matrix
-            if dt < 0: Q_d[i] = np.abs(Q_d[i]) # eigenvalues go negative if reverse time, but noise shouldn't shrink
             if np.linalg.cond(Q_d[i]) > 1e12: Q_d[i] += np.eye(order + 1)*1e-12
 
     x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem

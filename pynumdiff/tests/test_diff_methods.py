@@ -13,6 +13,7 @@ from ..linear_model import lineardiff
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
 def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
+def robust_irreg_step(*args, **kwargs): return robustdiff(*args, **kwargs)
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -52,6 +53,7 @@ diff_methods_and_params = [
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     (robustdiff, {'order':3, 'log_q':7, 'log_r':2}),
+    (robust_irreg_step, {'order':3, 'log_q':7, 'log_r':2}),
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
@@ -59,6 +61,7 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 0.01, 11], {'solver':'CLARABEL'})
     ]
+# diff_methods_and_params = [(robust_irreg_step, {'order':3, 'log_q':7, 'log_r':2})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations and random seed.
@@ -222,6 +225,7 @@ error_bounds = {
                  [(-7, -7), (-2, -2), (0, -1), (1, 1)],
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    robust_irreg_step: [],
     lineardiff: [[(-3, -4), (-3, -3), (0, -1), (1, 0)],
                  [(-1, -2), (0, 0), (0, -1), (1, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
@@ -242,9 +246,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # sample the true function and true derivative, and make noisy samples
-    x = f(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
-    dxdt = df(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
-    _t = dt if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else t_irreg
+    x = f(t) if diff_method not in [spline_irreg_step, robust_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
+    dxdt = df(t) if diff_method not in [spline_irreg_step, robust_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
+    _t = dt if diff_method not in [spline_irreg_step, robust_irreg_step, rbfdiff, rtsdiff] else t_irreg
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions

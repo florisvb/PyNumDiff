@@ -2,24 +2,15 @@
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
+from scipy.special import huber
 from scipy.stats import median_abs_deviation, norm
 from scipy.ndimage import convolve1d
 
 
-def huber(x, M):
-    """Huber loss function, for outlier-robust applications,
-    `see here <https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber>`_
-
-    :param np.array[float] x: data points on which to evaluate the Huber function pointwise
-    :param float M: where the loss turns from quadratic to linear
-    :return: (np.array[float]) -- pointwise evaluations of the Huber function
-    """
-    absx = np.abs(x)
-    return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
-
 def huber_const(M):
     """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
-    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
+    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt. Here :code:`huber`
+    refers to `scipy.special.huber <https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.huber.html>`_.
 
     :param float M: Huber parameter, where the function turns from quadratic to linear
     :return: (float) -- appropriate scale factor to normalize the Huber function
@@ -65,7 +56,7 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        return minimize(lambda c: np.sum(huber(x_hat + c.reshape(s) - x, M*sigma)), # fn to minimize in 1st argument
+        return minimize(lambda c: np.sum(huber(M*sigma, x_hat + c.reshape(s) - x)), # fn to minimize in 1st argument
             np.zeros(np.prod(s)), method='SLSQP').x.reshape(s) # initial guess is zeros; vector result must be reshaped
 
 

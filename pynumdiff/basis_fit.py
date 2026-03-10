@@ -5,10 +5,8 @@ from scipy import sparse
 
 from pynumdiff.utils import utility
 
-#maria spectral diff below
-
-def spectraldiff(x, dt, axis=0, params=None, options=None, high_freq_cutoff=None,
-                 even_extension=True, pad_to_zero_dxdt=True):
+def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
+                 even_extension=True, pad_to_zero_dxdt=True, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
 
     :param np.array[float] x: data to differentiate
@@ -26,7 +24,7 @@ def spectraldiff(x, dt, axis=0, params=None, options=None, high_freq_cutoff=None
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None:
+    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
              "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
@@ -38,52 +36,50 @@ def spectraldiff(x, dt, axis=0, params=None, options=None, high_freq_cutoff=None
 
     x = np.asarray(x)
     x0 = np.moveaxis(x, axis, 0) # move time axis to the front of the array
-    # now x0 dims are (# of data points, # of signals)
+    # Now x0 dims are (number of data points, number of signals)
     L = x0.shape[0]
 
-    # make derivative go to zero at ends (optional)
+    # Make derivative go to zero at the ends (optional):
     if pad_to_zero_dxdt:
         padding = 100
+        pre = x[0] * np.ones(padding)
+        post = x[-1] * np.ones(padding)
+        x = np.hstack((pre, x, post))  # extend the edges
 
-        # just pad first and last values x100
-        first = x0[0:1]               
-        last  = x0[-1:]    
+        # Pad first and last values x100
+        first = x0[0:1]
+        last = x0[-1:]
         pre = np.repeat(first, padding, axis=0)
         post = np.repeat(last, padding, axis=0)
 
-        xpad = np.concatenate((pre, x0, post), axis=0) # i think hstack won't work with the correct axis
-
-        kernel = utility.mean_kernel(padding//2)
-        x_hat0 = utility.convolutional_smoother(xpad, kernel, axis=0)
-
-        x_hat0[padding:-padding] = xpad[padding:-padding]
-        x0 = x_hat0
+        xpad = np.concatenate((pre, x0, post), axis=0)  # concatenate along axis 0
     else:
         padding = 0
 
-    # Do even extension (optional):
+    # Do even extension (optional)
     if even_extension is True:
         x0 = np.concatenate((x0, x0[::-1, ...]), axis=0)
 
     # Form wavenumbers
     N = x0.shape[0]
     k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
-    if N % 2 == 0: k[N//2] = 0  # odd derivatives get the Nyquist element zeroed out
+    if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
 
     # Filter to zero out higher wavenumbers
     discrete_cutoff = int(high_freq_cutoff * N / 2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
-    filt = np.ones_like(k, dtype=float)
-    filt = np.ones(k.shape); filt[discrete_cutoff:N-discrete_cutoff] = 0
+    
+    filt = np.ones(k.shape)  # start with all frequencies passing
+    filt[discrete_cutoff:-discrete_cutoff] = 0  # zero out high-frequency components
     filt = filt.reshape((N,) + (1,)*(x0.ndim-1))
 
-      # Smoothed signal
+    # Smoothed signal
     X = np.fft.fft(x0, axis=0)
 
     x_hat0 = np.real(np.fft.ifft(filt * X, axis=0))
     x_hat0 = x_hat0[padding:L+padding]
 
     # Derivative = 90 deg phase shift
-    omega = 2*np.pi/(dt*N)
+    omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
     k0 = k.reshape((N,) + (1,)*(x0.ndim-1))
     dxdt0 = np.real(np.fft.ifft(1j * k0 * omega * filt * X, axis=0))
     dxdt0 = dxdt0[padding:L+padding]

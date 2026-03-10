@@ -64,7 +64,6 @@ diff_methods_and_params = [
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
     (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 0.01, 11], {'solver':'CLARABEL'})
     ]
-diff_methods_and_params = [(robust_irreg_step, {'order':3, 'log_q':7, 'log_r':2})]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the
 # closeness to the right answer various methods achieve with the given parameterizations and random seed.
@@ -234,7 +233,12 @@ error_bounds = {
                  [(-7, -7), (-2, -2), (0, -1), (1, 1)],
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    robust_irreg_step: [],
+    robust_irreg_step: [[(-15, -15), (-13, -14), (0, -1), (1, 1)],
+                        [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                        [(-14, -15), (-13, -13), (0, -1), (1, 1)],
+                        [(-8, -8), (-2, -2), (0, -1), (1, 1)],
+                        [(0, 0), (2, 2), (0, 0), (2, 2)],
+                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
     lineardiff: [[(-3, -4), (-3, -3), (0, -1), (1, 0)],
                  [(-1, -2), (0, 0), (0, -1), (1, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],

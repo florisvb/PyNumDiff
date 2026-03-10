@@ -319,7 +319,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
 
         A_ds = np.empty((N-1, order+1, order+1))
         Q_ds = np.empty((N-1, order+1, order+1))
-        for i, dt in enumerate(dt_or_t): # for each variable time step
+        for i, dt in enumerate(np.diff(dt_or_t)): # for each variable time step
             eM = expm(M * dt)
             A_ds[i] = eM[:order+1, :order+1] # extract discrete time A matrix
             Q_ds[i] = eM[:order+1, order+1:] @ A_ds[i].T # extract discrete time Q matrix
@@ -353,22 +353,11 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     x_states = cvxpy.Variable((state_dim, N)) # each column is [position, velocity, acceleration, ...] at step n
     control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
 
-    if A.ndim == 3:
-        # It is extremely important to run time that CVXPY expressions be in vectorized form
+    if A.ndim == 3: # It is extremely important to runtime that CVXPY expressions be in vectorized form
         Ax = cvxpy.einsum('nij,jn->in', A, x_states[:, :-1]) # multipy each A matrix by the corresponding x_states at that time step
         Q_inv_sqrts = np.array([np.linalg.inv(sqrtm(Q[n])) for n in range(N-1)]) # precompute Q^(-1/2) for each time step
-        proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:, 1:] - Ax - (0 if not control else B @ u[1:].T))
-
-        # proc_resids = []
-        # for n in range(0, N-1):
-        #     Q_inv_sqrt = np.array(np.linalg.inv(sqrtm(Q[n])))
-        #     res_n = x_states[:, n+1] - A[n] @ x_states[:, n]
-        #     res_n = Q_inv_sqrt @ res_n
-        #     proc_resids.append(res_n)
-
-        # proc_resids = cvxpy.hstack(proc_resids)
-    else:
-        # It is extremely important to run time that CVXPY expressions be in vectorized form
+        proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:,1:] - Ax - (0 if not control else B @ u[1:].T))
+    else: # It is extremely important to runtime that CVXPY expressions be in vectorized form
         proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T)) # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
     
     meas_resids = np.linalg.inv(sqrtm(R)) @ (y.reshape(C.shape[0],-1) - C @ x_states) # all R^(-1/2)(y_n - C x_n)
@@ -385,7 +374,7 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     # function https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber, so correct with a factor of 0.5.
 
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
-    try: problem.solve(solver=cvxpy.CLARABEL)
+    try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
 
     if x_states.value is None: return np.full((N, state_dim), np.nan) # There can be solver failure, even without error

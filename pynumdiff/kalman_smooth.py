@@ -296,39 +296,33 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     equispaced = np.isscalar(dt_or_t)
+    if not equispaced and len(x) != len(dt_or_t):
+        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
 
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
-
     M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]])  # exponentiate per step
 
     if equispaced:
         # convert to discrete time using matrix exponential
         eM = expm(M * dt_or_t) # Note this could handle variable dt, similar to rtsdiff
         A_d = eM[:order+1, :order+1]
-        Q_d = eM[:order+1, order+1:] @ A_d.T # 
-        if np.linalg.cond(Q_d) > 1e12: 
-            Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+        Q_d = eM[:order+1, order+1:] @ A_d.T
+        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+    else: # support variable step size for this function
+        A_d = np.empty((len(x)-1, order+1, order+1)) # stack all the evolution matrices
+        Q_d = np.empty((len(x)-1, order+1, order+1))
 
-        x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
-    else:  # support variable step size for this function
-        N = len(x)
-        if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
-
-        A_ds = np.empty((N-1, order+1, order+1))
-        Q_ds = np.empty((N-1, order+1, order+1))
         for i, dt in enumerate(np.diff(dt_or_t)): # for each variable time step
             eM = expm(M * dt)
-            A_ds[i] = eM[:order+1, :order+1] # extract discrete time A matrix
-            Q_ds[i] = eM[:order+1, order+1:] @ A_ds[i].T # extract discrete time Q matrix
-            if dt < 0: Q_ds[i] = np.abs(Q_ds[i])  # eigenvalues go negative if reverse time, but noise shouldn't shrink
-            if np.linalg.cond(Q_ds[i]) > 1e12: 
-                Q_ds[i] += np.eye(order + 1)*1e-12
+            A_d[i] = eM[:order+1, :order+1] # extract discrete time A matrix
+            Q_d[i] = eM[:order+1, order+1:] @ A_d[i].T # extract discrete time Q matrix
+            if dt < 0: Q_d[i] = np.abs(Q_d[i]) # eigenvalues go negative if reverse time, but noise shouldn't shrink
+            if np.linalg.cond(Q_d[i]) > 1e12: Q_d[i] += np.eye(order + 1)*1e-12
 
-        x_states = convex_smooth(x, A_ds, Q_ds, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
-
+    x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
     return x_states[:,0], x_states[:,1]
 
 

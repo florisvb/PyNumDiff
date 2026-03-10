@@ -357,11 +357,12 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
         Ax = cvxpy.einsum('nij,jn->in', A, x_states[:, :-1]) # multipy each A matrix by the corresponding x_states at that time step
         Q_inv_sqrts = np.array([np.linalg.inv(sqrtm(Q[n])) for n in range(N-1)]) # precompute Q^(-1/2) for each time step
         proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:,1:] - Ax - (0 if not control else B @ u[1:].T))
-    else: # It is extremely important to runtime that CVXPY expressions be in vectorized form
-        proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T)) # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
+    else: # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
+        proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T))
     
-    meas_resids = np.linalg.inv(sqrtm(R)) @ (y.reshape(C.shape[0],-1) - C @ x_states) # all R^(-1/2)(y_n - C x_n)
-        
+    obs = ~np.isnan(y) # boolean mask of non-NaN observations
+    meas_resids = np.linalg.inv(sqrtm(R)) @ (y[obs].reshape(C.shape[0],-1) - C @ x_states[:,obs]) # all R^(-1/2)(y_n - C x_n)
+
     # Process terms: sum of J(proc_resids)
     objective = 0.5*cvxpy.sum_squares(proc_resids) if proc_huberM == float('inf') \
                 else np.sqrt(2)*cvxpy.sum(cvxpy.abs(proc_resids)) if proc_huberM < 1e-3 \

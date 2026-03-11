@@ -107,11 +107,12 @@ def rts_smooth(dt_or_t, A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, _recurse=True):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
-    :param np.array[float] x: data series to differentiate
+    :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are excluded from
+        fitting and imputed by dynamical model evolution. 
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         step size if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model
@@ -127,18 +128,6 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, _recurse=T
     if not np.isscalar(dt_or_t) and len(x) != len(dt_or_t):
         raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
     x = np.asarray(x) # to flexibly allow array-like inputs
-
-    # Recursive sequence to handle multi-dimensional data. We apply the smoother separately to
-    # each 1D slice along the given axis, and then stack the results back together. 
-    # The _recurse flag is to avoid infinite recursion.
-    if x.ndim > 1 and _recurse:
-        packed = np.apply_along_axis(
-            lambda v: np.stack(rtsdiff(v, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, _recurse=False), axis=0),
-            axis, x
-        )
-        x_hat = np.take(packed, 0, axis=axis)
-        dxdt_hat = np.take(packed, 1, axis=axis)
-        return x_hat, dxdt_hat
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
     r = q/(10**log_qr_ratio)
@@ -270,7 +259,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     return rtsdiff(x, dt, 3, np.log10(q/r), forwardbackward)
 
 
-def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
+def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
     :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
@@ -306,16 +295,31 @@ def robustdiff(x, dt, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    equispaced = np.isscalar(dt_or_t)
+    if not equispaced and len(x) != len(dt_or_t):
+        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
+    M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]])  # exponentiate per step
 
-    # convert to discrete time using matrix exponential
-    eM = expm(np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]]) * dt) # Note this could handle variable dt, similar to rtsdiff
-    A_d = eM[:order+1, :order+1]
-    Q_d = eM[:order+1, order+1:] @ A_d.T
-    if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+    if equispaced:
+        # convert to discrete time using matrix exponential
+        eM = expm(M * dt_or_t) # Note this could handle variable dt, similar to rtsdiff
+        A_d = eM[:order+1, :order+1]
+        Q_d = eM[:order+1, order+1:] @ A_d.T
+        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+    else: # support variable step size for this function
+        A_d = np.empty((len(x)-1, order+1, order+1)) # stack all the evolution matrices
+        Q_d = np.empty((len(x)-1, order+1, order+1))
+
+        for i, dt in enumerate(np.diff(dt_or_t)): # for each variable time step
+            eM = expm(M * dt)
+            A_d[i] = eM[:order+1, :order+1] # extract discrete time A matrix
+            Q_d[i] = eM[:order+1, order+1:] @ A_d[i].T # extract discrete time Q matrix
+            if np.linalg.cond(Q_d[i]) > 1e12: Q_d[i] += np.eye(order + 1)*1e-12
 
     x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
     return x_states[:,0], x_states[:,1]
@@ -338,12 +342,20 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     :return: (np.array) -- state estimates (state_dim x N)
     """
     N = len(y)
-    x_states = cvxpy.Variable((A.shape[0], N)) # each column is [position, velocity, acceleration, ...] at step n
+    state_dim = A.shape[-1]
+    x_states = cvxpy.Variable((state_dim, N)) # each column is [position, velocity, acceleration, ...] at step n
     control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
 
-    # It is extremely important to run time that CVXPY expressions be in vectorized form
-    proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T)) # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
-    meas_resids = np.linalg.inv(sqrtm(R)) @ (y.reshape(C.shape[0],-1) - C @ x_states) # all R^(-1/2)(y_n - C x_n)
+    if A.ndim == 3: # It is extremely important to runtime that CVXPY expressions be in vectorized form
+        Ax = cvxpy.einsum('nij,jn->in', A, x_states[:, :-1]) # multipy each A matrix by the corresponding x_states at that time step
+        Q_inv_sqrts = np.array([np.linalg.inv(sqrtm(Q[n])) for n in range(N-1)]) # precompute Q^(-1/2) for each time step
+        proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:,1:] - Ax - (0 if not control else B @ u[1:].T))
+    else: # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
+        proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T))
+    
+    obs = ~np.isnan(y) # boolean mask of non-NaN observations
+    meas_resids = np.linalg.inv(sqrtm(R)) @ (y[obs].reshape(C.shape[0],-1) - C @ x_states[:,obs]) # all R^(-1/2)(y_n - C x_n)
+
     # Process terms: sum of J(proc_resids)
     objective = 0.5*cvxpy.sum_squares(proc_resids) if proc_huberM == float('inf') \
                 else np.sqrt(2)*cvxpy.sum(cvxpy.abs(proc_resids)) if proc_huberM < 1e-3 \
@@ -356,8 +368,8 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     # function https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber, so correct with a factor of 0.5.
 
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
-    try: problem.solve(solver=cvxpy.CLARABEL)
+    try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND)
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
 
-    if x_states.value is None: return np.full((N, A.shape[0]), np.nan) # There can be solver failure, even without error
+    if x_states.value is None: return np.full((N, state_dim), np.nan) # There can be solver failure, even without error
     return x_states.value.T

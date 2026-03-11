@@ -390,3 +390,21 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+
+
+nan_methods_and_params = [
+    (splinediff, {'degree': 5, 's': 2}),
+    (polydiff,   {'degree': 2, 'window_size': 3}),
+    (rtsdiff,    {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
+    (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
+]
+
+@mark.parametrize("diff_method_and_params", nan_methods_and_params)
+def test_missing_data(diff_method_and_params):
+    """Ensure methods that support missing data return finite outputs when NaN values are present"""
+    diff_method, params = diff_method_and_params
+    x_nan = np.sin(t).copy()
+    x_nan[[5, 10, 15, 20]] = np.nan # introduce missing data at several locations
+    x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
+    assert np.all(np.isfinite(x_hat)), f"{diff_method.__name__}: x_hat contains NaN or Inf"
+    assert np.all(np.isfinite(dxdt_hat)), f"{diff_method.__name__}: dxdt_hat contains NaN or Inf"

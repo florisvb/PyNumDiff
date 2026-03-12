@@ -328,6 +328,8 @@ multidim_methods_and_params = [
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
+    (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
+    (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 1e-6}),
     (robustdiff, {'order':2, 'log_q':7, 'log_r':2})
 ]
@@ -343,6 +345,8 @@ multidim_error_bounds = {
     polydiff: [(1, -1), (1, 0)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)],
+    spectraldiff: [(2, 1), (3, 2)], # lot of Gibbs ringing in 2nd order derivatives along t1 with t_1^2 sin(3 pi t_2 / 2)
+    rbfdiff: [(0, -1), (1, 0)],
     splinediff: [(0, -1), (1, 0)],
     robustdiff: [(-2, -3), (0, -1)]
 }

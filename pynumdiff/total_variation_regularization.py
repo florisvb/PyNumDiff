@@ -52,6 +52,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
 
     return x_hat, dxdt_hat
 
+
 def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
     total variation regularized derivative. Other convex-solver-based methods in this module call this function.
@@ -70,20 +71,17 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    x = np.asarray(x, dtype=float)
+    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
 
-    # had to loop in python :(
-    x_hat = np.empty_like(x)
-    dxdt_hat = np.empty_like(x)
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
-        s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
-        xv = x[s]
+        s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing this iteration's vector in the overall array
+        x_v = x[s]
 
         # Normalize for numerical consistency with convex solver
-        mu = np.mean(xv)
-        sigma = median_abs_deviation(xv, scale='normal') # robust alternative to std()
+        mu = np.mean(x_v)
+        sigma = median_abs_deviation(x_v, scale='normal') # robust alternative to std()
         if sigma == 0: sigma = 1 # safety guard
-        y = (xv-mu)/sigma
+        y = (x_v-mu)/sigma
 
         # Define the variables for the highest order derivative and the integration constants
         deriv_values = cvxpy.Variable(len(y)) # values of the order^th derivative, in which we're penalizing variation
@@ -109,16 +107,16 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
         v = deriv_values.value
         for i in range(order-1): # stop one short to get the first derivative
             v = np.cumsum(v) + integration_constants.value[i]
-        dxdt_v = v/dt # v only holds the dx values; to get deriv scale by dt
-        x_v = np.cumsum(v) + integration_constants.value[order-1] # smoothed data
+        dxdt_hat_v = v/dt # v only holds the dx values; to get deriv scale by dt
+        x_hat_v = np.cumsum(v) + integration_constants.value[order-1] # smoothed data
 
         # Due to the first-order nature of the derivative, it has a slight lag. Average together every two values
         # to better center the answer. But this leaves us one-short, so devise a good last value.
-        dxdt_v = (dxdt_v[:-1] + dxdt_v[1:])/2
-        dxdt_v = np.hstack((dxdt_v, 2*dxdt_v[-1] - dxdt_v[-2])) # last value = penultimate value [-1] + diff between [-1] and [-2]
+        dxdt_hat_v = (dxdt_hat_v[:-1] + dxdt_hat_v[1:])/2
+        dxdt_hat_v = np.hstack((dxdt_hat_v, 2*dxdt_hat_v[-1] - dxdt_hat_v[-2])) # last value = penultimate value [-1] + diff between [-1] and [-2]
 
-        x_hat[s] = x_v*sigma+mu
-        dxdt_hat[s] = dxdt_v*sigma # derivative is linear, so scale derivative by scatter
+        x_hat[s] = x_hat_v*sigma+mu
+        dxdt_hat[s] = dxdt_hat_v*sigma # derivative is linear, so scale derivative by scatter
 
     return x_hat, dxdt_hat
 

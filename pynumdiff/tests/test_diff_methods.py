@@ -332,7 +332,7 @@ multidim_methods_and_params = [
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 1e-6}),
     (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
-    (tvrdiff, {'order': 1, 'gamma': 1e-2})
+    (tvrdiff, {'order': 3, 'gamma': 1e-4})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -350,7 +350,7 @@ multidim_error_bounds = {
     rbfdiff: [(0, -1), (1, 0)],
     splinediff: [(0, -1), (1, 0)],
     robustdiff: [(-2, -3), (0, -1)],
-    tvrdiff: [(2, 1), (3, 2)]
+    tvrdiff: [(0, -1), (1, 0)]
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)

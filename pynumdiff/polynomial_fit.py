@@ -6,7 +6,7 @@ import scipy
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iterations=1):
+def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iterations=1, axis=0):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
 
@@ -20,6 +20,7 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
     :param float s: positive smoothing factor used to choose the number of knots. Number of knots will be increased
         until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
     :param int num_iterations: how many times to apply smoothing
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -31,26 +32,29 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
         if options is not None:
             if 'iterate' in options and options['iterate']: num_iterations = params[2]
 
+    if num_iterations < 1: raise ValueError("`num_iterations` should be >=1")
     if np.isscalar(dt_or_t):
-        t = np.arange(len(x))*dt_or_t
+        t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
-        if len(x) != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         t = dt_or_t
 
-    x_hat = x
-    for _ in range(num_iterations):
-        obs = ~np.isnan(x_hat) # UnivariateSpline can't handle NaN, so fit only on observed points
-        spline = scipy.interpolate.UnivariateSpline(t[obs], x_hat[obs], k=degree, s=s)
-        x_hat = spline(t) # evaluate at all t, filling in NaN positions by interpolation
+    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
 
-    dspline = spline.derivative()
-    dxdt_hat = dspline(t)
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+        i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
+
+        obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so use only observed points for first fit
+        x_hat[i] = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s)(t) # interpolate at all t
+        for _ in range(num_iterations-1):
+            x_hat[i] = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s)(t)
+        dxdt_hat[i] = spline.derivative()(t) # evaluate derivative at sample points
 
     return x_hat, dxdt_hat
 
 
 def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=None, step_size=1,
-    kernel='friedrichs'):
+    kernel='friedrichs', axis=0):
     """Fit polynomials to the data, and differentiate the polynomials.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
@@ -64,6 +68,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     :param int window_size: size of the sliding window, if not given no sliding
     :param int step_size: step size for sliding
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -80,11 +85,13 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     elif degree is None or window_size is None:
         raise ValueError("`degree` and `window_size` must be given.")
 
-    if window_size < degree*3:
-        window_size = degree*3+1
-    if window_size % 2 == 0:
-        window_size += 1
-        warn("Kernel window size should be odd. Added 1 to length.")
+    if window_size:
+        if window_size < degree*3:
+            window_size = degree*3+1
+        if window_size % 2 == 0:
+            window_size += 1
+            warn("Kernel window size should be odd. Added 1 to length.")
+        kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
     def _polydiff(x, dt_or_t, degree, weights=None):
         t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
@@ -99,10 +106,14 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
         return x_hat, dxdt_hat
 
-    if not window_size: return _polydiff(x, dt_or_t, degree)
+    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
 
-    kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-    return utility.slide_function(_polydiff, x, dt_or_t, kernel, degree, stride=step_size, pass_weights=True)
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+        s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
+        x_hat[s], dxdt_hat[s] = _polydiff(x[s], dt_or_t, degree) if not window_size else \
+            utility.slide_function(_polydiff, x[s], dt_or_t, kernel, degree, stride=step_size, pass_weights=True)
+    
+    return x_hat, dxdt_hat
 
 
 def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, smoothing_win=None, axis=0):

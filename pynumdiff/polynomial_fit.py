@@ -32,21 +32,23 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
         if options is not None:
             if 'iterate' in options and options['iterate']: num_iterations = params[2]
 
+    if num_iterations < 1: raise ValueError("`num_iterations` should be >=1")
     if np.isscalar(dt_or_t):
         t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
-        if x.shape[axis] != len(dt_or_t):
-            raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         t = dt_or_t
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
-        x_hat[i] = x[i]
-        for _ in range(num_iterations):
-            obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so fit only on observed points
-            spline = scipy.interpolate.make_splrep(t[obs], x_hat[i][obs], k=degree, s=s)
+
+        obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so use only observed points for first fit
+        spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s)
+        x_hat[i] = spline(t) # interpolate everywhere
+        for _ in range(num_iterations-1):
+            spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s)
             x_hat[i] = spline(t) # evaluate at all t, filling in NaN positions by interpolation
         dxdt_hat[i] = spline.derivative()(t)
 

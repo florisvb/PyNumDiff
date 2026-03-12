@@ -317,6 +317,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
             if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*1e-12
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
         x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem

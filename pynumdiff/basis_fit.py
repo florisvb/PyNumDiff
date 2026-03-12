@@ -18,7 +18,6 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
             and 1. Frequencies below this threshold will be kept, and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
-
             zero before taking FFT.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
@@ -42,17 +41,9 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
     # Make derivative go to zero at the ends (optional):
     if pad_to_zero_dxdt:
         padding = 100
-        pre = x[0] * np.ones(padding)
-        post = x[-1] * np.ones(padding)
-        x = np.hstack((pre, x, post))  # extend the edges
-
-        # Pad first and last values x100
-        first = x0[0:1]
-        last = x0[-1:]
-        pre = np.repeat(first, padding, axis=0)
-        post = np.repeat(last, padding, axis=0)
-
-        xpad = np.concatenate((pre, x0, post), axis=0)  # concatenate along axis 0
+        pre = np.repeat(x0[0:1], padding, axis=0)
+        post = np.repeat(x0[-1:], padding, axis=0)
+        x0 = np.concatenate((pre, x0, post), axis=0) # np.concatenate works along any axis, unlike hstack/vstack
     else:
         padding = 0
 
@@ -70,7 +61,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
     
     filt = np.ones(k.shape)  # start with all frequencies passing
     filt[discrete_cutoff:-discrete_cutoff] = 0  # zero out high-frequency components
-    filt = filt.reshape((N,) + (1,)*(x0.ndim-1))
+    filt = filt.reshape((N,) + (1,)*(x0.ndim-1)) # reshape for broadcasting over extra dimensions
 
     # Smoothed signal
     X = np.fft.fft(x0, axis=0)
@@ -98,7 +89,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
 
     :param np.array[float] x: data to differentiate
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
-    :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
+        :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param float sigma: controls width of radial basis functions
     :param float lmbd: controls smoothness
 

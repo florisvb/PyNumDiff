@@ -45,9 +45,11 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
 
         obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so use only observed points for first fit
-        x_hat[i] = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s)(t) # interpolate at all t
+        spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s)
+        x_hat[i] = spline(t) # interpolate at all t
         for _ in range(num_iterations-1):
-            x_hat[i] = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s)(t)
+            spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s)
+            x_hat[i] = spline(t)
         dxdt_hat[i] = spline.derivative()(t) # evaluate derivative at sample points
 
     return x_hat, dxdt_hat

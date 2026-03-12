@@ -5,8 +5,8 @@ from scipy import sparse
 
 from pynumdiff.utils import utility
 
-def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
-                 even_extension=True, pad_to_zero_dxdt=True, axis=0):
+def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True,
+    pad_to_zero_dxdt=True, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
 
     :param np.array[float] x: data to differentiate
@@ -25,7 +25,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
         warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
-             "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
+            "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
         if options is not None:
             if 'even_extension' in options: even_extension = options['even_extension']
@@ -33,56 +33,48 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
     elif high_freq_cutoff is None:
         raise ValueError("`high_freq_cutoff` must be given.")
 
+    L = x.shape[axis]
     x = np.asarray(x)
-    x0 = np.moveaxis(x, axis, 0) # move time axis to the front of the array
-    # Now x0 dims are (number of data points, number of signals)
-    L = x0.shape[0]
 
-    # Make derivative go to zero at the ends (optional):
+    # Make derivative go to zero at the ends (optional)
     if pad_to_zero_dxdt:
         padding = 100
-        pre = np.repeat(x0[0:1], padding, axis=0)
-        post = np.repeat(x0[-1:], padding, axis=0)
-        x0 = np.concatenate((pre, x0, post), axis=0) # np.concatenate works along any axis, unlike hstack/vstack
+        pre = np.repeat(np.take(x, [0], axis=axis), padding, axis=axis) # take keeps dimensions, unlike x[0]
+        post = np.repeat(np.take(x, [-1], axis=axis), padding, axis=axis)
+        x = np.concatenate((pre, x, post), axis=axis) # extend the edges
         kernel = utility.mean_kernel(padding//2)
-        x0_smoothed = utility.convolutional_smoother(x0, kernel, axis=0) # smooth the padded edges in
-        x0_smoothed[padding:-padding] = x0[padding:-padding] # restore original signal in the middle
-        x0 = x0_smoothed
+        x_smoothed = utility.convolutional_smoother(x, kernel, axis=axis) # smooth the padded edges in
+        center = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1)
+        x_smoothed[center] = x[center] # restore original signal in the middle
+        x = x_smoothed
     else:
         padding = 0
 
     # Do even extension (optional)
     if even_extension is True:
-        x0 = np.concatenate((x0, x0[::-1, ...]), axis=0)
+        x = np.concatenate((x, np.flip(x, axis=axis)), axis=axis)
+
+    s = [np.newaxis for dim in x.shape]; s[axis] = slice(None); s = tuple(s) # for elevating vectors to have same dimension as data
 
     # Form wavenumbers
-    N = x0.shape[0]
+    N = x.shape[axis]
     k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
     if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
 
     # Filter to zero out higher wavenumbers
     discrete_cutoff = int(high_freq_cutoff * N / 2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
-    
     filt = np.ones(k.shape)  # start with all frequencies passing
     filt[discrete_cutoff:-discrete_cutoff] = 0  # zero out high-frequency components
-    filt = filt.reshape((N,) + (1,)*(x0.ndim-1)) # reshape for broadcasting over extra dimensions
 
     # Smoothed signal
-    X = np.fft.fft(x0, axis=0)
-
-    x_hat0 = np.real(np.fft.ifft(filt * X, axis=0))
-    x_hat0 = x_hat0[padding:L+padding]
+    X = np.fft.fft(x, axis=axis)
+    x_hat = np.real(np.fft.ifft(filt[s] * X, axis=axis))
 
     # Derivative = 90 deg phase shift
     omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    k0 = k.reshape((N,) + (1,)*(x0.ndim-1))
-    dxdt0 = np.real(np.fft.ifft(1j * k0 * omega * filt * X, axis=0))
-    dxdt0 = dxdt0[padding:L+padding]
-    # move back to original axis position
-    x_hat = np.moveaxis(x_hat0, 0, axis)
-    dxdt_hat = np.moveaxis(dxdt0, 0, axis)
-    
-    return x_hat, dxdt_hat
+    dxdt = np.real(np.fft.ifft(1j * k[s] * omega * filt[s] * X, axis=axis))
+
+    return (x_hat[center], dxdt[center]) if pad_to_zero_dxdt else (x_hat, dxdt)
 
 
 def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):

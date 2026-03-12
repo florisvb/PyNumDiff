@@ -325,7 +325,8 @@ multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
-    (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3})
+    (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
+    (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -336,7 +337,8 @@ multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)],
-    savgoldiff: [(0, -1), (1, 1)]
+    savgoldiff: [(0, -1), (1, 1)],
+    rtsdiff: [(1, -1), (1, 0)]
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
@@ -391,11 +393,11 @@ def test_multidimensionality(multidim_method_and_params, request):
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
-
+# List of methods that can handle missing values
 nan_methods_and_params = [
     (splinediff, {'degree': 5, 's': 2}),
-    (polydiff,   {'degree': 2, 'window_size': 3}),
-    (rtsdiff,    {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
+    (polydiff, {'degree': 2, 'window_size': 3}),
+    (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
     (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
 ]
 
@@ -403,8 +405,10 @@ nan_methods_and_params = [
 def test_missing_data(diff_method_and_params):
     """Ensure methods that support missing data return finite outputs when NaN values are present"""
     diff_method, params = diff_method_and_params
-    x_nan = np.sin(t).copy()
+
+    x_nan = np.sin(t)
     x_nan[[5, 10, 15, 20]] = np.nan # introduce missing data at several locations
     x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
-    assert np.all(np.isfinite(x_hat)), f"{diff_method.__name__}: x_hat contains NaN or Inf"
-    assert np.all(np.isfinite(dxdt_hat)), f"{diff_method.__name__}: dxdt_hat contains NaN or Inf"
+    
+    assert np.all(np.isfinite(x_hat))
+    assert np.all(np.isfinite(dxdt_hat))

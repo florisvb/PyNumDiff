@@ -37,9 +37,9 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     m = xhat0.shape[0] # dimension of the state
     xhat_post = np.empty((N,m))
     if save_P:
-        xhat_pre = np.empty((N,m)) # _pre = a priori predictions based on only past information
+        xhat_pre = np.empty_like(xhat_post) # _pre = a priori predictions based on only past information
         P_pre = np.empty((N,m,m)) # _post = a posteriori combinations of all information available at a step
-        P_post = np.empty((N,m,m))
+        P_post = np.empty_like(P_pre)
     
     control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
     if A.ndim == 2: An, Qn, Bn = A, Q, B # single matrices, assign once outside the loop
@@ -113,8 +113,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
-    x = np.moveaxis(np.asarray(x), axis, 0) # move axis of differentiation to standard position
-    if not np.isscalar(dt_or_t) and x.shape[0] != len(dt_or_t):
+    N = x.shape[axis]
+    if not np.isscalar(dt_or_t) and N != len(dt_or_t):
         raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
@@ -132,7 +132,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
         Q_d = eM[:order+1, order+1:] @ A_d.T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d)
     else:
-        A_d = np.empty((len(x)-1, order+1, order+1))
+        A_d = np.empty((N-1, order+1, order+1))
         Q_d = np.empty_like(A_d)
         for i, dt in enumerate(np.diff(dt_or_t)):
             eM = expm(M * dt)
@@ -141,10 +141,10 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
-    if forwardbackward: w = np.linspace(0, 1, len(x)) # weights used to combine forward and backward results
+    if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
 
-    for vec_idx in np.ndindex(x.shape[1:]):
-        s = (slice(None),) + vec_idx # for indexing the the vector we wish to differentiate
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+        s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing the vector we wish to differentiate
         xhat0 = np.zeros(order+1); xhat0[0] = x[s][0] if not np.isnan(x[s][0]) else 0 # The first estimate is the first seen state. See #110
 
         xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R)
@@ -161,7 +161,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
             x_hat[s] = x_hat[s] * w + xhat_smooth[:, 0][::-1] * (1-w)
             dxdt_hat[s] = dxdt_hat[s] * w + xhat_smooth[:, 1][::-1] * (1-w)
 
-    return np.moveaxis(x_hat, 0, axis), np.moveaxis(dxdt_hat, 0, axis)
+    return x_hat, dxdt_hat
 
 
 def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
@@ -292,8 +292,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
-    x = np.moveaxis(np.asarray(x), axis, 0)
-    N = x.shape[0]
+    N = x.shape[axis]
     if not np.isscalar(dt_or_t) and N != len(dt_or_t):
         raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")
 
@@ -315,12 +314,12 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
             if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order + 1)*1e-12
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
-    for idx in np.ndindex(x.shape[1:]):
-        s = (slice(None),) + idx
+    for idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+        s = idx[:axis] + (slice(None),) + idx[axis:]
         x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM)
         x_hat[s] = x_states[:, 0]; dxdt_hat[s] = x_states[:, 1]
 
-    return np.moveaxis(x_hat, 0, axis), np.moveaxis(dxdt_hat, 0, axis)
+    return x_hat, dxdt_hat
 
 
 def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):

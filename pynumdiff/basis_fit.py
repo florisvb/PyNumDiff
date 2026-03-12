@@ -43,11 +43,11 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
         x = np.concatenate((pre, x, post), axis=axis) # extend the edges
         kernel = utility.mean_kernel(padding//2)
         x_smoothed = utility.convolutional_smoother(x, kernel, axis=axis) # smooth the padded edges in
-        original_signal = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1)
-        x_smoothed[original_signal] = x[original_signal] # restore original signal in the middle
+        m = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1) # middle
+        x_smoothed[m] = x[m] # restore original signal in the middle
         x = x_smoothed
     else:
-        padding = 0
+        m = (slice(None),)*axis + (slice(0, L),) + (slice(None),)*(x.ndim-axis-1) # indices where signal lives
 
     # Do even extension (optional)
     if even_extension is True:
@@ -71,10 +71,9 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
 
     # Derivative = 90 deg phase shift
     omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    dxdt = np.real(np.fft.ifft(1j * k[s] * omega * filt[s] * X, axis=axis))
+    dxdt_hat = np.real(np.fft.ifft(1j * k[s] * omega * filt[s] * X, axis=axis))
 
-    original_signal = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x_hat.ndim-axis-1)
-    return x_hat[original_signal], dxdt[original_signal]
+    return x_hat[m], dxdt_hat[m]
 
 
 def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):

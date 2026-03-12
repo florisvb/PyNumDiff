@@ -43,9 +43,11 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
         x = np.concatenate((pre, x, post), axis=axis) # extend the edges
         kernel = utility.mean_kernel(padding//2)
         x_smoothed = utility.convolutional_smoother(x, kernel, axis=axis) # smooth the padded edges in
-        center = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1)
-        x_smoothed[center] = x[center] # restore original signal in the middle
+        original_signal = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1)
+        x_smoothed[original_signal] = x[original_signal] # restore original signal in the middle
         x = x_smoothed
+    else:
+        padding = 0
 
     # Do even extension (optional)
     if even_extension is True:
@@ -60,8 +62,8 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
 
     # Filter to zero out higher wavenumbers
     discrete_cutoff = int(high_freq_cutoff * N / 2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
-    filt = np.ones(k.shape)  # start with all frequencies passing
-    filt[discrete_cutoff:-discrete_cutoff] = 0  # zero out high-frequency components
+    filt = np.ones(k.shape) # start with all frequencies passing
+    filt[discrete_cutoff:-discrete_cutoff] = 0 # zero out high-frequency components
 
     # Smoothed signal
     X = np.fft.fft(x, axis=axis)
@@ -71,7 +73,8 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
     dxdt = np.real(np.fft.ifft(1j * k[s] * omega * filt[s] * X, axis=axis))
 
-    return (x_hat[center], dxdt[center]) if pad_to_zero_dxdt else (x_hat, dxdt)
+    original_signal = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x_hat.ndim-axis-1)
+    return x_hat[original_signal], dxdt[original_signal]
 
 
 def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
@@ -90,11 +93,10 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    x = np.asarray(x)
-    x = np.moveaxis(x, axis, 0)   # bring target axis to front
-    orig_shape = x.shape
-    N = orig_shape[0]
-    x_2d = x.reshape(N, -1)       # (N, M) — build matrix once, solve for all M columns
+    N = x.shape[axis]
+    x = np.moveaxis(x, axis, 0) # bring axis of differentiation to front so each N repeats comprise vector
+    plump = x.shape
+    x_flattened = x.reshape(N, -1) # (N, M) matrix where each column is a vector along the original axis
 
     if np.isscalar(dt_or_t):
         t = np.arange(N)*dt_or_t
@@ -102,7 +104,8 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         t = dt_or_t
 
-    # The below does the approximate equivalent of this code, but sparsely in O(N sigma^2), since the rbf falls off rapidly
+    # For each vector along the axis of differentiation, the below does the approximate equivalent of this code,
+    # but sparsely in O(N sigma^2), since the rbf falls off rapidly
     # t_i, t_j = np.meshgrid(t,t)
     # r = t_j - t_i # radius
     # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel, O(N^2) entries
@@ -125,8 +128,9 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(N, N)) # Build sparse kernels, O(N sigma) entries
     drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(N, N))
     rbf_regularized = rbf + lmbd*sparse.eye(N, format="csr") # identity matrix gives a little extra height at the centers
-    alpha = sparse.linalg.spsolve(rbf_regularized, x_2d) # solve sparse system targeting the noisy data, O(N sigma^2)
+    alpha = sparse.linalg.spsolve(rbf_regularized, x_flattened) # solve sparse system targeting the noisy data,
+                                                                # can take matrix target, O(N sigma^2) for each vector
+    x_hat_flattened = rbf @ alpha # find samples of reconstructions using the smooth bases
+    dxdt_hat_flattened = drbfdt @ alpha
 
-    x_hat = np.moveaxis((rbf @ alpha).reshape(orig_shape), 0, axis)     # find samples of reconstructions using the smooth bases
-    dxdt_hat = np.moveaxis((drbfdt @ alpha).reshape(orig_shape), 0, axis)
-    return x_hat, dxdt_hat
+    return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)

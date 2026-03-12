@@ -254,7 +254,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
     return rtsdiff(x, dt, 3, np.log10(q/r), forwardbackward)
 
 
-def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
+def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, axis=0):
     """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
     :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q_{n-1}^{-1/2}(x_n - A_{n-1} x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
@@ -287,13 +287,15 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     :param float log_r: base 10 logarithm of measurement noise variance, so :code:`r = 10**log_r`
     :param float proc_huberM: quadratic-to-linear transition point for process loss
     :param float meas_huberM: quadratic-to-linear transition point for measurement loss
+    :param int axis: data dimension along which differentiation is performed
 
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
+             - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
-    equispaced = np.isscalar(dt_or_t)
-    if not equispaced and len(x) != len(dt_or_t):
-        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+    x = np.moveaxis(np.asarray(x), axis, 0)
+    N = x.shape[0]
+    if not np.isscalar(dt_or_t) and N != len(dt_or_t):
+        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")
 
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
@@ -301,24 +303,24 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
     M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]])  # exponentiate per step
 
-    if equispaced:
-        # convert to discrete time using matrix exponential
-        eM = expm(M * dt_or_t) # Note this could handle variable dt, similar to rtsdiff
-        A_d = eM[:order+1, :order+1]
-        Q_d = eM[:order+1, order+1:] @ A_d.T
-        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
-    else: # support variable step size for this function
-        A_d = np.empty((len(x)-1, order+1, order+1)) # stack all the evolution matrices
-        Q_d = np.empty((len(x)-1, order+1, order+1))
-
-        for n,dt in enumerate(np.diff(dt_or_t)): # for each variable time step
+    if np.isscalar(dt_or_t):
+        eM = expm(M * dt_or_t)
+        A_d = eM[:order+1, :order+1]; Q_d = eM[:order+1, order+1:] @ A_d.T
+        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver
+    else:
+        A_d = np.empty((N-1, order+1, order+1)); Q_d = np.empty_like(A_d)
+        for n, dt in enumerate(np.diff(dt_or_t)):
             eM = expm(M * dt)
-            A_d[n] = eM[:order+1, :order+1] # extract discrete time A matrix
-            Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T # extract discrete time Q matrix
+            A_d[n] = eM[:order+1, :order+1]; Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
             if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order + 1)*1e-12
 
-    x_states = convex_smooth(x, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
-    return x_states[:,0], x_states[:,1]
+    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    for idx in np.ndindex(x.shape[1:]):
+        s = (slice(None),) + idx
+        x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM)
+        x_hat[s] = x_states[:, 0]; dxdt_hat[s] = x_states[:, 1]
+
+    return np.moveaxis(x_hat, 0, axis), np.moveaxis(dxdt_hat, 0, axis)
 
 
 def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):

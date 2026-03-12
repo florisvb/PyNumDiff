@@ -101,7 +101,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are excluded
         from fitting and imputed by dynamical model evolution. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
-        step size if given as a single float, or data locations along :code:`axis` if given as an array of same length as :code:`x`.
+        :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model
     :param log_qr_ratio: the log of the process noise level divided by the measurement noise level, because,
         per `our analysis <https://github.com/florisvb/PyNumDiff/issues/139>`_, the mean result is
@@ -256,7 +256,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
 
 def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
-    :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q^{-1/2}(x_n - A x_{n-1}))`,
+    :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q_{n-1}^{-1/2}(x_n - A_{n-1} x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant derivative model and :math:`V,J` are the :math:`\\ell_1` norm or Huber
     loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is convex, so this method calls
     :code:`convex_smooth`, which in turn forms a sparse CVXPY problem and invokes CLARABEL.
@@ -280,7 +280,8 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0):
     :math:`r` interact with the distinct Huber :math:`M` parameters.
 
     :param np.array[float] x: data series to differentiate
-    :param float dt: step size
+    :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
+        :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
     :param float log_q: base 10 logarithm of process noise variance, so :code:`q = 10**log_q`
     :param float log_r: base 10 logarithm of measurement noise variance, so :code:`r = 10**log_r`
@@ -324,11 +325,12 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     """Solve the optimization problem for robust smoothing using CVXPY.
 
     :param np.array[float] y: measurements
-    :param np.array A: discrete-time state transition matrix
-    :param np.array Q: discrete-time process noise covariance matrix
+    :param np.array A: discrete-time state transition matrix. If 2D (:math:`m \\times m`), the same matrix is used for all steps;
+        if 3D (:math:`N-1 \\times m \\times m`), :code:`A[n-1]` is used for the transition from step :math:`n-1` to :math:`n`.
+    :param np.array Q: discrete-time process noise covariance. Same 2D or 3D shape convention as :code:`A`.
     :param np.array C: measurement matrix
     :param np.array R: measurement noise covariance matrix
-    :param np.array B: optional control matrix
+    :param np.array B: optional discrete-time control matrix, optionally stacked like :code:`A`.
     :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param float proc_huberM: Huber loss parameter. :math:`M=0` reduces to :math:`\\sqrt{2}\\ell_1`.
     :param float meas_huberM: Huber loss parameter. :math:`M=\\infty` reduces to :math:`\\frac{1}{2}\\ell_2^2`.
@@ -343,7 +345,8 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     if A.ndim == 3: # It is extremely important to runtime that CVXPY expressions be in vectorized form
         Ax = cvxpy.einsum('nij,jn->in', A, x_states[:, :-1]) # multipy each A matrix by the corresponding x_states at that time step
         Q_inv_sqrts = np.array([np.linalg.inv(sqrtm(Q[n])) for n in range(N-1)]) # precompute Q^(-1/2) for each time step
-        proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:,1:] - Ax - (0 if not control else B @ u[1:].T))
+        Bu = 0 if not control else cvxpy.einsum('nij,nj->in', B, u[1:]) if B.ndim == 3 else B @ u[1:].T
+        proc_resids = cvxpy.einsum('nij,jn->in', Q_inv_sqrts, x_states[:,1:] - Ax - Bu)
     else: # all Q^(-1/2)(x_n - (A x_{n-1} + B u_n))
         proc_resids = np.linalg.inv(sqrtm(Q)) @ (x_states[:,1:] - A @ x_states[:,:-1] - (0 if not control else B @ u[1:].T))
     

@@ -32,28 +32,23 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
         if options is not None:
             if 'iterate' in options and options['iterate']: num_iterations = params[2]
 
-    x = np.asarray(x)
-    n = x.shape[axis]
-
     if np.isscalar(dt_or_t):
-        t = np.arange(n) * dt_or_t
+        t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
-        if n != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if x.shape[axis] != len(dt_or_t):
+            raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         t = dt_or_t
 
-    x_hat = np.empty_like(x)
-    dxdt_hat = np.empty_like(x)
+    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
 
-    for idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
-        sl = idx[:axis] + (slice(None),) + idx[axis:]
-        xi = x[sl]
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+        i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
+        x_hat[i] = x[i]
         for _ in range(num_iterations):
-            obs = ~np.isnan(xi) # UnivariateSpline can't handle NaN, so fit only on observed points
-            spline = scipy.interpolate.UnivariateSpline(t[obs], xi[obs], k=degree, s=s)
-            xi = spline(t) # evaluate at all t, filling in NaN positions by interpolation
-        dspline = spline.derivative()
-        x_hat[sl] = xi
-        dxdt_hat[sl] = dspline(t)
+            obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so fit only on observed points
+            spline = scipy.interpolate.make_splrep(t[obs], x_hat[i][obs], k=degree, s=s)
+            x_hat[i] = spline(t) # evaluate at all t, filling in NaN positions by interpolation
+        dxdt_hat[i] = spline.derivative()(t)
 
     return x_hat, dxdt_hat
 
@@ -112,6 +107,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
         return x_hat, dxdt_hat
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
         x_hat[s], dxdt_hat[s] = _polydiff(x[s], dt_or_t, degree) if not window_size else \

@@ -149,7 +149,7 @@ error_bounds = {
                  [(0, -1), (0, 0), (0, 0), (1, 0)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    splinediff: [[(-14, -15), (-14, -15), (-1, -1), (0, 0)],
+    splinediff: [[(-14, -14), (-14, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -13), (-1, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
@@ -328,6 +328,7 @@ multidim_methods_and_params = [
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
+    (splinediff, {'degree': 9, 's': 1e-6}),
     (robustdiff, {'order':2, 'log_q':7, 'log_r':2})
 ]
 
@@ -342,6 +343,7 @@ multidim_error_bounds = {
     polydiff: [(1, -1), (1, 0)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)],
+    splinediff: [(0, -1), (1, 0)],
     robustdiff: [(-2, -3), (0, -1)]
 }
 

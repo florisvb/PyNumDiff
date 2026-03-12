@@ -6,7 +6,7 @@ from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussia
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
@@ -331,7 +331,8 @@ multidim_methods_and_params = [
     (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 1e-6}),
-    (robustdiff, {'order':2, 'log_q':7, 'log_r':2})
+    (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
+    (tvrdiff, {'order': 3, 'gamma': 1e-4})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -348,7 +349,8 @@ multidim_error_bounds = {
     spectraldiff: [(2, 1), (3, 2)], # lot of Gibbs ringing in 2nd order derivatives along t1 with t_1^2 sin(3 pi t_2 / 2)
     rbfdiff: [(0, -1), (1, 0)],
     splinediff: [(0, -1), (1, 0)],
-    robustdiff: [(-2, -3), (0, -1)]
+    robustdiff: [(-2, -3), (0, -1)],
+    tvrdiff: [(0, -1), (1, 0)]
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)

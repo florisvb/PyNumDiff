@@ -134,23 +134,23 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     else:
         A_d = np.empty((N-1, order+1, order+1))
         Q_d = np.empty_like(A_d)
-        for i, dt in enumerate(np.diff(dt_or_t)):
+        for n,dt in enumerate(np.diff(dt_or_t)):
             eM = expm(M * dt)
-            A_d[i] = eM[:order+1, :order+1]
-            Q_d[i] = eM[:order+1, order+1:] @ A_d[i].T
+            A_d[n] = eM[:order+1, :order+1]
+            Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
 
-    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing the vector we wish to differentiate
         xhat0 = np.zeros(order+1); xhat0[0] = x[s][0] if not np.isnan(x[s][0]) else 0 # The first estimate is the first seen state. See #110
 
         xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R)
         xhat_smooth = rts_smooth(A_d, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
-        x_hat[s] = xhat_smooth[:, 0] # first dimension is time, so slice first element at all times
-        dxdt_hat[s] = xhat_smooth[:, 1]
+        x_hat[s] = xhat_smooth[:,0] # first dimension is time, so slice first and second states at all times
+        dxdt_hat[s] = xhat_smooth[:,1]
 
         if forwardbackward:
             xhat0[0] = x[s][-1] if not np.isnan(x[s][-1]) else 0
@@ -302,22 +302,25 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
     M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]])  # exponentiate per step
 
-    if np.isscalar(dt_or_t):
+    if np.isscalar(dt_or_t): # convert to discrete time using matrix exponential
         eM = expm(M * dt_or_t)
-        A_d = eM[:order+1, :order+1]; Q_d = eM[:order+1, order+1:] @ A_d.T
-        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order + 1)*1e-12 # for numerical stability with convex solver
-    else:
-        A_d = np.empty((N-1, order+1, order+1)); Q_d = np.empty_like(A_d)
-        for n, dt in enumerate(np.diff(dt_or_t)):
+        A_d = eM[:order+1, :order+1]
+        Q_d = eM[:order+1, order+1:] @ A_d.T
+        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order+1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+    else: # support variable step size for this function
+        A_d = np.empty((N-1, order+1, order+1))
+        Q_d = np.empty_like(A_d)
+        for n,dt in enumerate(np.diff(dt_or_t)):
             eM = expm(M * dt)
-            A_d[n] = eM[:order+1, :order+1]; Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
-            if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order + 1)*1e-12
+            A_d[n] = eM[:order+1, :order+1] # extract discrete time A matrix
+            Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T # extract discrete time Q matrix
+            if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*1e-12
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
-    for idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
-        s = idx[:axis] + (slice(None),) + idx[axis:]
-        x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM)
-        x_hat[s] = x_states[:, 0]; dxdt_hat[s] = x_states[:, 1]
+    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
+        s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
+        x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
+        x_hat[s] = x_states[:,0]; dxdt_hat[s] = x_states[:,1]
 
     return x_hat, dxdt_hat
 

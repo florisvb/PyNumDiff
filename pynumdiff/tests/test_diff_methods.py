@@ -340,7 +340,7 @@ multidim_error_bounds = {
     finitediff: [(0, -1), (1, -1)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)],
-    robustdiff: [(2, 1), (3, 3)],
+    robustdiff: [(-2, -3), (0, -1)]
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)

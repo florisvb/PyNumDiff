@@ -10,7 +10,8 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
+        fitting and imputed by spline interpolation.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
@@ -38,8 +39,9 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
 
     x_hat = x
     for _ in range(num_iterations):
-        spline = scipy.interpolate.UnivariateSpline(t, x_hat, k=degree, s=s)
-        x_hat = spline(t)
+        obs = ~np.isnan(x_hat) # UnivariateSpline can't handle NaN, so fit only on observed points
+        spline = scipy.interpolate.UnivariateSpline(t[obs], x_hat[obs], k=degree, s=s)
+        x_hat = spline(t) # evaluate at all t, filling in NaN positions by interpolation
 
     dspline = spline.derivative()
     dxdt_hat = dspline(t)

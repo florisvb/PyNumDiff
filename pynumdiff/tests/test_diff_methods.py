@@ -325,6 +325,7 @@ multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
+    (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True})
 ]
@@ -337,6 +338,7 @@ multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)],
+    polydiff: [(2, 2), (3, 3)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)]
 }

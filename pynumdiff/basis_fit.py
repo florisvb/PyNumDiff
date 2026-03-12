@@ -74,7 +74,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     return x_hat, dxdt_hat
 
 
-def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
+def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     """Find smoothed function and derivative estimates by fitting noisy data with radial-basis-functions. Naively,
     fill a matrix with basis function samples and solve a linear inverse problem against the data, but truncate tiny
     values to make columns sparse. Each basis function "hill" is topped with a "tower" of height :code:`lmbd` to reach
@@ -85,14 +85,21 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param float sigma: controls width of radial basis functions
     :param float lmbd: controls smoothness
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    x = np.asarray(x)
+    x = np.moveaxis(x, axis, 0)   # bring target axis to front
+    orig_shape = x.shape
+    N = orig_shape[0]
+    x_2d = x.reshape(N, -1)       # (N, M) — build matrix once, solve for all M columns
+
     if np.isscalar(dt_or_t):
-        t = np.arange(len(x))*dt_or_t
+        t = np.arange(N)*dt_or_t
     else: # support variable step size for this function
-        if len(x) != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         t = dt_or_t
 
     # The below does the approximate equivalent of this code, but sparsely in O(N sigma^2), since the rbf falls off rapidly
@@ -115,9 +122,11 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01):
             dv = -radius / sigma**2 * v # take derivative of radial basis function, because d/dt coef*f(t) = coef*df/dt
             rows.append(n); cols.append(j); vals.append(v); dvals.append(dv)
 
-    rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(len(t), len(t))) # Build sparse kernels, O(N sigma) entries
-    drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(len(t), len(t)))
-    rbf_regularized = rbf + lmbd*sparse.eye(len(t), format="csr") # identity matrix gives a little extra height at the centers
-    alpha = sparse.linalg.spsolve(rbf_regularized, x) # solve sparse system targeting the noisy data, O(N sigma^2)
+    rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(N, N)) # Build sparse kernels, O(N sigma) entries
+    drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(N, N))
+    rbf_regularized = rbf + lmbd*sparse.eye(N, format="csr") # identity matrix gives a little extra height at the centers
+    alpha = sparse.linalg.spsolve(rbf_regularized, x_2d) # solve sparse system targeting the noisy data, O(N sigma^2)
 
-    return rbf @ alpha, drbfdt @ alpha # find samples of reconstructions using the smooth bases
+    x_hat = np.moveaxis((rbf @ alpha).reshape(orig_shape), 0, axis)     # find samples of reconstructions using the smooth bases
+    dxdt_hat = np.moveaxis((drbfdt @ alpha).reshape(orig_shape), 0, axis)
+    return x_hat, dxdt_hat

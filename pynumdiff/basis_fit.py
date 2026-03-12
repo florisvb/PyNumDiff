@@ -44,6 +44,10 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None,
         pre = np.repeat(x0[0:1], padding, axis=0)
         post = np.repeat(x0[-1:], padding, axis=0)
         x0 = np.concatenate((pre, x0, post), axis=0) # np.concatenate works along any axis, unlike hstack/vstack
+        kernel = utility.mean_kernel(padding//2)
+        x0_smoothed = utility.convolutional_smoother(x0, kernel, axis=0) # smooth the padded edges in
+        x0_smoothed[padding:-padding] = x0[padding:-padding] # restore original signal in the middle
+        x0 = x0_smoothed
     else:
         padding = 0
 

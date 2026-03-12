@@ -11,7 +11,7 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
     scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
-        fitting and imputed by spline interpolation.
+        fitting and imputed by spline interpolation. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
@@ -60,7 +60,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     """Fit polynomials to the data, and differentiate the polynomials.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
-        fitting and imputed by polynomial interpolation.
+        fitting and imputed by polynomial interpolation. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param list[int] params: (**deprecated**, prefer :code:`degree` and :code:`window_size`)
@@ -123,7 +123,7 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit,
     but slightly noisier and much faster.
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`window_size`, and :code:`smoothing_win`)
     :param dict options: (**deprecated**)

@@ -279,7 +279,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     :code:`log_qr_ratio` as in RTS smoothing without the addition of a new absolute scale parameter, becausee :math:`q` and
     :math:`r` interact with the distinct Huber :math:`M` parameters.
 
-    :param np.array[float] x: data series to differentiate
+    :param np.array[float] x: data series to differentiate. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)

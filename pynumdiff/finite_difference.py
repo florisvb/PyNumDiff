@@ -8,8 +8,8 @@ from pynumdiff.utils import utility
 def finitediff(x, dt, num_iterations=1, order=2, axis=0):
     """Perform iterated finite difference of a given order. This serves as the common backing function for
     all other methods in this module.
-    
-    :param np.array[float] x: data to differentiate
+
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
             rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times

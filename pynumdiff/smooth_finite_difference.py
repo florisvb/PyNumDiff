@@ -12,7 +12,7 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
     """Differentiate by applying a smoothing kernel to the signal, then performing 2nd-order finite difference.
     :code:`meandiff`, :code:`mediandiff`, :code:`gaussiandiff`, and :code:`friedrichsdiff` call this function.
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param str kernel: prefilter data, {:code:`'mean'`, :code:`'median'`, :code:`'gaussian'`,
         :code:`'friedrichs'`}
@@ -145,7 +145,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
 def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0):
     """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by second order finite difference
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param list[int] params: (**deprecated**, prefer :code:`filter_order`, :code:`cutoff_freq`,
         and :code:`num_iterations`)

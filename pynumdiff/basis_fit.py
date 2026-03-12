@@ -9,7 +9,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     pad_to_zero_dxdt=True, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
     :param dict options: (**deprecated**, prefer :code:`even_extension`
@@ -82,7 +82,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     values to make columns sparse. Each basis function "hill" is topped with a "tower" of height :code:`lmbd` to reach
     noisy data samples, and the final smoothed reconstruction is found by razing these and only keeping the hills.
 
-    :param np.array[float] x: data to differentiate
+    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param float sigma: controls width of radial basis functions

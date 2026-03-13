@@ -2,7 +2,6 @@
 from warnings import warn
 import numpy as np
 from scipy.linalg import expm, sqrtm
-from collections.abc import Iterable
 try: import cvxpy
 except ImportError: pass
 

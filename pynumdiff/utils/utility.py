@@ -247,6 +247,6 @@ def ensure_iterable(v, length):
 
     :return: - **v** -- list or iterable
     """
-    if not isinstance(v, Iterable):
+    if not hasattr(v, '__iter__'):
         return [v] * length
     return v

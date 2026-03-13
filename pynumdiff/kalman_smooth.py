@@ -2,13 +2,15 @@
 from warnings import warn
 import numpy as np
 from scipy.linalg import expm, sqrtm
+from collections.abc import Iterable
 try: import cvxpy
 except ImportError: pass
 
-from pynumdiff.utils.utility import huber_const
+from pynumdiff.utils.utility import huber_const, wrap_angle, ensure_iterable
 
 
-def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
+def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, 
+                  circular_vars=None, circular_units='rad'):
     """Run the forward pass of a Kalman filter. Expects discrete-time matrices; use :func:`scipy.linalg.expm`
     in the caller to convert from continuous time if needed.
 
@@ -24,6 +26,10 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
     :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
+    :param bool or None circular_vars: bool indicating whether the measurement y is a circular (angular) variable 
+        that is wrapped. This will use a circular innovation calculation for the Kalman filter. The smoothed result
+        will be returned in an unwrapped form. 
+    :param string circular_units: 'rad' or 'deg' to specify whether wrapping is in degrees or radians. 
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -57,7 +63,10 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True):
         P = P_.copy()
         if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
-            xhat += K @ (y[n] - C @ xhat_)
+            innovation = y[n] - C @ xhat_
+            if circular_vars is not None and circular_vars is not False:
+                innovation[0] = wrap_angle(innovation[0], circular_units)
+            xhat += K @ innovation
             P -= K @ C @ P_
         # the [n]th index of pre variables holds _{n|n-1} info; the [n]th index of post variables holds _{n|n} info
         xhat_post[n] = xhat
@@ -94,7 +103,8 @@ def rts_smooth(A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, 
+            circular_vars=None, circular_units='rad'):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
@@ -109,6 +119,10 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
     :param int axis: data dimension along which differentiation is performed
+    :param list[bool] circular_vars: set list element to bool for any axes of x that are a circular (angular) variable 
+        that is wrapped. This will use a circular innovation calculation for the Kalman filter. The smoothed result
+        will be returned in an unwrapped form. 
+    :param string circular_units: 'rad' or 'deg' to specify whether wrapping is in degrees or radians. 
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
@@ -116,6 +130,13 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     N = x.shape[axis]
     if not np.isscalar(dt_or_t) and N != len(dt_or_t):
         raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
+    
+    # turn circular_vars into something with the same shape as the number of differentiated axes in x
+    if len(x.shape) > 1:
+        n = int(np.prod(x.shape[:axis] + x.shape[axis+1:]))
+        circular_vars = ensure_iterable(circular_vars, n)
+    else:
+        circular_vars = ensure_iterable(circular_vars, 1)
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
     r = q/(10**log_qr_ratio)
@@ -143,11 +164,12 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
 
-    for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
+    for i, vec_idx in enumerate(np.ndindex(x.shape[:axis] + x.shape[axis+1:])): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing the vector we wish to differentiate
         xhat0 = np.zeros(order+1); xhat0[0] = x[s][0] if not np.isnan(x[s][0]) else 0 # The first estimate is the first seen state. See #110
 
-        xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R)
+        xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R, 
+                                                           circular_vars=circular_vars[i], circular_units=circular_units)
         xhat_smooth = rts_smooth(A_d, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
         x_hat[s] = xhat_smooth[:,0] # first dimension is time, so slice first and second states at all times
         dxdt_hat[s] = xhat_smooth[:,1]
@@ -155,7 +177,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0):
         if forwardbackward:
             xhat0[0] = x[s][-1] if not np.isnan(x[s][-1]) else 0
             xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s][::-1], xhat0, P0, A_d_bwd,
-                Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R) # Use same Q matrices as before, because noise should still grow in reverse time
+                Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R, 
+                circular_vars=circular_vars[i], circular_units=circular_units) # Use same Q matrices as before, because noise should still grow in reverse time
             xhat_smooth = rts_smooth(A_d_bwd, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
 
             x_hat[s] = x_hat[s] * w + xhat_smooth[:, 0][::-1] * (1-w)

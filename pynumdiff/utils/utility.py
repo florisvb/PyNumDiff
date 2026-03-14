@@ -7,6 +7,18 @@ from scipy.stats import median_abs_deviation, norm
 from scipy.ndimage import convolve1d
 
 
+def wrap_angle(angle):
+    """Wrap an angle (in radians) to the range [-pi, pi].
+
+    :param float or np.array angle: angle(s) in radians to wrap
+    :return: (float or np.array) -- wrapped angle(s) in [-pi, pi]
+
+    .. note::
+        Only radians are supported. Convert degrees to radians with :code:`np.deg2rad` before using this function.
+    """
+    return (angle + np.pi) % (2*np.pi) - np.pi
+
+
 def huber_const(M):
     """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
     from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt. Here :code:`huber`

@@ -405,6 +405,24 @@ def test_multidimensionality(multidim_method_and_params, request):
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
+def test_circular_rtsdiff():
+    """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
+    np.random.seed(42)
+    N = 200
+    dt_circ = 0.05
+    t_circ = np.arange(N) * dt_circ
+    true_dtheta = 2.0 # constant angular velocity in rad/s
+    theta_true = true_dtheta * t_circ # linearly increasing angle, crosses 2*pi boundaries
+    theta_noisy = np.angle(np.exp(1j * (theta_true + 0.1 * np.random.randn(N)))) # wrap to [-pi, pi] and add noise
+
+    _, dxdt_hat = rtsdiff(theta_noisy, dt_circ, order=1, log_qr_ratio=1, forwardbackward=True, circular=True)
+
+    # The interior of the signal (away from endpoints) should recover the true angular velocity well
+    interior = slice(10, N-10)
+    rmse = np.sqrt(np.mean((dxdt_hat[interior] - true_dtheta)**2))
+    assert rmse < 0.5, f"RMSE of angular velocity estimate too large: {rmse:.3f} rad/s"
+
+
 # List of methods that can handle missing values
 nan_methods_and_params = [
     (splinediff, {'degree': 5, 's': 2}),

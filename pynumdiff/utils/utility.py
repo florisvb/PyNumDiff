@@ -7,6 +7,7 @@ from scipy.stats import median_abs_deviation, norm
 from scipy.ndimage import convolve1d
 
 
+
 def huber_const(M):
     """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
     from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt. Here :code:`huber`
@@ -202,51 +203,3 @@ def peakdet(x, delta, t=None):
     return np.array(maxtab), np.array(mintab)
 
 
-def wrap_angle(angle, units='rad', range='symmetric'):
-    """Wrap an angle to a specified range.
-    
-    :param np.array angle: angular values
-    :param string units: either 'rad' or 'deg'
-    :param string range: either 'symmetric' for [-pi, pi] / [-180, 180],
-                         or 'positive' for [0, 2pi] / [0, 360]
-
-    :return: - **angle** -- the angular values wrapped as requested
-    """
-    if units == 'rad':
-        period = 2 * np.pi
-        if range == 'symmetric':
-            return (angle + np.pi) % period - np.pi
-        elif range == 'positive':
-            return angle % period
-        else:
-            raise ValueError(f"Invalid range '{range}'. Expected 'symmetric' or 'positive'.")
-
-    elif units == 'deg':
-        period = 360.
-        if range == 'symmetric':
-            return (angle + 180.) % period - 180.
-        elif range == 'positive':
-            return angle % period
-        else:
-            raise ValueError(f"Invalid range '{range}'. Expected 'symmetric' or 'positive'.")
-
-    else:
-        raise ValueError(f"Invalid units '{units}'. Expected 'rad' or 'deg'.")
-    
-
-def ensure_iterable(v, length):
-    """Ensure v is a list of the specified length.
-
-    If v is not iterable (e.g. a scalar), it is broadcast
-    into a list by repeating it `length` times. If it is already iterable,
-    it is returned as-is.
-
-    :param v: a scalar or iterable
-    :param int length: desired length of the output list when broadcasting a scalar
-    :return: v repeated `length` times if scalar, otherwise unchanged
-
-    :return: - **v** -- list or iterable
-    """
-    if not hasattr(v, '__iter__'):
-        return [v] * length
-    return v

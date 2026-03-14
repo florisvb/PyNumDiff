@@ -5,7 +5,7 @@ from scipy.linalg import expm, sqrtm
 try: import cvxpy
 except ImportError: pass
 
-from pynumdiff.utils.utility import huber_const, wrap_angle
+from pynumdiff.utils.utility import huber_const
 
 
 def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovation_fn=None):
@@ -26,7 +26,7 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
         smoothing but nonstandard to compute for ordinary filtering
     :param callable innovation_fn: optional function :code:`(y_n, pred)` returning the innovation :code:`y_n - pred`,
         where :code:`pred = C @ xhat_`. When :code:`None` (default), standard subtraction is used. Use this to handle
-        circular quantities, e.g. :code:`lambda y, pred: wrap_angle(y - pred)` for angular measurements in radians.
+        circular quantities, e.g. :code:`lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi` for angular measurements in radians.
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -147,7 +147,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, circular=F
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
-    innovation_fn = (lambda y, pred: wrap_angle(y - pred)) if circular else None # wrap innovation for circular variables
+    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # wrap innovation to [-pi, pi] for circular variables
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results

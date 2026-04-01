@@ -405,6 +405,7 @@ def test_multidimensionality(multidim_method_and_params, request):
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
+
 def test_circular_rtsdiff(request):
     """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
     dthdt = 5 # constant angular velocity in rad/s

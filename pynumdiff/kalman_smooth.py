@@ -147,7 +147,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
-    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionall wrap innovation to [-pi, pi], see #178
+    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionally wrap innovation to [-pi, pi], see #178
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results

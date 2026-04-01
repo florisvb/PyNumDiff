@@ -407,28 +407,28 @@ def test_multidimensionality(multidim_method_and_params, request):
 
 def test_circular_rtsdiff(request):
     """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
-    dtheta = 5 # constant angular velocity in rad/s
-    theta = dtheta * t # linearly increasing angle, crosses 2*pi boundaries
-    theta_noisy = np.angle(np.exp(1j * (theta + noise))) # add noise and wrap to [-pi, pi]
+    dthdt = 5 # constant angular velocity in rad/s
+    th = dthdt * t # linearly increasing angle, crosses 2*pi boundaries
+    th_noisy = np.angle(np.exp(1j * (th + noise))) # add noise and wrap to [-pi, pi]
 
-    theta_hat_naive, dxdt_hat_naive = rtsdiff(theta_noisy, dt, order=1, log_qr_ratio=1, circular=False)
-    theta_hat, dxdt_hat = rtsdiff(theta_noisy, dt, order=1, log_qr_ratio=1, circular=True)
+    th_hat_naive, dthdt_hat_naive = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=False)
+    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True)
     
-    naive_rmse = np.sqrt(np.mean((dxdt_hat_naive - dtheta)**2))
-    wrapped_rmse = np.sqrt(np.mean((dxdt_hat - dtheta)**2))
+    naive_rmse = np.sqrt(np.mean((dthdt_hat_naive - dthdt)**2))
+    wrapped_rmse = np.sqrt(np.mean((dthdt_hat - dthdt)**2))
     assert wrapped_rmse < naive_rmse
 
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
         fig, (ax1, ax2) = pyplot.subplots(2, 1, figsize=(10, 6), sharex=True)
-        ax1.plot(t, theta_noisy, 'k+', label=r'$\theta$ noisy (wrapped)')
-        ax1.plot(t, theta_hat_naive, 'C1--', label=r'$\hat{\theta}$ with circular=False')
-        ax1.plot(t, theta_hat, 'C0', label=r'$\hat{\theta}$ with circular=True')
+        ax1.plot(t, th_noisy, 'k+', label=r'$\theta$ noisy (wrapped)')
+        ax1.plot(t, th_hat_naive, 'C1--', label=r'$\hat{\theta}$ with circular=False')
+        ax1.plot(t, th_hat, 'C0', label=r'$\hat{\theta}$ with circular=True')
         ax1.set_ylabel(r'$\theta$ (rad)')
         ax1.legend()
-        ax2.axhline(dtheta, color='C2', xmin=0.045, xmax=0.955, label=r'true $\dot{\theta}$')
-        ax2.plot(t, dxdt_hat_naive, 'C1--', label=r'$\hat{\dot{\theta}}$ circular=False')
-        ax2.plot(t, dxdt_hat, 'C0', label=r'$\hat{\dot{\theta}}$ circular=True')
+        ax2.axhline(dthdt, color='C2', xmin=0.045, xmax=0.955, label=r'true $\dot{\theta}$')
+        ax2.plot(t, dthdt_hat_naive, 'C1--', label=r'$\hat{\dot{\theta}}$ circular=False')
+        ax2.plot(t, dthdt_hat, 'C0', label=r'$\hat{\dot{\theta}}$ circular=True')
         ax2.set_ylabel(r'$\dot{\theta}$ (rad/time)')
         ax2.set_xlabel('t')
         ax2.legend()

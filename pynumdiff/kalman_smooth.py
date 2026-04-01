@@ -25,8 +25,8 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
     :param callable innovation_fn: optional function taking measurements and predicted measurements and returning the innovation.
-        When :code:`None`, traditional subtraction is used. This is exposed to handle cases like wrapped domains, where alternative
-        displacement measures may be more appropriate. See e.g. the function passed by :code:`rtsdiff` with :code:`circular=True`.
+        When :code:`None`, traditional subtraction is used. This is primarily exposed to handle angles, which have a wrapped domain,
+        so alternative displacement measure :code:`lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi` is more appropriate.
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -147,7 +147,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
-    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # wrap innovation to [-pi, pi] for circular variables
+    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionall wrap innovation to [-pi, pi], see #178
 
     x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
@@ -171,7 +171,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
             x_hat[s] = x_hat[s] * w + xhat_smooth[:, 0][::-1] * (1-w)
             dxdt_hat[s] = dxdt_hat[s] * w + xhat_smooth[:, 1][::-1] * (1-w)
 
-    if circular: x_hat = (x_hat + np.pi) % (2*np.pi) - np.pi # wrap output to match the input domain
+    if circular: x_hat = (x_hat + np.pi) % (2*np.pi) - np.pi # wrap output to match the input domain, see #178
     return x_hat, dxdt_hat
 
 

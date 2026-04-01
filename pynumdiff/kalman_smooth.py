@@ -98,7 +98,7 @@ def rts_smooth(A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, circular=False):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circular=False):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
 
@@ -113,9 +113,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward, axis=0, circular=F
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
     :param int axis: data dimension along which differentiation is performed
-    :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians, wrapping
-        the innovation to :math:`[-\\pi, \\pi]`. The input :code:`x` must be in radians; convert degrees with
-        :code:`np.deg2rad` first. Default :code:`False`.
+    :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians, wrapping the
+        innovation to :math:`[-\\pi, \\pi]`. The input :code:`x` must be in radians; convert degrees with :code:`np.deg2rad`.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`

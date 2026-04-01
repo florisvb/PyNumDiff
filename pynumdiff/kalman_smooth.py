@@ -24,9 +24,9 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
     :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
-    :param callable innovation_fn: optional function :code:`(y_n, pred)` returning the innovation :code:`y_n - pred`,
-        where :code:`pred = C @ xhat_`. When :code:`None` (default), standard subtraction is used. Use this to handle
-        circular quantities, e.g. :code:`lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi` for angular measurements in radians.
+    :param callable innovation_fn: optional function taking measurements and predicted measurements and returning the innovation.
+        When :code:`None`, traditional subtraction is used. This is exposed to handle cases like wrapped domains, where alternative
+        displacement measures may be more appropriate. See e.g. the function passed by :code:`rtsdiff` with :code:`circular=True`.
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -60,7 +60,7 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
         P = P_.copy()
         if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
-            innovation = innovation_fn(y[n], C @ xhat_) if innovation_fn is not None else y[n] - C @ xhat_
+            innovation = y[n] - C @ xhat_ if innovation_fn is None else innovation_fn(y[n], C @ xhat_)
             xhat += K @ innovation
             P -= K @ C @ P_
         # the [n]th index of pre variables holds _{n|n-1} info; the [n]th index of post variables holds _{n|n} info
@@ -116,7 +116,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians, wrapping the
         innovation to :math:`[-\\pi, \\pi]`. The input :code:`x` must be in radians; convert degrees with :code:`np.deg2rad`.
 
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`.
+             When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
     N = x.shape[axis]
@@ -153,7 +154,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing the vector we wish to differentiate
-        xhat0 = np.zeros(order+1); xhat0[0] = x[s][0] if not np.isnan(x[s][0]) else 0 # The first estimate is the first seen state. See #110
+        xhat0 = np.zeros(order+1)
+        if not np.isnan(x[s][0]): xhat0[0] = x[s][0] # The first estimate is the first seen state. See #110
 
         xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R, innovation_fn=innovation_fn)
         xhat_smooth = rts_smooth(A_d, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
@@ -161,7 +163,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
         dxdt_hat[s] = xhat_smooth[:,1]
 
         if forwardbackward:
-            xhat0[0] = x[s][-1] if not np.isnan(x[s][-1]) else 0
+            if not np.isnan(x[s][-1]): xhat0[0] = x[s][-1]
             xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s][::-1], xhat0, P0, A_d_bwd,
                 Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R, innovation_fn=innovation_fn) # Use same Q matrices as before, because noise should still grow in reverse time
             xhat_smooth = rts_smooth(A_d_bwd, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
@@ -169,6 +171,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
             x_hat[s] = x_hat[s] * w + xhat_smooth[:, 0][::-1] * (1-w)
             dxdt_hat[s] = dxdt_hat[s] * w + xhat_smooth[:, 1][::-1] * (1-w)
 
+    if circular: x_hat = (x_hat + np.pi) % (2*np.pi) - np.pi # wrap output to match the input domain
     return x_hat, dxdt_hat
 
 

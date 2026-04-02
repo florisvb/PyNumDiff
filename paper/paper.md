@@ -1,5 +1,5 @@
 ---
-title: 'PyNumDiff: A Python Package for Numerical Differentiation of Noisy Data'
+title: 'PyNumDiff 2.0: Practical Numerical Differentiation for Noisy Data'
 tags:
   - Python
   - numerical differentiation

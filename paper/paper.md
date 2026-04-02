@@ -61,7 +61,7 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 
 **Method capabilities.** All non-deprecated methods support multidimensional data via `axis`; Table 1 lists additional specialized capabilities.
 
-| Method | Variable step | Missing | Robust | Circular |
+| Method | Variable step | Missing Data | Outlier Robust | Circular Domain |
 |---|:---:|:---:|:---:|:---:|
 | `kerneldiff` | | | | |
 | `finitediff` | | | | |

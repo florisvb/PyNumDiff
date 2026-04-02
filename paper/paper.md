@@ -57,7 +57,7 @@ x_hat, dxdt_hat = method(x, dt_or_t, **params)
 
 where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is either a scalar step size or an array of sample locations; and keyword arguments configure the method. Explicit keyword arguments make calls self-documenting; prior positional signatures are preserved with deprecation warnings.
 
-**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`, as an optional dependency keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are public, letting users with known dynamical models bypass the constant-derivative assumption of `rtsdiff`; an `innovation_fn` hook extends the filter to non-Euclidean spaces.
+**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`, as an optional dependency, keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are public, letting users with known dynamical models bypass the assumed constant-derivative model of `rtsdiff`; an `innovation_fn` hook extends the filter to non-Euclidean spaces.
 
 **Method capabilities.** All non-deprecated methods support multidimensional data via `axis`; Table 1 lists additional specialized capabilities.
 
@@ -87,19 +87,19 @@ Table: Specialized capabilities by method.
 
 **Hyperparameter optimization.** `pynumdiff.optimize` minimizes the weighted combination described above [@vanBreugel2020numerical]. The smoothness weight `tvgamma` can be initialized from the signal's estimated cutoff frequency $f_c$ via
 $$\texttt{tvgamma} = \exp(-1.6\ln f_c - 0.71\ln \Delta t - 5.1).$$
-Three improvements ship in this version: intermediate evaluations are cached; the loss is robustified via Huber penalty so outliers do not bias parameter selection; and the Kalman parameter space is reduced from two independent noise variances to their log-ratio, the quantity the result actually depends on [@komarov2025].
+Three improvements are made in this version: intermediate evaluations are cached; the loss is robustified via Huber penalty so outliers do not bias parameter selection; and the Kalman parameter space is reduced from two independent noise variances to their log-ratio, the only salient factor [@komarov2025].
 
 **Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering noiseless and noisy cases across the full expected accuracy range. Care was taken to avoid tautological tests where the implementation directly determines the expected result. Tests run automatically on every push and pull request via GitHub Actions, with line coverage tracked via Coveralls.
 
 
 # Research Impact
 
-The original PyNumDiff paper [@vanBreugel2022] has accumulated nearly 30 citations since 2022, applied in experimental biology (flight kinematics from motion capture), control engineering (observer design), and data-driven dynamics identification via SINDy [@brunton2016discovering]. The present version ships under the MIT License, is available on PyPI (`pip install pynumdiff`), and is accompanied by Jupyter notebook tutorials and full Sphinx API documentation at [pynumdiff.readthedocs.io](https://pynumdiff.readthedocs.io/master/). The companion Taxonomy paper [@komarov2025], submitted to the Journal of Computational Physics, provides the theoretical underpinning and benchmarks all included methods. The PySINDy project [@pysindy] maintains its own differentiation submodule substantially overlapping with PyNumDiff's capabilities; integration discussions are ongoing.
+The original PyNumDiff paper [@vanBreugel2022] has been applied in experimental biology (flight kinematics from motion capture), control engineering (observer design), and data-driven dynamics identification via SINDy [@brunton2016discovering]. The present version ships under the MIT License, is available on PyPI (`pip install pynumdiff`), and is accompanied by Jupyter notebook tutorials and full Sphinx API documentation at [pynumdiff.readthedocs.io](https://pynumdiff.readthedocs.io/master/). The companion Taxonomy paper [@komarov2025], submitted to the Journal of Computational Physics, provides the theoretical underpinning and benchmarks all included methods. The PySINDy project [@pysindy] maintains its own differentiation submodule substantially overlapping with PyNumDiff's capabilities; integration discussions are ongoing.
 
 
 # AI Usage Disclosure
 
-This paper was drafted with assistance from Claude Sonnet 4.6 (Anthropic), which also implemented successive code revisions based on author feedback; all outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
+This paper was drafted with assistance from Claude Sonnet 4.6 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
 
 
 # Acknowledgements

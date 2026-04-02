@@ -55,13 +55,13 @@ The original PyNumDiff publication [@vanBreugel2022] established the core method
 x_hat, dxdt_hat = method(x, dt_or_t, **params)
 ```
 
-where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is either a scalar step size or an array of sample locations; and keyword arguments configure the method. The two return values always match the shape of `x`. Explicit keyword arguments make calls self-documenting; prior positional signatures are preserved with deprecation warnings. Using PyNumDiff involves three steps: select a method, optionally optimize its hyperparameters via `pynumdiff.optimize`, and apply to data.
+where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is either a scalar step size or an array of sample locations; and keyword arguments configure the method. Explicit keyword arguments make calls self-documenting; prior positional signatures are preserved with deprecation warnings.
 
-**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`. CVXPY is an optional dependency isolated to the methods that need it, keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are exposed as public functions so users with known dynamical models can bypass the constant-derivative assumption of `rtsdiff` entirely; an `innovation_fn` hook makes the filter generic to non-Euclidean measurement spaces without touching the core algorithm.
+**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`, as an optional dependency keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are public, letting users with known dynamical models bypass the constant-derivative assumption of `rtsdiff`; an `innovation_fn` hook extends the filter to non-Euclidean spaces.
 
 **Method capabilities.** All non-deprecated methods support multidimensional data via `axis`; Table 1 lists additional specialized capabilities.
 
-| Method | Var. step | Missing | Robust | Circular |
+| Method | Variable step | Missing | Robust | Circular |
 |---|:---:|:---:|:---:|:---:|
 | `kerneldiff` | | | | |
 | `finitediff` | | | | |

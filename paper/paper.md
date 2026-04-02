@@ -59,9 +59,9 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 
 **Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`. CVXPY is an optional dependency isolated to the methods that need it, keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are exposed as public functions so users with known dynamical models can bypass the constant-derivative assumption of `rtsdiff` entirely; an `innovation_fn` hook makes the filter generic to non-Euclidean measurement spaces without touching the core algorithm.
 
-**Method capabilities.** Table 1 summarizes the specialized capabilities of each method. All non-deprecated methods support multidimensional data via the `axis` parameter.
+**Method capabilities.** All non-deprecated methods support multidimensional data via `axis`; Table 1 lists additional specialized capabilities.
 
-| Method | Variable Step | Missing Data | Outlier Robust | Circular Domain |
+| Method | Var. step | Missing | Robust | Circular |
 |---|:---:|:---:|:---:|:---:|
 | `kerneldiff` | | | | |
 | `finitediff` | | | | |
@@ -75,7 +75,7 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 | `robustdiff` | $\checkmark$ | $\checkmark$ | $\checkmark$ | |
 | `lineardiff` | | | | |
 
-Table: Specialized capabilities by method. All methods support multidimensional data via `axis`.
+Table: Specialized capabilities by method.
 
 **Variable sample spacing.** Methods that support variable step size accept an array of sample locations in place of a scalar step size. For Kalman-based methods, this means computing the discrete-time transition matrix via matrix exponential at each actual sample interval (not extracting a fixed $\Delta t$ from the first two samples), a subtle distinction whose absence silently corrupts estimates on irregularly sampled data.
 

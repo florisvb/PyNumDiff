@@ -65,14 +65,14 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 |---|:---:|:---:|:---:|:---:|
 | `kerneldiff` | | | | |
 | `finitediff` | | | | |
-| `polydiff` | ✓ | ✓ | | |
+| `polydiff` | $\checkmark$ | $\checkmark$ | | |
 | `savgoldiff` | | | | |
-| `splinediff` | ✓ | ✓ | | |
+| `splinediff` | $\checkmark$ | $\checkmark$ | | |
 | `spectraldiff` | | | | |
-| `rbfdiff` | ✓ | | | |
-| `tvrdiff` | | | ✓ | |
-| `rtsdiff` | ✓ | ✓ | | ✓ |
-| `robustdiff` | ✓ | ✓ | ✓ | |
+| `rbfdiff` | $\checkmark$ | | | |
+| `tvrdiff` | | | $\checkmark$ | |
+| `rtsdiff` | $\checkmark$ | $\checkmark$ | | $\checkmark$ |
+| `robustdiff` | $\checkmark$ | $\checkmark$ | $\checkmark$ | |
 | `lineardiff` | | | | |
 
 Table: Specialized capabilities by method. All methods support multidimensional data via `axis`.

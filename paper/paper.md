@@ -89,7 +89,7 @@ Table: Specialized capabilities by method.
 $$\texttt{tvgamma} = \exp(-1.6\ln f_c - 0.71\ln \Delta t - 5.1).$$
 Three improvements are made in this version: intermediate evaluations are cached; the loss is robustified via Huber penalty so outliers do not bias parameter selection; and the Kalman parameter space is reduced from two independent noise variances to their log-ratio, the only salient factor [@komarov2025].
 
-**Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering noiseless and noisy cases across the full expected accuracy range. Tests run automatically on every push and pull request via GitHub Actions, with line coverage tracked via Coveralls.
+**Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering noiseless and noisy cases across the full expected accuracy range. Care was taken to avoid tautological tests where the implementation directly determines the expected result. Tests run automatically on every push and pull request via GitHub Actions, with line coverage tracked via Coveralls.
 
 
 # Research Impact
@@ -104,7 +104,7 @@ This paper was drafted with assistance from Claude Sonnet 4.6 (Anthropic), which
 
 # Acknowledgements
 
-The authors thank Yuying Liu and Bingni W. Brunton for their contributions to the original PyNumDiff package [@vanBreugel2022], and Sasha Aravkin for discussions on convex optimization techniques that informed the robust differentiation methods. This work was supported by the National Science Foundation AI Institute in Dynamic Systems (grant number 2112085).
+The authors thank Yuying Liu and Bingni W. Brunton for their contributions to the original PyNumDiff package [@vanBreugel2022], and Sasha Aravkin for discussions on convex optimization techniques that informed the robust differentiation methods. This work was supported by the NSF AI Institute in Dynamic Systems (grant number 2112085).
 
 
 # References

@@ -77,7 +77,7 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 
 Table: Specialized capabilities by method.
 
-**Variable sample spacing.** Methods that support variable step size accept an array of sample locations in place of a scalar step size. For Kalman-based methods, this means computing the discrete-time transition matrix via matrix exponential at each actual sample interval (not extracting a fixed $\Delta t$ from the first two samples), a subtle distinction whose absence silently corrupts estimates on irregularly sampled data.
+**Variable sample spacing.** Methods that support variable step size accept an array of sample locations in place of a scalar step size. For Kalman-based methods, this means computing the discrete-time transition matrix via matrix exponential at each actual sample interval rather than extracting a fixed $\Delta t$ from the first two samples.
 
 **Missing data.** NaN-valued entries are treated as missing observations: excluded from fitting, imputed from the model. This supports sensors that occasionally drop samples without any user preprocessing.
 
@@ -89,7 +89,7 @@ Table: Specialized capabilities by method.
 $$\texttt{tvgamma} = \exp(-1.6\ln f_c - 0.71\ln \Delta t - 5.1).$$
 Three improvements are made in this version: intermediate evaluations are cached; the loss is robustified via Huber penalty so outliers do not bias parameter selection; and the Kalman parameter space is reduced from two independent noise variances to their log-ratio, the only salient factor [@komarov2025].
 
-**Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering noiseless and noisy cases across the full expected accuracy range. Care was taken to avoid tautological tests where the implementation directly determines the expected result. Tests run automatically on every push and pull request via GitHub Actions, with line coverage tracked via Coveralls.
+**Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering noiseless and noisy cases across the full expected accuracy range. Tests run automatically on every push and pull request via GitHub Actions, with line coverage tracked via Coveralls.
 
 
 # Research Impact

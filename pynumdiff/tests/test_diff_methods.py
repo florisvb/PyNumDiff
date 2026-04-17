@@ -5,13 +5,8 @@ from pytest import mark
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
-<<<<<<< HEAD
 from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
-=======
-from ..basis_fit import spectraldiff, rbfdiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
->>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict

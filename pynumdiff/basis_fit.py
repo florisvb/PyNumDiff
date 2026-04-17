@@ -2,6 +2,7 @@
 from warnings import warn
 import numpy as np
 from scipy import sparse
+import pywt
 
 from pynumdiff.utils import utility
 
@@ -133,3 +134,125 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     dxdt_hat_flattened = drbfdt @ alpha
 
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
+
+
+def waveletdiff(x, dt_or_t, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
+    """Smooth and differentiate noisy data via discrete wavelet denoising.
+
+    Decomposes x into wavelet detail and approximation coefficients, soft-thresholds
+    the detail coefficients to remove noise using the Donoho & Johnstone (1994)
+    universal threshold estimator, reconstructs a smoothed signal, then
+    differentiates with finite differences via np.gradient.
+
+    :param np.array x: data to differentiate
+    :param float or array dt_or_t: scalar dt or array of sample times. If an
+        array is provided it is passed directly to np.gradient, giving correct
+        results for non-uniformly sampled data.
+    :param str wavelet: PyWavelets wavelet name, e.g. 'db4', 'sym4', 'coif2'.
+        'db4' is a solid general-purpose default. Biorthogonal wavelets such as
+        'bior2.2' or 'bior4.4' are symmetric and designed for smooth reconstruction
+        but may need a lower threshold value.
+    :param int level: decomposition depth. None (default) resolves to
+        min(pywt.dwt_max_level(N, wavelet), 5) to avoid over-decomposing short
+        signals. Increase for heavily oversampled data.
+    :param float threshold: soft-thresholding scale factor in [0, inf).
+        Multiplies the universal threshold sigma * sqrt(2 * log(N)).
+        threshold=1.0 is the classical Donoho & Johnstone universal threshold
+        and is the recommended starting point. Values < 1.0 give less smoothing;
+        values > 1.0 give more aggressive smoothing. This parameter maps onto
+        tvgamma in the pynumdiff.optimize framework.
+    :param int axis: axis along which to differentiate (default 0).
+    :param str mode: PyWavelets signal extension mode passed to wavedec/waverec.
+        'periodization' (default) keeps coefficient arrays exactly length N and
+        is the most numerically stable choice for differentiation. 'reflect' is
+        a good alternative for clearly non-periodic signals.
+        See pywt.Modes.modes for all options.
+    :return: - **x_hat** (np.array) -- estimated (smoothed) x
+             - **dxdt_hat** (np.array) -- estimated derivative of x
+    """
+    N = x.shape[axis]
+
+    # Axis normalisation — bring target axis to front.
+    # Skip moveaxis when axis is already 0 to avoid an unnecessary allocation.
+    # When we do move, call ascontiguousarray immediately so the subsequent
+    # reshape is guaranteed zero-copy.
+    if axis == 0:
+        x_work = x if x.flags['C_CONTIGUOUS'] else np.ascontiguousarray(x)
+    else:
+        x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0))
+
+    shape = x_work.shape
+    x_flat = x_work.reshape(N, -1)  # (N, M) contiguous, no hidden copy
+    M = x_flat.shape[1]
+
+    if np.isscalar(dt_or_t):
+        grad_arg = dt_or_t
+    else:
+        if len(dt_or_t) != N:
+            raise ValueError(
+                "`dt_or_t` array must have the same length as x along `axis`."
+            )
+        grad_arg = dt_or_t  # np.gradient accepts a full coordinate array
+
+    # Conservative level default avoids over-decomposing short signals
+    # (pywt default uses the maximum possible level).
+    if level is None:
+        max_level = pywt.dwt_max_level(N, wavelet)
+        level = min(max_level, 5)
+
+    # Decompose all columns and stack coefficients into 2-D arrays of shape
+    # (coeff_len_i, M). Probing column 0 first lets us pre-allocate correctly;
+    # the probe result is reused for col 0 so we pay N+1 wavedec calls total.
+    _probe = pywt.wavedec(x_flat[:, 0], wavelet, level=level, mode=mode)
+    coeff_lengths = [len(c) for c in _probe]
+    n_levels = len(_probe)
+
+    coeffs_all = [
+        np.empty((coeff_lengths[i], M), dtype=x_flat.dtype)
+        for i in range(n_levels)
+    ]
+    for i, c in enumerate(_probe):
+        coeffs_all[i][:, 0] = c
+
+    for col in range(1, M):
+        for i, c in enumerate(
+            pywt.wavedec(x_flat[:, col], wavelet, level=level, mode=mode)
+        ):
+            coeffs_all[i][:, col] = c
+
+    # Vectorised noise estimation and soft-thresholding over all columns at once.
+    # sigma: robust MAD estimator from finest detail level, shape (M,).
+    # thresh: per-column universal threshold, shape (M,).
+    # Approximation coefficients (index 0) are left untouched; only detail
+    # levels (indices 1..n_levels-1) are thresholded.
+    sigma = np.median(np.abs(coeffs_all[-1]), axis=0) / 0.6745
+    np.maximum(sigma, 1e-10, out=sigma)  # floor avoids zero threshold on clean signals
+
+    thresh = threshold * sigma * np.sqrt(2 * np.log(N))  # shape (M,)
+
+    coeffs_denoised = [coeffs_all[0]] + [
+        pywt.threshold(c, thresh[np.newaxis, :], mode='soft')
+        for c in coeffs_all[1:]
+    ]
+
+    # Reconstruct and differentiate — pywt.waverec is 1-D only so a column
+    # loop remains, but all Python-level arithmetic has been moved out above.
+    x_hat_flat    = np.empty_like(x_flat)
+    dxdt_hat_flat = np.empty_like(x_flat)
+
+    for col in range(M):
+        col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
+        x_hat_col = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
+        x_hat_flat[:, col]    = x_hat_col
+        dxdt_hat_flat[:, col] = np.gradient(x_hat_col, grad_arg)
+
+    # Restore original shape and axis order.
+    # moveaxis on the way out is only needed when we moved on the way in.
+    x_hat    = x_hat_flat.reshape(shape)
+    dxdt_hat = dxdt_hat_flat.reshape(shape)
+
+    if axis != 0:
+        x_hat    = np.moveaxis(x_hat,    0, axis)
+        dxdt_hat = np.moveaxis(dxdt_hat, 0, axis)
+
+    return x_hat, dxdt_hat

@@ -5,7 +5,7 @@ from pytest import mark
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
-from ..basis_fit import spectraldiff, rbfdiff
+from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
@@ -51,6 +51,7 @@ diff_methods_and_params = [
     (spline_irreg_step, {'degree':5, 's':2}),
     (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
+    (waveletdiff, {'wavelet':'db4', 'threshold':1.0}),
     (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
@@ -173,6 +174,12 @@ error_bounds = {
               [(-2, -2), (0, 0), (0, -1), (0, 0)],
               [(0, 0), (2, 2), (0, 0), (2, 2)],
               [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    waveletdiff: [[(-14, -15), (-14, -14), (-1, -1), (0, 0)],
+                  [(-9, -9), (-8, -8), (0, 0), (1, 1)],
+                  [(-9, -9), (0, 0), (0, 0), (1, 1)],
+                  [(-1, -1), (0, 0), (0, 0), (1, 1)],
+                  [(1, 0), (2, 2), (1, 1), (2, 2)],
+                  [(0, 0), (3, 3), (1, 0), (3, 3)]], 
     velocity: [[(-25, -25), (-18, -19), (0, -1), (1, 0)],
                [(-12, -12), (-11, -12), (-1, -1), (-1, -2)],
                [(0, -1), (1, 0), (0, -1), (1, 0)],
@@ -325,6 +332,10 @@ multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
+<<<<<<< HEAD
+    (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
+    (waveletdiff, {'wavelet': 'db4', 'threshold': 1.0}),
+=======
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
@@ -333,6 +344,7 @@ multidim_methods_and_params = [
     (splinediff, {'degree': 9, 's': 1e-6}),
     (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
     (tvrdiff, {'order': 3, 'gamma': 1e-4})
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -343,6 +355,10 @@ multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)],
+<<<<<<< HEAD
+    savgoldiff: [(0, -1), (1, 1)],
+    waveletdiff: [(1, 0), (2, 1)],
+=======
     polydiff: [(1, -1), (1, 0)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)],
@@ -351,6 +367,7 @@ multidim_error_bounds = {
     splinediff: [(0, -1), (1, 0)],
     robustdiff: [(-2, -3), (0, -1)],
     tvrdiff: [(0, -1), (1, 0)]
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
@@ -403,6 +420,9 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax2.plot_wireframe(T1, T2, computed_d2)
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
+<<<<<<< HEAD
+        fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+=======
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
 
@@ -455,3 +475,4 @@ def test_missing_data(diff_method_and_params):
     
     assert np.all(np.isfinite(x_hat))
     assert np.all(np.isfinite(dxdt_hat))
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a

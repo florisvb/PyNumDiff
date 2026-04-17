@@ -24,7 +24,7 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 
 ## Introduction
 
-PyNumDiff is a Python package that implements various methods for computing numerical derivatives of noisy data, which can be a critical step in developing dynamic models or designing control. There are seven different families of methods implemented in this repository:
+PyNumDiff is a Python package that implements many methods for computing numerical derivatives and smooth estimates of noisy data, which can be a critical step in developing dynamic models or designing control. There are seven different families of methods implemented in this repository:
 
 1. prefiltering followed by finite difference calculation
 2. iterated finite differencing
@@ -34,9 +34,11 @@ PyNumDiff is a Python package that implements various methods for computing nume
 6. generalized Kalman smoothing
 7. local approximation with linear model
 
-For a full list, explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/), or read section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090).
+All are ultimately smoothing with similar runtime and accuracy, but some have situational advantages over others: For example, `robustdiff` is specialized to handle outliers; `splinediff`, `polydiff`, `rtsdiff`, and `robustdiff` can handle missing data; `splinediff`, `polydiff`, `rbfdiff`, `rtsdiff`, and `robustdiff` can handle irregularly-spaced data; and `rtsdiff` can handle inputs on a wrapped domain, like angles. All methods can accept blocks of multidimensional data, differentiating all vectors along the dimension given by the `axis` parameter.
 
-Most of these methods have multiple parameters, so we take a principled approach and propose a multi-objective optimization framework for choosing parameters that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
+For a full list and comparison, see section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090) and explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
+
+All methods have hyperparameters, so we take a principled approach and propose a multi-objective optimization framework for choosing settings that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
 
 ## Installing
 
@@ -52,7 +54,7 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 somethingdiff(x, dt, **kwargs)
 ```
 
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `dt_or_t` and can receive either a constant step size or an array of values to denote sample locations. Some methods support multidimensional data, in which case there is an `axis` argument to control the dimension differentiated along.
+where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `dt_or_t` and can receive either a constant step size or an array of values to denote sample locations. All major methods support multidimensional data, so look for an `axis` argument to control the dimension differentiated along.
 
 You can set the hyperparameters:
 ```python

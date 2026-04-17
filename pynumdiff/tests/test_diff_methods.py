@@ -5,14 +5,22 @@ from pytest import mark
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
+<<<<<<< HEAD
 from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
+=======
+from ..basis_fit import spectraldiff, rbfdiff
+from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
 def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
 def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
 def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
+def robust_irreg_step(*args, **kwargs): return robustdiff(*args, **kwargs)
+def polydiff_irreg_step(*args, **kwargs): return polydiff(*args, **kwargs)
+irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff, robust_irreg_step] # methods to test with irregular time steps
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -42,18 +50,19 @@ diff_methods_and_params = [
     (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
     (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (polydiff, {'degree':2, 'window_size':3}), (polydiff, [2, 3]),
+    (polydiff_irreg_step, {'degree':2, 'window_size':3}),
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
     (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
     (spline_irreg_step, {'degree':5, 's':2}),
     (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
     (waveletdiff, {'wavelet':'db4', 'threshold':1.0}),
-    (waveletdiff, {'wavelet':'db4', 'threshold':1.0}),
     (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     (robustdiff, {'order':3, 'log_q':7, 'log_r':2}),
+    (robust_irreg_step, {'order':3, 'log_q':7, 'log_r':2}),
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
@@ -134,13 +143,19 @@ error_bounds = {
                [(-2, -2), (0, 0), (0, -1), (1, 1)],
                [(0, 0), (1, 1), (0, -1), (1, 1)],
                [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    polydiff_irreg_step: [[(-14, -15), (-14, -14), (0, -1), (1, 1)],
+                          [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                          [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                          [(-2, -2), (0, 0), (0, -1), (1, 1)],
+                          [(0, 0), (1, 1), (0, 0), (1, 1)],
+                          [(0, 0), (3, 3), (0, 0), (3, 3)]],
     savgoldiff: [[(-13, -14), (-13, -14), (0, -1), (0, 0)],
                  [(-13, -13), (-13, -13), (0, -1), (0, 0)],
                  [(-2, -2), (-1, -1), (0, -1), (0, 0)],
                  [(0, -1), (0, 0), (0, 0), (1, 0)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    splinediff: [[(-14, -15), (-14, -15), (-1, -1), (0, 0)],
+    splinediff: [[(-14, -14), (-14, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -14), (-1, -1), (0, 0)],
                  [(-14, -14), (-13, -13), (-1, -1), (0, 0)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
@@ -230,6 +245,12 @@ error_bounds = {
                  [(-7, -7), (-2, -2), (0, -1), (1, 1)],
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    robust_irreg_step: [[(-15, -15), (-13, -14), (0, -1), (1, 1)],
+                        [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                        [(-14, -14), (-13, -13), (0, -1), (1, 1)],
+                        [(-8, -8), (-2, -2), (0, -1), (1, 1)],
+                        [(0, 0), (2, 2), (0, 0), (2, 2)],
+                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
     lineardiff: [[(-3, -4), (-3, -3), (0, -1), (1, 0)],
                  [(-1, -2), (0, 0), (0, -1), (1, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
@@ -250,9 +271,9 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     i, latex_name, f, df = test_func_and_deriv
 
     # sample the true function and true derivative, and make noisy samples
-    x = f(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else f(t_irreg)
-    dxdt = df(t) if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else df(t_irreg)
-    _t = dt if diff_method not in [spline_irreg_step, rbfdiff, rtsdiff] else t_irreg
+    x = f(t) if diff_method not in irreg_list else f(t_irreg)
+    dxdt = df(t) if diff_method not in irreg_list else df(t_irreg)
+    _t = dt if diff_method not in irreg_list else t_irreg
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
@@ -266,7 +287,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
-        t_ = t_irreg if diff_method in [spline_irreg_step, rtsdiff, rbfdiff] else t
+        t_ = t_irreg if diff_method in irreg_list else t
         axes[i, 0].plot(t_, f(t_))
         axes[i, 0].plot(t_, x, 'C0+')
         axes[i, 0].plot(t_, x_hat, 'C2.', ms=4)
@@ -316,8 +337,19 @@ multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
+<<<<<<< HEAD
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (waveletdiff, {'wavelet': 'db4', 'threshold': 1.0}),
+=======
+    (polydiff, {'degree': 2, 'window_size': 5}),
+    (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
+    (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
+    (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
+    (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
+    (splinediff, {'degree': 9, 's': 1e-6}),
+    (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
+    (tvrdiff, {'order': 3, 'gamma': 1e-4})
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -328,8 +360,19 @@ multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)],
+<<<<<<< HEAD
     savgoldiff: [(0, -1), (1, 1)],
     waveletdiff: [(1, 0), (2, 1)],
+=======
+    polydiff: [(1, -1), (1, 0)],
+    savgoldiff: [(0, -1), (1, 1)],
+    rtsdiff: [(1, -1), (1, 0)],
+    spectraldiff: [(2, 1), (3, 2)], # lot of Gibbs ringing in 2nd order derivatives along t1 with t_1^2 sin(3 pi t_2 / 2)
+    rbfdiff: [(0, -1), (1, 0)],
+    splinediff: [(0, -1), (1, 0)],
+    robustdiff: [(-2, -3), (0, -1)],
+    tvrdiff: [(0, -1), (1, 0)]
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
@@ -382,4 +425,59 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax2.plot_wireframe(T1, T2, computed_d2)
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
+<<<<<<< HEAD
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+=======
+        fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+
+
+def test_circular_rtsdiff(request):
+    """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
+    dthdt = 5 # constant angular velocity in rad/s
+    th = dthdt * t # linearly increasing angle, crosses 2*pi boundaries
+    th_noisy = np.angle(np.exp(1j * (th + noise))) # add noise and wrap to [-pi, pi]
+
+    th_hat_naive, dthdt_hat_naive = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=False)
+    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True)
+    
+    naive_rmse = np.sqrt(np.mean((dthdt_hat_naive - dthdt)**2))
+    wrapped_rmse = np.sqrt(np.mean((dthdt_hat - dthdt)**2))
+    assert wrapped_rmse < naive_rmse
+
+    if request.config.getoption("--plot"):
+        from matplotlib import pyplot
+        fig, (ax1, ax2) = pyplot.subplots(2, 1, figsize=(10, 6), sharex=True)
+        ax1.plot(t, th_noisy, 'k+', label=r'$\theta$ noisy (wrapped)')
+        ax1.plot(t, th_hat_naive, 'C1--', label=r'$\hat{\theta}$ with circular=False')
+        ax1.plot(t, th_hat, 'C0', label=r'$\hat{\theta}$ with circular=True')
+        ax1.set_ylabel(r'$\theta$ (rad)')
+        ax1.legend()
+        ax2.axhline(dthdt, color='C2', xmin=0.045, xmax=0.955, label=r'true $\dot{\theta}$')
+        ax2.plot(t, dthdt_hat_naive, 'C1--', label=r'$\hat{\dot{\theta}}$ circular=False')
+        ax2.plot(t, dthdt_hat, 'C0', label=r'$\hat{\dot{\theta}}$ circular=True')
+        ax2.set_ylabel(r'$\dot{\theta}$ (rad/time)')
+        ax2.set_xlabel('t')
+        ax2.legend()
+        fig.suptitle('rtsdiff with circular domain', fontsize=16)
+
+
+# List of methods that can handle missing values
+nan_methods_and_params = [
+    (splinediff, {'degree': 5, 's': 2}),
+    (polydiff, {'degree': 2, 'window_size': 3}),
+    (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
+    (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
+]
+
+@mark.parametrize("diff_method_and_params", nan_methods_and_params)
+def test_missing_data(diff_method_and_params):
+    """Ensure methods that support missing data return finite outputs when NaN values are present"""
+    diff_method, params = diff_method_and_params
+
+    x_nan = np.sin(t)
+    x_nan[[5, 10, 15, 20]] = np.nan # introduce missing data at several locations
+    x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
+    
+    assert np.all(np.isfinite(x_hat))
+    assert np.all(np.isfinite(dxdt_hat))
+>>>>>>> b38199f982cb4036065f599b3fe00f6076671a6a

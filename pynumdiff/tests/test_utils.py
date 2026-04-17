@@ -4,7 +4,7 @@ from matplotlib import pyplot
 
 from pynumdiff.utils import utility, evaluate
 from pynumdiff.utils.simulate import sine, triangle, pop_dyn, linear_autonomous, pi_cruise_control, lorenz_x
-np.random.seed(42) # The answer to life, the universe, and everything
+np.random.seed(7)
 
 
 def test_integrate_dxdt_hat():
@@ -56,7 +56,8 @@ def test_convolutional_smoother():
 def test_peakdet(request):
     """Verify peakdet finds peaks and valleys"""
     t = np.arange(0, 10, 0.001)
-    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + 0.02*np.random.randn(10000)
+    x = 0.3*np.sin(t) + np.sin(1.3*t) + 0.9*np.sin(4.2*t) + \
+        0.02*np.random.RandomState(42).randn(10000) # isolated source of randomness so test order doesn't affect results
     maxtab, mintab = utility.peakdet(x, 0.5, t)
 
     if request.config.getoption("--plot"):
@@ -66,30 +67,33 @@ def test_peakdet(request):
         pyplot.title('peakdet validataion')
         pyplot.show()
 
-    assert np.allclose(maxtab, [[0.475, 1.58696894], # these numbers validated by eye with --plot
-                                [1.813, 1.91418201],
-                                [3.311, -0.02749755],
-                                [4.971, 0.74687989],
-                                [6.333, 1.89776084],
-                                [7.76, 0.57366611],
-                                [9.397, 0.59379866]])
-    assert np.allclose(mintab, [[1.134, 0.31086976],
-                                [2.747, -1.13032479],
-                                [4.093, -2.00466846],
-                                [5.502, -0.31428495],
-                                [7.206, -0.5993835],
-                                [8.607,-1.71266074]])
+    assert np.allclose(maxtab, [[0.478, 1.59725055], # these numbers validated by eye with --plot
+                                [1.8, 1.91003085],
+                                [3.319, -0.04597348],
+                                [4.997, 0.74477798],
+                                [6.35, 1.89578662],
+                                [7.783, 0.57274039],
+                                [9.429, 0.58636224]])
+    assert np.allclose(mintab, [[1.101, 0.30335672],
+                                [2.744, -1.12418367],
+                                [4.077, -2.00297377],
+                                [5.587, -0.31253041],
+                                [7.14, -0.58622913],
+                                [8.608, -1.71228973]])
 
 def test_slide_function():
     """Verify the slide function's weighting scheme calculates as expected"""
-    def identity(x, dt): return x, 0 # should come back the same
+    def identity(x, dt_or_t): return x, 0 # should come back the same
 
-    x = np.arange(100)
+    x = np.arange(100, dtype=float)
     kernel = utility.gaussian_kernel(9)
 
-    x_hat, dxdt_hat = utility.slide_function(identity, x, 0.1, kernel, stride=2)
+    x_hat_dt, _ = utility.slide_function(identity, x, 0.1, kernel, stride=2)
+    assert np.allclose(x, x_hat_dt)
 
-    assert np.allclose(x, x_hat)
+    # time array: func receives a kernel-length slice of times instead of scalar dt; identity still returns x unchanged
+    x_hat_t, _ = utility.slide_function(identity, x, np.linspace(0, 10, 100, endpoint=False), kernel, stride=2)
+    assert np.allclose(x, x_hat_t)
 
 
 def test_simulations(request):

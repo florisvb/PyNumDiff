@@ -255,7 +255,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
     a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
     using default search spaces defined at the top of the :code:`pynumdiff/optimize/_optimize.py` file.
-    This routine will take a few minutes to run, especially due to `robustdiff`.
+    This routine will take a few minutes to run.
     
     Excluded:
         - ``first_order``, because iterating causes drift

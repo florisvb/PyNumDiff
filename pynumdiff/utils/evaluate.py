@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+from scipy.special import huber
 
 from pynumdiff.utils import utility
 
@@ -95,7 +96,7 @@ def robust_rme(u, v, padding=0, M=6):
     s = slice(padding, len(u)-padding) # slice out data we want to measure
 
     sigma = stats.median_abs_deviation(u[s] - v[s], scale='normal') # M is in units of this robust scatter metric
-    return np.sqrt(2*np.mean(utility.huber(u[s] - v[s], M*sigma)))
+    return np.sqrt(2*np.mean(huber(M*sigma, u[s] - v[s])))
 
 
 def rmse(u, v, padding=0):

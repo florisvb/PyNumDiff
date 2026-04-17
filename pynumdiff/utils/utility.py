@@ -2,24 +2,15 @@
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
+from scipy.special import huber
 from scipy.stats import median_abs_deviation, norm
 from scipy.ndimage import convolve1d
 
 
-def huber(x, M):
-    """Huber loss function, for outlier-robust applications,
-    `see here <https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber>`_
-
-    :param np.array[float] x: data points on which to evaluate the Huber function pointwise
-    :param float M: where the loss turns from quadratic to linear
-    :return: (np.array[float]) -- pointwise evaluations of the Huber function
-    """
-    absx = np.abs(x)
-    return np.where(absx <= M, 0.5*x**2, M*(absx - 0.5*M))
-
 def huber_const(M):
     """Scale that makes :code:`sum(huber())` interpolate :math:`\\sqrt{2}\\|\\cdot\\|_1` and :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`,
-    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt
+    from https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf, with correction for missing sqrt. Here :code:`huber`
+    refers to `scipy.special.huber <https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.huber.html>`_.
 
     :param float M: Huber parameter, where the function turns from quadratic to linear
     :return: (float) -- appropriate scale factor to normalize the Huber function
@@ -65,7 +56,7 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        return minimize(lambda c: np.sum(huber(x_hat + c.reshape(s) - x, M*sigma)), # fn to minimize in 1st argument
+        return minimize(lambda c: np.sum(huber(M*sigma, x_hat + c.reshape(s) - x)), # fn to minimize in 1st argument
             np.zeros(np.prod(s)), method='SLSQP').x.reshape(s) # initial guess is zeros; vector result must be reshaped
 
 
@@ -114,24 +105,26 @@ def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     return x_hat
 
 
-def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **kwargs):
+def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False, **kwargs):
     """Slide a smoothing derivative function across a timeseries with specified window size, and
     combine the results according to kernel weights.
 
     :param callable func: name of the function to slide
     :param np.array[float] x: data to differentiate
-    :param float dt: step size
+    :param float or np.array[float] dt_or_t: constant step size (scalar) or array of sample locations (same length as x).
+        When given as an array, the actual time values for each window are passed to :code:`func`, enabling nonuniform spacing.
     :param np.array[float] kernel: values to weight the sliding window
-    :param list args: passed to func
-    :param int stride: step size for slide (e.g. 1 means slide by 1 step)
+    :param list args: passed to :code:`func`
+    :param int stride: step size for slide (e.g. 1 means slide by 1 index location)
     :param bool pass_weights: whether weights should be passed to func via update to kwargs
-    :param dict kwargs: passed to func
+    :param dict kwargs: passed to :code:`func`
 
     :return: - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
+    equispaced = np.isscalar(dt_or_t)
 
     x_hat = np.zeros(x.shape)
     dxdt_hat = np.zeros(x.shape)
@@ -141,7 +134,7 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
         # find where to index data and kernel, taking care at edges
         start = max(0, midpoint - half_window_size)
         end = min(len(x), midpoint + half_window_size + 1) # +1 because slicing is exclusive of end
-        window = slice(start, end)
+        window = slice(start, end) # This is in terms of indices, not true time in the event of nonuniform spacing
 
         kstart = max(0, half_window_size - midpoint)
         kend = kstart + (end - start)
@@ -150,8 +143,8 @@ def slide_function(func, x, dt, kernel, *args, stride=1, pass_weights=False, **k
         w = kernel if (end-start) == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
         if pass_weights: kwargs['weights'] = w
 
-        # run the function on the window and add weighted results to cumulative answers
-        x_window_hat, dxdt_window_hat = func(x[window], dt, *args, **kwargs)
+        # Run the function on the window and add weighted results to cumulative answers. If not equispaced, pass times for window.
+        x_window_hat, dxdt_window_hat = func(x[window], dt_or_t if equispaced else dt_or_t[window], *args, **kwargs)
         x_hat[window] += w * x_window_hat
         dxdt_hat[window] += w * dxdt_window_hat
         weight_sum[window] += w # save sum of weights for normalization at the end
@@ -207,3 +200,5 @@ def peakdet(x, delta, t=None):
                 lookformax = True # now searching for a max
 
     return np.array(maxtab), np.array(mintab)
+
+

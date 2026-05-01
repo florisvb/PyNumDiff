@@ -25,7 +25,8 @@ classifiers = [
 dependencies = [
     "numpy",
     "scipy",
-    "matplotlib"
+    "matplotlib",
+    "pywavelets"
 ]
 
 [project.urls]

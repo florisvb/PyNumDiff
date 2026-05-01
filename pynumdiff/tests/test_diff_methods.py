@@ -5,7 +5,7 @@ from pytest import mark
 from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from ..finite_difference import finitediff, first_order, second_order, fourth_order
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
-from ..basis_fit import spectraldiff, rbfdiff
+from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
 from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
 from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from ..linear_model import lineardiff
@@ -51,6 +51,7 @@ diff_methods_and_params = [
     (spline_irreg_step, {'degree':5, 's':2}),
     (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
+    (waveletdiff, {'wavelet':'db4', 'threshold':1.0}),
     (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
@@ -173,6 +174,12 @@ error_bounds = {
               [(-2, -2), (0, 0), (0, -1), (0, 0)],
               [(0, 0), (2, 2), (0, 0), (2, 2)],
               [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    waveletdiff: [[(-14, -15), (-14, -14), (-1, -1), (0, 0)],
+                  [(-9, -9), (-8, -8), (0, 0), (1, 1)],
+                  [(-9, -9), (0, 0), (0, 0), (1, 1)],
+                  [(-1, -1), (0, 0), (0, 0), (1, 1)],
+                  [(1, 0), (2, 2), (1, 1), (2, 2)],
+                  [(0, 0), (3, 3), (1, 0), (3, 3)]], 
     velocity: [[(-25, -25), (-18, -19), (0, -1), (1, 0)],
                [(-12, -12), (-11, -12), (-1, -1), (-1, -2)],
                [(0, -1), (1, 0), (0, -1), (1, 0)],
@@ -327,6 +334,7 @@ multidim_methods_and_params = [
     (finitediff, {}),
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
+    (waveletdiff, {'wavelet': 'db4', 'threshold': 1.0}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
@@ -343,6 +351,7 @@ multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
     finitediff: [(0, -1), (1, -1)],
+    waveletdiff: [(1, 0), (2, 1)],
     polydiff: [(1, -1), (1, 0)],
     savgoldiff: [(0, -1), (1, 1)],
     rtsdiff: [(1, -1), (1, 0)],

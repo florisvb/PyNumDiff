@@ -240,40 +240,24 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
         for c in coeffs_all[1:]
     ]
 
-    # Build derivative reconstruction filters from the wavelet's reconstruction
-    # filters. Because the DWT reconstructs a signal as a linear combination of
-    # shifted scaling/wavelet functions, the derivative of the reconstruction is
-    # the same linear combination of the *derivatives* of those basis functions.
-    # We obtain derivative filters by finite-differencing the reconstruction
-    # lowpass filter (rec_lo), then scaling by 1/dt to convert discrete
-    # differences to continuous-time derivatives.
-    w = pywt.Wavelet(wavelet)
-    rec_lo = np.array(w.rec_lo)
-    # First-order finite difference of the filter gives the derivative filter.
-    # np.diff shortens by 1; padding with a leading zero keeps the filter length
-    # and phase consistent with the original so waverec alignment is preserved.
-    d_rec_lo = np.concatenate(([0.0], np.diff(rec_lo))) / dt
-    d_rec_hi = np.concatenate(([0.0], np.diff(np.array(w.rec_hi)))) / dt
-
-    # Reconstruct x_hat and dxdt_hat column by column.
+    # Reconstruct x_hat and differentiate column by column.
     # pywt.waverec is 1-D only, so the column loop is unavoidable here;
     # the vectorised operations above have already moved all Python-level
     # arithmetic outside this loop.
+    #
+    # After wavelet denoising we have a smooth, noise-free signal. np.gradient
+    # applies a second-order central finite difference to that clean signal,
+    # which gives an accurate derivative. This is appropriate here because the
+    # heavy lifting (noise removal) has already been done by the wavelet
+    # thresholding step; np.gradient on a smooth signal converges at O(dt^2).
     x_hat_flat    = np.empty_like(x_flat)
     dxdt_hat_flat = np.empty_like(x_flat)
 
     for col in range(M):
         col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
-
-        # Standard reconstruction for the smoothed signal.
-        x_hat_flat[:, col] = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
-
-        # Derivative reconstruction: replace the wavelet's reconstruction
-        # filters with their finite-difference derivatives and run waverec.
-        d_wavelet = pywt.Wavelet(
-            filter_bank=(w.dec_lo, w.dec_hi, d_rec_lo, d_rec_hi)
-        )
-        dxdt_hat_flat[:, col] = pywt.waverec(col_coeffs, d_wavelet, mode=mode)[:N]
+        x_hat_col = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
+        x_hat_flat[:, col]    = x_hat_col
+        dxdt_hat_flat[:, col] = np.gradient(x_hat_col, dt)
 
     # Restore original shape and axis order.
     x_hat    = np.moveaxis(x_hat_flat.reshape(shape),    0, axis)

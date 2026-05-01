@@ -136,18 +136,21 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
 
 
-def waveletdiff(x, dt_or_t, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
+def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
     """Smooth and differentiate noisy data via discrete wavelet denoising.
 
     Decomposes x into wavelet detail and approximation coefficients, soft-thresholds
     the detail coefficients to remove noise using the Donoho & Johnstone (1994)
     universal threshold estimator, reconstructs a smoothed signal, then
-    differentiates with finite differences via np.gradient.
+    differentiates analytically by applying derivative reconstruction filters to
+    the denoised wavelet coefficients.
 
-    :param np.array x: data to differentiate
-    :param float or array dt_or_t: scalar dt or array of sample times. If an
-        array is provided it is passed directly to np.gradient, giving correct
-        results for non-uniformly sampled data.
+    Because the DWT requires uniform spacing, this method only accepts a scalar
+    time step dt (not a vector of sample times). For non-uniformly sampled data,
+    use :func:`rbfdiff` or :func:`splinediff` instead.
+
+    :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
+    :param float dt: uniform time step between samples.
     :param str wavelet: PyWavelets wavelet name, e.g. 'db4', 'sym4', 'coif2'.
         'db4' is a solid general-purpose default. Biorthogonal wavelets such as
         'bior2.2' or 'bior4.4' are symmetric and designed for smooth reconstruction
@@ -170,39 +173,32 @@ def waveletdiff(x, dt_or_t, wavelet='db4', level=None, threshold=1.0, axis=0, mo
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    if not np.isscalar(dt):
+        raise ValueError(
+            "`dt` must be a scalar. The DWT requires uniformly sampled data. "
+            "For variable step sizes, use rbfdiff or splinediff instead."
+        )
+
     N = x.shape[axis]
 
-    # Axis normalisation — bring target axis to front.
-    # Skip moveaxis when axis is already 0 to avoid an unnecessary allocation.
-    # When we do move, call ascontiguousarray immediately so the subsequent
-    # reshape is guaranteed zero-copy.
-    if axis == 0:
-        x_work = x if x.flags['C_CONTIGUOUS'] else np.ascontiguousarray(x)
-    else:
-        x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0))
-
+    # Bring axis of differentiation to front so each column of x_flat is one
+    # signal to differentiate. moveaxis returns a view with updated strides,
+    # so ascontiguousarray ensures the subsequent reshape is zero-copy.
+    x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0))
     shape = x_work.shape
-    x_flat = x_work.reshape(N, -1)  # (N, M) contiguous, no hidden copy
+    x_flat = x_work.reshape(N, -1)  # (N, M)
     M = x_flat.shape[1]
 
-    if np.isscalar(dt_or_t):
-        grad_arg = dt_or_t
-    else:
-        if len(dt_or_t) != N:
-            raise ValueError(
-                "`dt_or_t` array must have the same length as x along `axis`."
-            )
-        grad_arg = dt_or_t  # np.gradient accepts a full coordinate array
-
-    # Conservative level default avoids over-decomposing short signals
-    # (pywt default uses the maximum possible level).
+    # Conservative level cap: pywt's default uses the maximum possible level,
+    # which can over-decompose short signals and wash out meaningful detail.
+    # Capping at 5 keeps at least 2^5 = 32 samples in the coarsest subband,
+    # which is enough to represent a smooth approximation without artefacts.
     if level is None:
         max_level = pywt.dwt_max_level(N, wavelet)
         level = min(max_level, 5)
 
-    # Decompose all columns and stack coefficients into 2-D arrays of shape
-    # (coeff_len_i, M). Probing column 0 first lets us pre-allocate correctly;
-    # the probe result is reused for col 0 so we pay N+1 wavedec calls total.
+    # Decompose all columns; probe column 0 first to learn coefficient lengths
+    # and pre-allocate, reusing that result so we only pay N+1 wavedec calls.
     _probe = pywt.wavedec(x_flat[:, 0], wavelet, level=level, mode=mode)
     coeff_lengths = [len(c) for c in _probe]
     n_levels = len(_probe)
@@ -221,10 +217,19 @@ def waveletdiff(x, dt_or_t, wavelet='db4', level=None, threshold=1.0, axis=0, mo
             coeffs_all[i][:, col] = c
 
     # Vectorised noise estimation and soft-thresholding over all columns at once.
-    # sigma: robust MAD estimator from finest detail level, shape (M,).
-    # thresh: per-column universal threshold, shape (M,).
-    # Approximation coefficients (index 0) are left untouched; only detail
-    # levels (indices 1..n_levels-1) are thresholded.
+    #
+    # Soft-thresholding achieves smoothing by shrinking wavelet detail
+    # coefficients toward zero: coefficients whose magnitude is below the
+    # threshold (mostly noise) are zeroed out, while large coefficients (true
+    # signal features) are kept but reduced by the threshold amount. Only detail
+    # levels (indices 1..n_levels-1) are thresholded; the coarse approximation
+    # coefficients (index 0) are left untouched.
+    #
+    # sigma: robust noise-level estimate via the median absolute deviation of
+    #        the finest detail level. Dividing by 0.6745 converts MAD to an
+    #        estimate of the Gaussian standard deviation.
+    # thresh: per-column Donoho & Johnstone (1994) universal threshold,
+    #         sigma * sqrt(2 * log(N)), scaled by the user-supplied `threshold`.
     sigma = np.median(np.abs(coeffs_all[-1]), axis=0) / 0.6745
     np.maximum(sigma, 1e-10, out=sigma)  # floor avoids zero threshold on clean signals
 
@@ -235,24 +240,43 @@ def waveletdiff(x, dt_or_t, wavelet='db4', level=None, threshold=1.0, axis=0, mo
         for c in coeffs_all[1:]
     ]
 
-    # Reconstruct and differentiate — pywt.waverec is 1-D only so a column
-    # loop remains, but all Python-level arithmetic has been moved out above.
+    # Build derivative reconstruction filters from the wavelet's reconstruction
+    # filters. Because the DWT reconstructs a signal as a linear combination of
+    # shifted scaling/wavelet functions, the derivative of the reconstruction is
+    # the same linear combination of the *derivatives* of those basis functions.
+    # We obtain derivative filters by finite-differencing the reconstruction
+    # lowpass filter (rec_lo), then scaling by 1/dt to convert discrete
+    # differences to continuous-time derivatives.
+    w = pywt.Wavelet(wavelet)
+    rec_lo = np.array(w.rec_lo)
+    # First-order finite difference of the filter gives the derivative filter.
+    # np.diff shortens by 1; padding with a leading zero keeps the filter length
+    # and phase consistent with the original so waverec alignment is preserved.
+    d_rec_lo = np.concatenate(([0.0], np.diff(rec_lo))) / dt
+    d_rec_hi = np.concatenate(([0.0], np.diff(np.array(w.rec_hi)))) / dt
+
+    # Reconstruct x_hat and dxdt_hat column by column.
+    # pywt.waverec is 1-D only, so the column loop is unavoidable here;
+    # the vectorised operations above have already moved all Python-level
+    # arithmetic outside this loop.
     x_hat_flat    = np.empty_like(x_flat)
     dxdt_hat_flat = np.empty_like(x_flat)
 
     for col in range(M):
         col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
-        x_hat_col = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
-        x_hat_flat[:, col]    = x_hat_col
-        dxdt_hat_flat[:, col] = np.gradient(x_hat_col, grad_arg)
+
+        # Standard reconstruction for the smoothed signal.
+        x_hat_flat[:, col] = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
+
+        # Derivative reconstruction: replace the wavelet's reconstruction
+        # filters with their finite-difference derivatives and run waverec.
+        d_wavelet = pywt.Wavelet(
+            filter_bank=(w.dec_lo, w.dec_hi, d_rec_lo, d_rec_hi)
+        )
+        dxdt_hat_flat[:, col] = pywt.waverec(col_coeffs, d_wavelet, mode=mode)[:N]
 
     # Restore original shape and axis order.
-    # moveaxis on the way out is only needed when we moved on the way in.
-    x_hat    = x_hat_flat.reshape(shape)
-    dxdt_hat = dxdt_hat_flat.reshape(shape)
-
-    if axis != 0:
-        x_hat    = np.moveaxis(x_hat,    0, axis)
-        dxdt_hat = np.moveaxis(dxdt_hat, 0, axis)
+    x_hat    = np.moveaxis(x_hat_flat.reshape(shape),    0, axis)
+    dxdt_hat = np.moveaxis(dxdt_hat_flat.reshape(shape), 0, axis)
 
     return x_hat, dxdt_hat

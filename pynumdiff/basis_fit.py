@@ -245,19 +245,25 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
     # the vectorised operations above have already moved all Python-level
     # arithmetic outside this loop.
     #
-    # After wavelet denoising we have a smooth, noise-free signal. np.gradient
-    # applies a second-order central finite difference to that clean signal,
-    # which gives an accurate derivative. This is appropriate here because the
-    # heavy lifting (noise removal) has already been done by the wavelet
-    # thresholding step; np.gradient on a smooth signal converges at O(dt^2).
+    # After wavelet denoising we have a smooth, noise-free signal. We
+    # differentiate it analytically in the Fourier domain: multiplying the
+    # FFT by i*omega is equivalent to applying the derivative operator exactly,
+    # with no finite-difference truncation error. This keeps the two concerns
+    # cleanly separated — wavelets handle denoising, Fourier handles
+    # differentiation.
     x_hat_flat    = np.empty_like(x_flat)
     dxdt_hat_flat = np.empty_like(x_flat)
+
+    # Angular frequency axis for a length-N signal sampled at dt.
+    # fftfreq returns cycles/sample; multiplying by 2*pi/dt gives rad/s.
+    k = np.fft.fftfreq(N, d=dt) * 2 * np.pi
 
     for col in range(M):
         col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
         x_hat_col = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
         x_hat_flat[:, col]    = x_hat_col
-        dxdt_hat_flat[:, col] = np.gradient(x_hat_col, dt)
+        X = np.fft.fft(x_hat_col)
+        dxdt_hat_flat[:, col] = np.real(np.fft.ifft(1j * k * X))
 
     # Restore original shape and axis order.
     x_hat    = np.moveaxis(x_hat_flat.reshape(shape),    0, axis)

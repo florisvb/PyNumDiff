@@ -1,7 +1,9 @@
 """Methods based on fitting basis functions to data"""
+from functools import lru_cache
 from warnings import warn
 import numpy as np
 from scipy import sparse
+from scipy.interpolate import CubicSpline
 import pywt
 
 from pynumdiff.utils import utility
@@ -136,14 +138,94 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
 
 
-def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
-    """Smooth and differentiate noisy data via discrete wavelet denoising.
+@lru_cache(maxsize=32)
+def _wavelet_derivative_synthesis_matrix(N, dt, wavelet, level, mode):
+    """Build sparse samples of d/dt of the inverse-DWT synthesis basis.
 
-    Decomposes x into wavelet detail and approximation coefficients, soft-thresholds
-    the detail coefficients to remove noise using the Donoho & Johnstone (1994)
-    universal threshold estimator, reconstructs a smoothed signal, then
-    differentiates analytically by applying derivative reconstruction filters to
-    the denoised wavelet coefficients.
+    For a fixed wavelet/level/mode/length, wavedec/waverec define a linear
+    synthesis map
+
+        x(t_n) = sum_k c_k phi_k(t_n).
+
+    This routine samples phi'_k(t_n) once, stores those samples sparsely, and
+    lets waveletdiff compute
+
+        x'(t_n) = sum_k c_k phi'_k(t_n)
+
+    without differentiating the reconstructed signal.  The derivative samples
+    are obtained from a local cubic interpolant of each compactly supported
+    synthesis basis vector; this is bookkeeping on the basis functions, not a
+    finite-difference derivative of the data.
+    """
+    zero = np.zeros(N)
+    template = pywt.wavedec(zero, wavelet, level=level, mode=mode)
+    coeff_lengths = tuple(len(c) for c in template)
+    coeff_offsets = np.cumsum((0,) + coeff_lengths[:-1])
+    n_coeffs = sum(coeff_lengths)
+    t = np.arange(N, dtype=float) * dt
+
+    rows, cols, vals = [], [], []
+    eps = 1e-12
+
+    for band, (offset, length) in enumerate(zip(coeff_offsets, coeff_lengths)):
+        for local_idx in range(length):
+            coeffs = [np.zeros_like(c, dtype=float) for c in template]
+            coeffs[band][local_idx] = 1.0
+            basis = pywt.waverec(coeffs, wavelet, mode=mode)[:N]
+
+            # Basis functions are compactly supported, but boundary extension can
+            # split support across the two ends.  Differentiating only the active
+            # samples keeps the matrix sparse and avoids global sinusoidal bases.
+            active = np.flatnonzero(np.abs(basis) > eps)
+            if active.size == 0:
+                continue
+
+            # Include one-sample padding around active support so the cubic has
+            # enough context near the edges of the support.  If support wraps or
+            # covers most of the signal, fall back to all samples.
+            support = np.zeros(N, dtype=bool)
+            support[active] = True
+            support[np.maximum(active - 1, 0)] = True
+            support[np.minimum(active + 1, N - 1)] = True
+            idx = np.flatnonzero(support)
+            if idx.size < 4 or (idx[-1] - idx[0] + 1) > 2 * idx.size:
+                idx = np.arange(N)
+
+            # CubicSpline requires strictly increasing x and at least two points.
+            # With >=4 points the not-a-knot default is well-defined; with fewer,
+            # fall back to clamped end slopes of zero.
+            bc_type = 'not-a-knot' if idx.size >= 4 else ((1, 0.0), (1, 0.0))
+            spline = CubicSpline(t[idx], basis[idx], bc_type=bc_type, extrapolate=False)
+            deriv_vals = spline(t[idx], 1)
+            keep = np.isfinite(deriv_vals) & (np.abs(deriv_vals) > eps)
+
+            rows.extend(idx[keep])
+            cols.extend(np.full(np.count_nonzero(keep), offset + local_idx))
+            vals.extend(deriv_vals[keep])
+
+    return sparse.csr_matrix((vals, (rows, cols)), shape=(N, n_coeffs)), coeff_lengths
+
+
+def _flatten_wavelet_coeffs(coeffs):
+    """Stack a wavedec coefficient list into a 2-D coefficient matrix."""
+    return np.vstack([c for band in coeffs for c in band])
+
+
+def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
+    """Smooth and differentiate noisy data with a wavelet-basis derivative sum.
+
+    Decomposes x into wavelet approximation/detail coefficients, soft-thresholds
+    the detail coefficients to denoise, reconstructs a smoothed signal, and then
+    estimates the derivative directly from the denoised wavelet coefficients:
+
+        x(t_n)  = sum_k c_k phi_k(t_n)
+        x'(t_n) = sum_k c_k phi'_k(t_n)
+
+    The first sum is the ordinary inverse wavelet transform.  The second sum is
+    evaluated by precomputing sparse samples of the derivative of each synthesis
+    basis function and multiplying that sparse matrix by the denoised
+    coefficients.  This avoids the previous reconstruct-then-FFT derivative path
+    and does not call finite differences or np.gradient on the signal.
 
     Because the DWT requires uniform spacing, this method only accepts a scalar
     time step dt (not a vector of sample times). For non-uniformly sampled data,
@@ -152,24 +234,13 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: uniform time step between samples.
     :param str wavelet: PyWavelets wavelet name, e.g. 'db4', 'sym4', 'coif2'.
-        'db4' is a solid general-purpose default. Biorthogonal wavelets such as
-        'bior2.2' or 'bior4.4' are symmetric and designed for smooth reconstruction
-        but may need a lower threshold value.
     :param int level: decomposition depth. None (default) resolves to
-        min(pywt.dwt_max_level(N, wavelet), 5) to avoid over-decomposing short
-        signals. Increase for heavily oversampled data.
+        min(pywt.dwt_max_level(N, wavelet), 5) to avoid over-decomposing short signals.
     :param float threshold: soft-thresholding scale factor in [0, inf).
-        Multiplies the universal threshold sigma * sqrt(2 * log(N)).
-        threshold=1.0 is the classical Donoho & Johnstone universal threshold
-        and is the recommended starting point. Values < 1.0 give less smoothing;
-        values > 1.0 give more aggressive smoothing. This parameter maps onto
-        tvgamma in the pynumdiff.optimize framework.
     :param int axis: axis along which to differentiate (default 0).
     :param str mode: PyWavelets signal extension mode passed to wavedec/waverec.
-        'periodization' (default) keeps coefficient arrays exactly length N and
-        is the most numerically stable choice for differentiation. 'reflect' is
-        a good alternative for clearly non-periodic signals.
-        See pywt.Modes.modes for all options.
+        'periodization' keeps coefficient arrays compact; 'reflect' is often a
+        better choice for clearly non-periodic signals.
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
@@ -180,19 +251,11 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
         )
 
     N = x.shape[axis]
-
-    # Bring axis of differentiation to front so each column of x_flat is one
-    # signal to differentiate. moveaxis returns a view with updated strides,
-    # so ascontiguousarray ensures the subsequent reshape is zero-copy.
     x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0))
     shape = x_work.shape
-    x_flat = x_work.reshape(N, -1)  # (N, M)
+    x_flat = x_work.reshape(N, -1)
     M = x_flat.shape[1]
 
-    # Conservative level cap: pywt's default uses the maximum possible level,
-    # which can over-decompose short signals and wash out meaningful detail.
-    # Capping at 5 keeps at least 2^5 = 32 samples in the coarsest subband,
-    # which is enough to represent a smooth approximation without artefacts.
     if level is None:
         max_level = pywt.dwt_max_level(N, wavelet)
         level = min(max_level, 5)
@@ -216,57 +279,35 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
         ):
             coeffs_all[i][:, col] = c
 
-    # Vectorised noise estimation and soft-thresholding over all columns at once.
-    #
-    # Soft-thresholding achieves smoothing by shrinking wavelet detail
-    # coefficients toward zero: coefficients whose magnitude is below the
-    # threshold (mostly noise) are zeroed out, while large coefficients (true
-    # signal features) are kept but reduced by the threshold amount. Only detail
-    # levels (indices 1..n_levels-1) are thresholded; the coarse approximation
-    # coefficients (index 0) are left untouched.
-    #
-    # sigma: robust noise-level estimate via the median absolute deviation of
-    #        the finest detail level. Dividing by 0.6745 converts MAD to an
-    #        estimate of the Gaussian standard deviation.
-    # thresh: per-column Donoho & Johnstone (1994) universal threshold,
-    #         sigma * sqrt(2 * log(N)), scaled by the user-supplied `threshold`.
+    # Robust noise estimate from finest details, then Donoho-Johnstone
+    # soft-thresholding on detail bands only.
     sigma = np.median(np.abs(coeffs_all[-1]), axis=0) / 0.6745
-    np.maximum(sigma, 1e-10, out=sigma)  # floor avoids zero threshold on clean signals
-
-    thresh = threshold * sigma * np.sqrt(2 * np.log(N))  # shape (M,)
-
+    np.maximum(sigma, 1e-10, out=sigma)
+    thresh = threshold * sigma * np.sqrt(2 * np.log(N))
     coeffs_denoised = [coeffs_all[0]] + [
         pywt.threshold(c, thresh[np.newaxis, :], mode='soft')
         for c in coeffs_all[1:]
     ]
 
-    # Reconstruct x_hat and differentiate column by column.
-    # pywt.waverec is 1-D only, so the column loop is unavoidable here;
-    # the vectorised operations above have already moved all Python-level
-    # arithmetic outside this loop.
-    #
-    # After wavelet denoising we have a smooth, noise-free signal. We
-    # differentiate it analytically in the Fourier domain: multiplying the
-    # FFT by i*omega is equivalent to applying the derivative operator exactly,
-    # with no finite-difference truncation error. This keeps the two concerns
-    # cleanly separated — wavelets handle denoising, Fourier handles
-    # differentiation.
-    x_hat_flat    = np.empty_like(x_flat)
-    dxdt_hat_flat = np.empty_like(x_flat)
+    Dphi, matrix_coeff_lengths = _wavelet_derivative_synthesis_matrix(
+        N, float(dt), wavelet, int(level), mode
+    )
+    if tuple(coeff_lengths) != tuple(matrix_coeff_lengths):
+        raise RuntimeError("Cached wavelet derivative matrix coefficient layout does not match wavedec output.")
 
-    # Angular frequency axis for a length-N signal sampled at dt.
-    # fftfreq returns cycles/sample; multiplying by 2*pi/dt gives rad/s.
-    k = np.fft.fftfreq(N, d=dt) * 2 * np.pi
+    x_hat_flat = np.empty_like(x_flat)
+    coeffs_flat = np.empty((sum(coeff_lengths), M), dtype=x_flat.dtype)
+    offsets = np.cumsum((0,) + tuple(coeff_lengths[:-1]))
 
     for col in range(M):
         col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
-        x_hat_col = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
-        x_hat_flat[:, col]    = x_hat_col
-        X = np.fft.fft(x_hat_col)
-        dxdt_hat_flat[:, col] = np.real(np.fft.ifft(1j * k * X))
+        x_hat_flat[:, col] = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
+        for i, (offset, length) in enumerate(zip(offsets, coeff_lengths)):
+            coeffs_flat[offset:offset + length, col] = coeffs_denoised[i][:, col]
 
-    # Restore original shape and axis order.
-    x_hat    = np.moveaxis(x_hat_flat.reshape(shape),    0, axis)
+    dxdt_hat_flat = Dphi @ coeffs_flat
+
+    x_hat = np.moveaxis(x_hat_flat.reshape(shape), 0, axis)
     dxdt_hat = np.moveaxis(dxdt_hat_flat.reshape(shape), 0, axis)
 
     return x_hat, dxdt_hat

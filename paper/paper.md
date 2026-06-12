@@ -13,6 +13,8 @@ authors:
     affiliation: 1
   - name: Floris van Breugel
     affiliation: 2
+  - name: Maria Protogerou
+    affiliation: 4
   - name: J. Nathan Kutz
     affiliation: 3
 affiliations:
@@ -22,6 +24,8 @@ affiliations:
     index: 2
   - name: Autodesk Research, London, UK
     index: 3
+  - name: Department of Applied Mathematics, University of Washington, USA
+    index: 4
 date: 1 April 2026
 bibliography: paper.bib
 ---
@@ -30,7 +34,7 @@ bibliography: paper.bib
 
 Derivatives of measured data are a prerequisite across science and engineering: identifying governing equations, designing controllers, and processing sensor streams alike. The textbook remedy, finite differencing, amplifies noise as $1/\Delta t$ and deteriorates rapidly as data grows noisier or more finely sampled. Smoothing before differencing helps, but algorithm choice and tuning substantially affect the result, and no single approach wins universally.
 
-PyNumDiff is an open-source Python package consolidating a broad suite of numerical differentiation methods under a unified API. Seven algorithm families are implemented: (1) prefiltering followed by finite difference calculation; (2) iterated finite differencing; (3) polynomial fitting [@savitzky1964]; (4) spectral and radial basis function fitting; (5) total variation regularization [@chartrand2011numerical]; (6) Kalman smoothing [@kalman1960; @rauch1965]; and (7) local approximation with linear models. @ahnert2007 provides a useful taxonomy of these families, distinguishing local methods (which estimate derivatives from a surrounding window) from global methods that fit the entire signal at once. All PyNumDiff methods return a matched pair `(x_hat, dxdt_hat)`. A companion paper [@komarov2025] benchmarks all methods across test signals and guides selection for different application scenarios.
+PyNumDiff is an open-source Python package consolidating a broad suite of numerical differentiation methods under a unified API. Seven algorithm families are implemented: (1) prefiltering followed by finite difference calculation; (2) iterated finite differencing; (3) polynomial fitting [@savitzky1964]; (4) spectral, radial basis function, and wavelet fitting; (5) total variation regularization [@chartrand2011numerical]; (6) Kalman smoothing [@kalman1960; @rauch1965]; and (7) local approximation with linear models. @ahnert2007 provides a useful taxonomy of these families, distinguishing local methods (which estimate derivatives from a surrounding window) from global methods that fit the entire signal at once. All PyNumDiff methods return a matched pair `(x_hat, dxdt_hat)`. A companion paper [@komarov2025] benchmarks all methods across test signals and guides selection for different application scenarios.
 
 
 # Statement of Need
@@ -57,7 +61,7 @@ x_hat, dxdt_hat = method(x, dt_or_t, **params)
 
 where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is either a scalar step size or an array of sample locations; and keyword arguments configure the method. Explicit keyword arguments make calls self-documenting; prior positional signatures are preserved with deprecation warnings.
 
-**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`, as an optional dependency, keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are public, letting users with known dynamical models bypass the assumed constant-derivative model of `rtsdiff`; an `innovation_fn` hook extends the filter to non-Euclidean spaces.
+**Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules, a flat structure chosen for discoverability. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; PyWavelets [@lee2019pywavelets] provides the discrete wavelet transform for `waveletdiff`; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff`, as an optional dependency, keeping the base installation lightweight. The `kalman_filter` and `rts_smooth` primitives are public, letting users with known dynamical models bypass the assumed constant-derivative model of `rtsdiff`; an `innovation_fn` hook extends the filter to non-Euclidean spaces.
 
 **Method capabilities.** All non-deprecated methods support multidimensional data via `axis`; Table 1 lists additional specialized capabilities.
 
@@ -70,6 +74,7 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 | `splinediff` | $\checkmark$ | $\checkmark$ | | |
 | `spectraldiff` | | | | |
 | `rbfdiff` | $\checkmark$ | | | |
+| `waveletdiff` | | | | |
 | `tvrdiff` | | | $\checkmark$ | |
 | `rtsdiff` | $\checkmark$ | $\checkmark$ | | $\checkmark$ |
 | `robustdiff` | $\checkmark$ | $\checkmark$ | $\checkmark$ | |

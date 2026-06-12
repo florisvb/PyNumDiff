@@ -104,7 +104,7 @@ The original PyNumDiff paper [@vanBreugel2022] has been applied in experimental 
 
 # AI Usage Disclosure
 
-This paper was drafted with assistance from Claude Sonnet 4.6 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
+This paper was drafted with assistance from Claude Sonnet 4.6 and Claude Opus 4.8 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
 
 
 # Acknowledgements

@@ -1,5 +1,4 @@
 """Methods based on fitting basis functions to data"""
-from functools import lru_cache
 from warnings import warn
 import numpy as np
 from scipy import sparse
@@ -137,9 +136,11 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
 
 
-@lru_cache(maxsize=32)
 def _wavelet_derivative_operator(N, dt, wavelet):
     """Build the sparse operators that turn denoised samples into a derivative.
+
+    Depends only on the grid (N, dt) and the wavelet, not on the data, and is
+    built once per waveletdiff call then applied to every column at once.
 
     PyWavelets treats the input samples as the finest-level scaling coefficients,
     so the denoised reconstruction x_hat represents the continuous interpolant

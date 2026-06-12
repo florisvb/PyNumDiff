@@ -8,10 +8,10 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # important for Coveralls to read commit history
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13' # because cvxopt binaries for 3.14 don't yet exist, and building is terrible
       - name: tests and coverage

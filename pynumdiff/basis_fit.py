@@ -157,10 +157,20 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
     The integer samples phi(p), phi'(p) are the eigenvalue-1 and eigenvalue-1/2
     eigenvectors of the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k)
     (the "connection coefficients"), normalized to reproduce constants and ramps.
+    This is the wavelet-basis representation of the derivative operator from
+    Beylkin (1992); the connection coefficients follow Latto, Resnikoff &
+    Tenenbaum (1991), for Daubechies' compactly supported wavelets (1988).
 
     Because the DWT requires uniform spacing, this method only accepts a scalar
     time step dt (not a vector of sample times). For non-uniformly sampled data,
     use :func:`rbfdiff` or :func:`splinediff` instead.
+
+    References:
+        G. Beylkin, "On the representation of operators in bases of compactly
+        supported wavelets," SIAM J. Numer. Anal. 29(6):1716-1740, 1992.
+        A. Latto, H. L. Resnikoff & E. Tenenbaum, "The evaluation of connection
+        coefficients of compactly supported wavelets," Proc. French-USA Workshop
+        on Wavelets and Turbulence, 1991.
 
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: uniform time step between samples.

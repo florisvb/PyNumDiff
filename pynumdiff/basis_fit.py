@@ -3,7 +3,6 @@ from functools import lru_cache
 from warnings import warn
 import numpy as np
 from scipy import sparse
-from scipy.interpolate import CubicSpline
 import pywt
 
 from pynumdiff.utils import utility
@@ -139,93 +138,70 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
 
 
 @lru_cache(maxsize=32)
-def _wavelet_derivative_synthesis_matrix(N, dt, wavelet, level, mode):
-    """Build sparse samples of d/dt of the inverse-DWT synthesis basis.
+def _wavelet_derivative_operator(N, dt, wavelet):
+    """Build the sparse operators that turn denoised samples into a derivative.
 
-    For a fixed wavelet/level/mode/length, wavedec/waverec define a linear
-    synthesis map
+    PyWavelets treats the input samples as the finest-level scaling coefficients,
+    so the denoised reconstruction x_hat represents the continuous interpolant
+    x(t) = sum_n a_n phi(t/dt - n), where phi is the wavelet's scaling function.
+    Sampling x and its analytic derivative on the grid t_m = m*dt gives two
+    convolutions against phi and phi' evaluated at *integers*:
 
-        x(t_n) = sum_k c_k phi_k(t_n).
+        x_hat[m] = sum_n a_n phi(m - n)            ->  x_hat = Phi @ a
+        x'(t_m)  = (1/dt) sum_n a_n phi'(m - n)    ->  x'    = Phi_prime @ a
 
-    This routine samples phi'_k(t_n) once, stores those samples sparsely, and
-    lets waveletdiff compute
+    so x' = Phi_prime @ Phi^-1 @ x_hat. This is the exact derivative of the
+    wavelet interpolant, with no spline or finite-difference approximation.
 
-        x'(t_n) = sum_k c_k phi'_k(t_n)
+    phi and phi' at the integers are the eigenvectors of the wavelet's refinement
+    (dilation) relation: differentiating phi(t) = sqrt2 * sum_k h_k phi(2t - k)
+    and evaluating at integers shows phi sampled at integers is the eigenvalue-1
+    eigenvector and phi' the eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 * h_{2p-q}.
+    Normalizations come from reproduction of constants (sum phi(p) = 1) and of
+    linears (sum p*phi'(p) = -1, so the operator differentiates a ramp exactly).
 
-    without differentiating the reconstructed signal.  The derivative samples
-    are obtained from a local cubic interpolant of each compactly supported
-    synthesis basis vector; this is bookkeeping on the basis functions, not a
-    finite-difference derivative of the data.
+    :return: - **Phi** (csc_matrix) -- circulant samples of phi, to be inverted
+             - **Phi_prime** (csr_matrix) -- circulant samples of phi'/dt
     """
-    zero = np.zeros(N)
-    template = pywt.wavedec(zero, wavelet, level=level, mode=mode)
-    coeff_lengths = tuple(len(c) for c in template)
-    coeff_offsets = np.cumsum((0,) + coeff_lengths[:-1])
-    n_coeffs = sum(coeff_lengths)
-    t = np.arange(N, dtype=float) * dt
+    h = np.array(pywt.Wavelet(wavelet).rec_lo)   # reconstruction low-pass = refinement filter h_k
+    h = h / h.sum() * np.sqrt(2)                  # enforce sum(h) = sqrt2, i.e. integral of phi is 1
+    L = len(h)                                    # phi is supported on [0, L-1]; sample those integers
+    p = np.arange(L)
 
-    rows, cols, vals = [], [], []
-    eps = 1e-12
+    # Transition matrix T[p,q] = sqrt2 * h_{2p-q}; entries outside the filter are 0.
+    cols = 2 * p[:, None] - p[None, :]
+    T = np.where((cols >= 0) & (cols < L), np.sqrt(2) * h[np.clip(cols, 0, L - 1)], 0.0)
 
-    for band, (offset, length) in enumerate(zip(coeff_offsets, coeff_lengths)):
-        for local_idx in range(length):
-            coeffs = [np.zeros_like(c, dtype=float) for c in template]
-            coeffs[band][local_idx] = 1.0
-            basis = pywt.waverec(coeffs, wavelet, mode=mode)[:N]
+    evals, evecs = np.linalg.eig(T)
+    phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))])    # phi(p):  eigenvalue 1
+    dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))])   # phi'(p): eigenvalue 1/2
+    phi = phi / phi.sum()                                      # sum_p phi(p) = 1
+    dphi = dphi / np.dot(p, dphi) * (-1.0)                     # sum_p p*phi'(p) = -1
 
-            # Basis functions are compactly supported, but boundary extension can
-            # split support across the two ends.  Differentiating only the active
-            # samples keeps the matrix sparse and avoids global sinusoidal bases.
-            active = np.flatnonzero(np.abs(basis) > eps)
-            if active.size == 0:
-                continue
+    # Both kernels become circulant matrices under periodic boundaries; a common
+    # shift of both cancels in Phi_prime @ Phi^-1, so the offset choice is cosmetic.
+    def circulant(kernel):
+        rows, cols, vals = [], [], []
+        m = np.arange(N)
+        for offset, val in zip(p, kernel):
+            if abs(val) < 1e-12: continue
+            rows.extend(m); cols.extend((m - offset) % N); vals.extend([val] * N)
+        return sparse.csr_matrix((vals, (rows, cols)), shape=(N, N))
 
-            # Include one-sample padding around active support so the cubic has
-            # enough context near the edges of the support.  If support wraps or
-            # covers most of the signal, fall back to all samples.
-            support = np.zeros(N, dtype=bool)
-            support[active] = True
-            support[np.maximum(active - 1, 0)] = True
-            support[np.minimum(active + 1, N - 1)] = True
-            idx = np.flatnonzero(support)
-            if idx.size < 4 or (idx[-1] - idx[0] + 1) > 2 * idx.size:
-                idx = np.arange(N)
-
-            # CubicSpline requires strictly increasing x and at least two points.
-            # With >=4 points the not-a-knot default is well-defined; with fewer,
-            # fall back to clamped end slopes of zero.
-            bc_type = 'not-a-knot' if idx.size >= 4 else ((1, 0.0), (1, 0.0))
-            spline = CubicSpline(t[idx], basis[idx], bc_type=bc_type, extrapolate=False)
-            deriv_vals = spline(t[idx], 1)
-            keep = np.isfinite(deriv_vals) & (np.abs(deriv_vals) > eps)
-
-            rows.extend(idx[keep])
-            cols.extend(np.full(np.count_nonzero(keep), offset + local_idx))
-            vals.extend(deriv_vals[keep])
-
-    return sparse.csr_matrix((vals, (rows, cols)), shape=(N, n_coeffs)), coeff_lengths
+    return circulant(phi).tocsc(), circulant(dphi / dt)
 
 
-def _flatten_wavelet_coeffs(coeffs):
-    """Stack a wavedec coefficient list into a 2-D coefficient matrix."""
-    return np.vstack([c for band in coeffs for c in band])
+def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='periodization'):
+    """Smooth and differentiate noisy data in a wavelet basis.
 
-
-def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='periodization'):
-    """Smooth and differentiate noisy data with a wavelet-basis derivative sum.
-
-    Decomposes x into wavelet approximation/detail coefficients, soft-thresholds
-    the detail coefficients to denoise, reconstructs a smoothed signal, and then
-    estimates the derivative directly from the denoised wavelet coefficients:
-
-        x(t_n)  = sum_k c_k phi_k(t_n)
-        x'(t_n) = sum_k c_k phi'_k(t_n)
-
-    The first sum is the ordinary inverse wavelet transform.  The second sum is
-    evaluated by precomputing sparse samples of the derivative of each synthesis
-    basis function and multiplying that sparse matrix by the denoised
-    coefficients.  This avoids the previous reconstruct-then-FFT derivative path
-    and does not call finite differences or np.gradient on the signal.
+    Three steps: (1) decompose x with the DWT and soft-threshold the detail
+    coefficients to denoise (Donoho-Johnstone universal threshold), reconstructing
+    a smoothed x_hat; (2) extend x_hat antisymmetrically so the periodic derivative
+    operator stays accurate at the edges; (3) recover the scaling coefficients of
+    x_hat and apply the analytic derivative of the wavelet basis to get the
+    derivative. The derivative operator differentiates the basis functions
+    themselves (see :func:`_wavelet_derivative_operator`) rather than
+    finite-differencing the signal, so it is exact for signals the basis can represent.
 
     Because the DWT requires uniform spacing, this method only accepts a scalar
     time step dt (not a vector of sample times). For non-uniformly sampled data,
@@ -233,81 +209,62 @@ def waveletdiff(x, dt, wavelet='db4', level=None, threshold=1.0, axis=0, mode='p
 
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: uniform time step between samples.
-    :param str wavelet: PyWavelets wavelet name, e.g. 'db4', 'sym4', 'coif2'.
+    :param str wavelet: PyWavelets wavelet name. Must have a differentiable scaling
+        function, so smoother wavelets give better derivatives: 'db8' (default) and
+        'sym8' are best for noisy data; 'db4', 'sym4', and 'coif2' also work well.
     :param int level: decomposition depth. None (default) resolves to
         min(pywt.dwt_max_level(N, wavelet), 5) to avoid over-decomposing short signals.
     :param float threshold: soft-thresholding scale factor in [0, inf).
     :param int axis: axis along which to differentiate (default 0).
-    :param str mode: PyWavelets signal extension mode passed to wavedec/waverec.
-        'periodization' keeps coefficient arrays compact; 'reflect' is often a
-        better choice for clearly non-periodic signals.
+    :param str mode: PyWavelets signal extension mode for the denoising transform.
+        'periodization' keeps coefficient arrays compact. The derivative operator is
+        periodic, so x_hat is antisymmetrically extended before it is applied (see below).
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if not np.isscalar(dt):
-        raise ValueError(
-            "`dt` must be a scalar. The DWT requires uniformly sampled data. "
-            "For variable step sizes, use rbfdiff or splinediff instead."
-        )
+        raise ValueError("`dt` must be a scalar. The DWT requires uniformly sampled data. "
+            "For variable step sizes, use rbfdiff or splinediff instead.")
+
+    # The Haar scaling function is a step, so it has no pointwise derivative and the
+    # connection-coefficient operator below is undefined for it. Haar/db1 is the only
+    # orthonormal wavelet with a 2-tap filter, so dec_len identifies it.
+    if pywt.Wavelet(wavelet).dec_len == 2:
+        raise ValueError("The Haar/db1 wavelet has a discontinuous (piecewise-constant) scaling "
+            "function with no derivative, so it cannot be used to differentiate. Pick a smoother "
+            "wavelet such as 'db4', 'sym4', or 'coif2'.")
 
     N = x.shape[axis]
-    x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0))
-    shape = x_work.shape
-    x_flat = x_work.reshape(N, -1)
-    M = x_flat.shape[1]
+    x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0)) # differentiation axis to front
+    shape = x_work.shape                                   # remember it to restore the input's dimensionality
+    x_flat = x_work.reshape(N, -1)                         # rest of the dims flattened into columns
 
     if level is None:
-        max_level = pywt.dwt_max_level(N, wavelet)
-        level = min(max_level, 5)
+        level = min(pywt.dwt_max_level(N, wavelet), 5)
 
-    # Decompose all columns; probe column 0 first to learn coefficient lengths
-    # and pre-allocate, reusing that result so we only pay N+1 wavedec calls.
-    _probe = pywt.wavedec(x_flat[:, 0], wavelet, level=level, mode=mode)
-    coeff_lengths = [len(c) for c in _probe]
-    n_levels = len(_probe)
-
-    coeffs_all = [
-        np.empty((coeff_lengths[i], M), dtype=x_flat.dtype)
-        for i in range(n_levels)
-    ]
-    for i, c in enumerate(_probe):
-        coeffs_all[i][:, 0] = c
-
-    for col in range(1, M):
-        for i, c in enumerate(
-            pywt.wavedec(x_flat[:, col], wavelet, level=level, mode=mode)
-        ):
-            coeffs_all[i][:, col] = c
-
-    # Robust noise estimate from finest details, then Donoho-Johnstone
-    # soft-thresholding on detail bands only.
-    sigma = np.median(np.abs(coeffs_all[-1]), axis=0) / 0.6745
-    np.maximum(sigma, 1e-10, out=sigma)
+    # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The
+    # noise level is estimated robustly per column from the finest details (coeffs[-1]).
+    coeffs = pywt.wavedec(x_flat, wavelet, level=level, mode=mode, axis=0)
+    sigma = np.maximum(np.median(np.abs(coeffs[-1]), axis=0) / 0.6745, 1e-10)
     thresh = threshold * sigma * np.sqrt(2 * np.log(N))
-    coeffs_denoised = [coeffs_all[0]] + [
-        pywt.threshold(c, thresh[np.newaxis, :], mode='soft')
-        for c in coeffs_all[1:]
-    ]
+    coeffs = [coeffs[0]] + [pywt.threshold(c, thresh[np.newaxis, :], mode='soft') for c in coeffs[1:]]
+    x_hat = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:N]
 
-    Dphi, matrix_coeff_lengths = _wavelet_derivative_synthesis_matrix(
-        N, float(dt), wavelet, int(level), mode
-    )
-    if tuple(coeff_lengths) != tuple(matrix_coeff_lengths):
-        raise RuntimeError("Cached wavelet derivative matrix coefficient layout does not match wavedec output.")
+    # 2. The derivative operator is periodic, but x_hat usually isn't. Extend it
+    # antisymmetrically (reflect through each endpoint: x[-1-k] -> 2*x[0]-x[1+k]) so the
+    # periodic wrap is continuous in both value and slope, which keeps the derivative
+    # accurate at the edges instead of spiking there. This is the odd-symmetry analog of
+    # spectraldiff's even extension; a ramp extends to a ramp, so slopes survive exactly.
+    left = 2 * x_hat[0] - x_hat[1:][::-1]
+    right = 2 * x_hat[-1] - x_hat[:-1][::-1]
+    x_ext = np.concatenate([left, x_hat, right], axis=0)  # length 3N-2, original at [N-1:2N-1]
 
-    x_hat_flat = np.empty_like(x_flat)
-    coeffs_flat = np.empty((sum(coeff_lengths), M), dtype=x_flat.dtype)
-    offsets = np.cumsum((0,) + tuple(coeff_lengths[:-1]))
+    # 3. Differentiate the basis: recover the scaling coefficients a = Phi^-1 @ x_ext, then
+    # apply the analytic basis derivative dxdt = Phi_prime @ a, and crop back to the original.
+    Phi, Phi_prime = _wavelet_derivative_operator(x_ext.shape[0], float(dt), wavelet)
+    a = sparse.linalg.spsolve(Phi, x_ext)
+    dxdt_flat = (Phi_prime @ a.reshape(x_ext.shape[0], -1))[N - 1:2 * N - 1]
 
-    for col in range(M):
-        col_coeffs = [coeffs_denoised[i][:, col] for i in range(n_levels)]
-        x_hat_flat[:, col] = pywt.waverec(col_coeffs, wavelet, mode=mode)[:N]
-        for i, (offset, length) in enumerate(zip(offsets, coeff_lengths)):
-            coeffs_flat[offset:offset + length, col] = coeffs_denoised[i][:, col]
-
-    dxdt_hat_flat = Dphi @ coeffs_flat
-
-    x_hat = np.moveaxis(x_hat_flat.reshape(shape), 0, axis)
-    dxdt_hat = np.moveaxis(dxdt_hat_flat.reshape(shape), 0, axis)
-
+    x_hat = np.moveaxis(x_hat.reshape(shape), 0, axis)
+    dxdt_hat = np.moveaxis(dxdt_flat.reshape(shape), 0, axis)
     return x_hat, dxdt_hat

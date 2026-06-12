@@ -136,73 +136,27 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
 
 
-def _wavelet_derivative_operator(N, dt, wavelet):
-    """Build the sparse operators that turn denoised samples into a derivative.
-
-    Depends only on the grid (N, dt) and the wavelet, not on the data, and is
-    built once per waveletdiff call then applied to every column at once.
-
-    PyWavelets treats the input samples as the finest-level scaling coefficients,
-    so the denoised reconstruction x_hat represents the continuous interpolant
-    x(t) = sum_n a_n phi(t/dt - n), where phi is the wavelet's scaling function.
-    Sampling x and its analytic derivative on the grid t_m = m*dt gives two
-    convolutions against phi and phi' evaluated at *integers*:
-
-        x_hat[m] = sum_n a_n phi(m - n)            ->  x_hat = Phi @ a
-        x'(t_m)  = (1/dt) sum_n a_n phi'(m - n)    ->  x'    = Phi_prime @ a
-
-    so x' = Phi_prime @ Phi^-1 @ x_hat. This is the exact derivative of the
-    wavelet interpolant, with no spline or finite-difference approximation.
-
-    phi and phi' at the integers are the eigenvectors of the wavelet's refinement
-    (dilation) relation: differentiating phi(t) = sqrt2 * sum_k h_k phi(2t - k)
-    and evaluating at integers shows phi sampled at integers is the eigenvalue-1
-    eigenvector and phi' the eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 * h_{2p-q}.
-    Normalizations come from reproduction of constants (sum phi(p) = 1) and of
-    linears (sum p*phi'(p) = -1, so the operator differentiates a ramp exactly).
-
-    :return: - **Phi** (csc_matrix) -- circulant samples of phi, to be inverted
-             - **Phi_prime** (csr_matrix) -- circulant samples of phi'/dt
-    """
-    h = np.array(pywt.Wavelet(wavelet).rec_lo)   # reconstruction low-pass = refinement filter h_k
-    h = h / h.sum() * np.sqrt(2)                  # enforce sum(h) = sqrt2, i.e. integral of phi is 1
-    L = len(h)                                    # phi is supported on [0, L-1]; sample those integers
-    p = np.arange(L)
-
-    # Transition matrix T[p,q] = sqrt2 * h_{2p-q}; entries outside the filter are 0.
-    cols = 2 * p[:, None] - p[None, :]
-    T = np.where((cols >= 0) & (cols < L), np.sqrt(2) * h[np.clip(cols, 0, L - 1)], 0.0)
-
-    evals, evecs = np.linalg.eig(T)
-    phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))])    # phi(p):  eigenvalue 1
-    dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))])   # phi'(p): eigenvalue 1/2
-    phi = phi / phi.sum()                                      # sum_p phi(p) = 1
-    dphi = dphi / np.dot(p, dphi) * (-1.0)                     # sum_p p*phi'(p) = -1
-
-    # Both kernels become circulant matrices under periodic boundaries; a common
-    # shift of both cancels in Phi_prime @ Phi^-1, so the offset choice is cosmetic.
-    def circulant(kernel):
-        rows, cols, vals = [], [], []
-        m = np.arange(N)
-        for offset, val in zip(p, kernel):
-            if abs(val) < 1e-12: continue
-            rows.extend(m); cols.extend((m - offset) % N); vals.extend([val] * N)
-        return sparse.csr_matrix((vals, (rows, cols)), shape=(N, N))
-
-    return circulant(phi).tocsc(), circulant(dphi / dt)
-
-
 def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='periodization'):
     """Smooth and differentiate noisy data in a wavelet basis.
 
     Three steps: (1) decompose x with the DWT and soft-threshold the detail
     coefficients to denoise (Donoho-Johnstone universal threshold), reconstructing
     a smoothed x_hat; (2) extend x_hat antisymmetrically so the periodic derivative
-    operator stays accurate at the edges; (3) recover the scaling coefficients of
-    x_hat and apply the analytic derivative of the wavelet basis to get the
-    derivative. The derivative operator differentiates the basis functions
-    themselves (see :func:`_wavelet_derivative_operator`) rather than
-    finite-differencing the signal, so it is exact for signals the basis can represent.
+    operator stays accurate at the edges; (3) recover the wavelet scaling
+    coefficients of x_hat and apply the analytic derivative of the wavelet basis.
+
+    The derivative differentiates the basis functions themselves rather than
+    finite-differencing the signal. PyWavelets treats the samples as finest-level
+    scaling coefficients, so x_hat is the interpolant x(t) = sum_n a_n phi(t/dt - n)
+    for the scaling function phi. Sampling x and its analytic derivative on the grid
+    gives two convolutions against phi and phi' evaluated at *integers*,
+
+        x_hat = Phi @ a     and     x' = Phi_prime @ a,
+
+    so x' = Phi_prime @ Phi^-1 @ x_hat, exact for signals the basis can represent.
+    The integer samples phi(p), phi'(p) are the eigenvalue-1 and eigenvalue-1/2
+    eigenvectors of the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k)
+    (the "connection coefficients"), normalized to reproduce constants and ramps.
 
     Because the DWT requires uniform spacing, this method only accepts a scalar
     time step dt (not a vector of sample times). For non-uniformly sampled data,
@@ -239,6 +193,26 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
     x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0)) # differentiation axis to front
     shape = x_work.shape                                   # remember it to restore the input's dimensionality
     x_flat = x_work.reshape(N, -1)                         # rest of the dims flattened into columns
+    Ne = 3 * N - 2                                         # length after the antisymmetric extension in step 2
+
+    # Build the wavelet-basis derivative operator (depends only on the grid and wavelet).
+    # Sampling the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at integers makes
+    # phi(p) the eigenvalue-1 and phi'(p) the eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
+    h = np.array(pywt.Wavelet(wavelet).rec_lo); h = h / h.sum() * np.sqrt(2) # refinement filter, integral of phi = 1
+    L = len(h); p = np.arange(L)                            # phi is supported on the integers [0, L-1]
+    shift = 2 * p[:, None] - p[None, :]
+    T = np.where((shift >= 0) & (shift < L), np.sqrt(2) * h[np.clip(shift, 0, L - 1)], 0.0)
+    evals, evecs = np.linalg.eig(T)
+    phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))]); phi /= phi.sum()           # sum_p phi(p) = 1
+    dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))]); dphi /= np.dot(p, dphi)*-1 # sum_p p*phi'(p) = -1
+    # Phi and Phi_prime hold circulant samples of phi and phi'/dt on the extended grid; both
+    # share a common shift that cancels in Phi_prime @ Phi^-1, so the offset choice is cosmetic.
+    rows, cols, phi_vals, dphi_vals = [], [], [], []
+    m = np.arange(Ne)
+    for offset, phi_p, dphi_p in zip(p, phi, dphi / dt):
+        rows.extend(m); cols.extend((m - offset) % Ne); phi_vals.extend([phi_p]*Ne); dphi_vals.extend([dphi_p]*Ne)
+    Phi = sparse.csr_matrix((phi_vals, (rows, cols)), shape=(Ne, Ne)).tocsc()           # to invert
+    Phi_prime = sparse.csr_matrix((dphi_vals, (rows, cols)), shape=(Ne, Ne))            # to apply
 
     if level is None:
         level = min(pywt.dwt_max_level(N, wavelet), 5)
@@ -262,9 +236,8 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
 
     # 3. Differentiate the basis: recover the scaling coefficients a = Phi^-1 @ x_ext, then
     # apply the analytic basis derivative dxdt = Phi_prime @ a, and crop back to the original.
-    Phi, Phi_prime = _wavelet_derivative_operator(x_ext.shape[0], float(dt), wavelet)
     a = sparse.linalg.spsolve(Phi, x_ext)
-    dxdt_flat = (Phi_prime @ a.reshape(x_ext.shape[0], -1))[N - 1:2 * N - 1]
+    dxdt_flat = (Phi_prime @ a.reshape(Ne, -1))[N - 1:2 * N - 1]
 
     x_hat = np.moveaxis(x_hat.reshape(shape), 0, axis)
     dxdt_hat = np.moveaxis(dxdt_flat.reshape(shape), 0, axis)

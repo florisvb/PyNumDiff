@@ -21,7 +21,11 @@ def test_parallel_same_as_serial():
     params_serial, val_serial = optimize(rtsdiff, x, dt, tvgamma=tvgamma, parallel=False)
 
     assert np.allclose(val_serial, val_parallel)
-    assert params_serial == params_parallel
+    # Same optimum, but the parallel path evaluates the objective in worker subprocesses whose
+    # float reduction order isn't bit-identical to serial, so compare params within tolerance
+    # rather than exactly (an exact == here fails nondeterministically, e.g. 5.359375 vs 5.359375-3.6e-15).
+    assert params_serial.keys() == params_parallel.keys()
+    assert all(np.allclose(params_serial[k], params_parallel[k]) for k in params_serial)
 
 
 def test_targeting_rmse_vs_tvgamma_loss():

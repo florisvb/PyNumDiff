@@ -23,8 +23,10 @@ project = 'PyNumDiff'
 copyright = '2025, Floris van Breugel, Pavel Komarov, Yuying Liu'
 author = 'Floris van Breugel, Pavel Komarov, Yuying Liu'
 
-# The full version, including alpha/beta/rc tags
-release = '0.1.2'
+# The full version, including alpha/beta/rc tags (tracks the setuptools_scm
+# version derived from git tags, so it never goes stale).
+from importlib.metadata import version as _v
+release = _v('pynumdiff')
 
 
 # -- General configuration ---------------------------------------------------

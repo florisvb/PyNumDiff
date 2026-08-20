@@ -218,9 +218,8 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
             None for k,v in search_space_types.items()] # None means no bound on a dimension
 
     results = []
-    # An extra filtering call, because some worker work can actually be done in the main process. Scoped to this
-    # call, so the caller's filters are restored on the way out.
-    with catch_warnings(action="ignore", category=UserWarning):
+    with catch_warnings(action="ignore", category=UserWarning): # an extra filtering call because some worker work can actually be
+        # done in the main process, scoped to this call, so the caller's prior filters are restored on the way out.
         if parallel:
             with Manager() as manager:
                 cache = manager.dict() # cache answers to avoid expensive repeat queries

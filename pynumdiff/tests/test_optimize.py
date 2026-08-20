@@ -1,4 +1,5 @@
 """Unit tests of optimizer"""
+import warnings
 import numpy as np
 
 from ..smooth_finite_difference import butterdiff
@@ -42,3 +43,12 @@ def test_search_space_updates_applied():
 
     assert params2['filter_order'] == 2
     assert params3['filter_order'] == 3
+
+
+def test_warning_filters_restored():
+    """Ensure the UserWarning silencing inside optimize() doesn't leak out and mute the caller's warnings"""
+    before = list(warnings.filters) # a copy, because filterwarnings() mutates this list in place
+    optimize(butterdiff, x, dt, tvgamma=tvgamma, parallel=False, maxiter=1,
+        search_space_updates={'filter_order':2, 'cutoff_freq':[0.1], 'num_iterations':1})
+
+    assert warnings.filters == before

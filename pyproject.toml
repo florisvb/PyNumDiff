@@ -7,6 +7,7 @@ name = "pynumdiff"
 dynamic = ["version"]
 description = "pynumdiff: numerical derivatives in python"
 readme = "README.md"
+requires-python = ">=3.11" # needed for catch_warnings(action=...) in the optimizer
 license = "MIT"
 maintainers = [
   {name = "Floris van Breugel", email = "fvanbreugel@unr.edu"},

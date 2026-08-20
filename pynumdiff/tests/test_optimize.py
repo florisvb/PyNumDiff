@@ -1,6 +1,7 @@
 """Unit tests of optimizer"""
 import warnings
 import numpy as np
+from pytest import warns
 
 from ..smooth_finite_difference import butterdiff
 from ..polynomial_fit import splinediff
@@ -52,3 +53,24 @@ def test_warning_filters_restored():
         search_space_updates={'filter_order':2, 'cutoff_freq':[0.1], 'num_iterations':1})
 
     assert warnings.filters == before
+
+
+def test_search_space_with_no_dimensions():
+    """Ensure pinning every parameter scores that lone point instead of handing scipy an empty one"""
+    pinned = {'filter_order':2, 'cutoff_freq':0.1, 'num_iterations':1}
+    with warns(UserWarning, match="Nothing to optimize"):
+        opt_params, val = optimize(butterdiff, x, dt, dxdt_truth=dxdt_truth, parallel=False, search_space_updates=pinned)
+
+    assert opt_params == pinned # nothing to search, so they should come back untouched
+    assert np.isclose(val, rmse(dxdt_truth, butterdiff(x, dt, **pinned)[1]))
+
+
+def test_categorical_only_search_space():
+    """Ensure categoricals still get compared when there are no numerical dimensions left to search"""
+    fixed = {'cutoff_freq':0.1, 'num_iterations':1}
+    opt_params, val = optimize(butterdiff, x, dt, dxdt_truth=dxdt_truth, parallel=False,
+        search_space_updates={'filter_order':{2, 3}, **fixed})
+
+    scores = {order:rmse(dxdt_truth, butterdiff(x, dt, filter_order=order, **fixed)[1]) for order in [2, 3]}
+    assert opt_params['filter_order'] == min(scores, key=scores.get) # the better of the two, not just either one
+    assert np.isclose(val, min(scores.values()))

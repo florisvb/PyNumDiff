@@ -134,14 +134,14 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     :return: float, cost of this objective at the point
     """
     # Short circuit if this hyperparam combo has already been queried, ~10% savings per #160
-    key = sha1((''.join(f"{v:.3e}" for v in point) + # This hash is stable across processes. Takes bytes
+    key = sha1((''.join(f"{v:.6e}" for v in point) + # This hash is stable across processes. Takes bytes
                ''.join(str(v) for k,v in sorted(categorical_params.items()))).encode()).digest()
     if key in cache: return cache[key]
 
     # Query the differentiation method at this choice of hyperparameters
     point_params = {k:(v if search_space_types[k] == float else int(np.round(v)))
                         for k,v in zip(search_space_types, point)} # point -> dict
-    # add back in singletons and categorical choices the Nelder-Mead isn't searching over
+    # add back in singletons and categorical choices the numerical minimzation isn't searching over
     try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # estimate x and dxdt
     except np.linalg.LinAlgError: cache[key] = 1e10; return 1e10 # some methods can fail numerically
 
@@ -174,10 +174,13 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
     :param float tvgamma: Only used if :code:`dxdt_truth` is *not* given. Regularization value used to select for parameters
                     that yield a smooth derivative. Larger value results in a smoother derivative.
-    :param dict search_space_updates: Each method has a default search space of parameter settings, structured as
-                    :code:`{param1:[numerical, values], param2:{categorical, values}, param3:value, ...}` (defined in
-                    :code:`_optimize.py`). The Cartesian product of values are used as initial starting points in optimization.
-                    If left None, the default search space is used, if :code:`{param1:[different,values]}`, these are applied.
+    :param dict search_space_updates: Each method has a default search space of parameter settings, encoded as
+                    :code:`{param1:[numerical, values], param2:{categorical, values}, param3:value, ...}` (defined at the top of
+                    :code:`pynumdiff/optimize.py`). The Cartesian product of dictionary values serves as initialization points,
+                    where values given as singletons or in sets are plugged into separate minimization runs (since some algos cannot
+                    handle discrete search), and values given in lists serve as seeds for search across continuous dimensions.
+                    This parameter optionally accepts a `dictionary update <https://docs.python.org/3/library/stdtypes.html#dict.update>`_
+                    to override particular or multiple parameter values.
     :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth` is given
     :param int padding: number of steps to ignore at the beginning and end of the data series, or :code:`'auto'` to ignore
                     2.5% at each end. Larger value causes the optimization to emphasize the accuracy in the series middle.
@@ -193,8 +196,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function
     """
-    if metric not in ['rmse','error_correlation']:
-        raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
+    if metric not in ['rmse','error_correlation']: raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
 
     default_search_space, bounds = method_params_and_bounds[func]
     search_space = {**default_search_space, **search_space_updates} # applies updates without mutating default
@@ -207,7 +209,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     categorical_combos = [dict(zip(categorical_params, combo)) for combo in
         product(*[search_space[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
-    # The Nelder-Mead's search space is the dimensions where multiple numerical options are given in a list
+    # The minimization's search space is the dimensions where numerical options are given in a list
     search_space_types = {k:type(v[0]) for k,v in search_space.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
     if any(v not in [float, int] for v in search_space_types.values()):
         raise ValueError("To optimize over categorical strings or bools, put them in a tuple, not a list.")
@@ -217,28 +219,32 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
             None for k,v in search_space_types.items()] # None means no bound on a dimension
 
-    results = []
+    if len(search_space_types) == 0 and len(categorical_combos) == 1: # one point is not much of a space
+        warn(f"Nothing to optimize: every parameter of {func.__name__} is pinned to a single value, so the objective is simply evaluated there.")
+
+    # Bind everything that stays the same across jobs, leaving `minimize`'s `fun` and `x0` args positional so one `partial` can serve them all.
+    _minimize = partial(scipy.optimize.minimize, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
+    obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'search_space_types':search_space_types,
+        'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
+
     with catch_warnings(action="ignore", category=UserWarning): # an extra filtering call because some worker work can actually be
-        # done in the main process, scoped to this call, so the caller's prior filters are restored on the way out.
+        # done in the main process; scoped to this call so the caller's prior filters are restored on the way out
         if parallel:
             with Manager() as manager:
-                cache = manager.dict() # cache answers to avoid expensive repeat queries
+                obj_kwargs['cache'] = manager.dict() # cache answers to avoid expensive repeat queries
+                # Line up every (objective, starting point) pair across all categorical combos, so the whole sweep can go out at once.
+                # Combo-major, so opt_idx//len(starting_points) works to index results below.
+                jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
+                        for categorical_combo in categorical_combos for point in starting_points]
                 with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
-                    for categorical_combo in categorical_combos:
-                        # wrap the objective and scipy.optimize.minimize to pass kwargs and a host of other things that remain the same
-                        _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
-                            categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
-                            metric=metric, tvgamma=tvgamma, padding=padding, cache=cache, huberM=huberM)
-                        _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-                        results += pool.map(_minimize, starting_points) # returns a bunch of OptimizeResult objects
+                    results = pool.starmap(_minimize, jobs, chunksize=1) if len(search_space_types) > 0 else \
+                        [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # no space for minimizer to walk
         else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
-            cache = {} # dict
-            for categorical_combo in categorical_combos:
-                _obj_fun = partial(_objective_function, func=func, x=x, dt=dt, singleton_params=singleton_params,
-                    categorical_params=categorical_combo, search_space_types=search_space_types, dxdt_truth=dxdt_truth,
-                    metric=metric, tvgamma=tvgamma, padding=padding, cache=cache, huberM=huberM)
-                _minimize = partial(scipy.optimize.minimize, _obj_fun, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-                results += [_minimize(p) for p in starting_points]
+            obj_kwargs['cache'] = {} # a plain dict suffices when there are no other processes to share it with
+            jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
+                for categorical_combo in categorical_combos for point in starting_points]
+            results = [_minimize(obj, point) for obj, point in jobs] if len(search_space_types) > 0 else \
+                [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # again, nowhere to walk
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x
@@ -255,7 +261,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
 def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
     a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
-    using default search spaces defined at the top of the :code:`pynumdiff/optimize/_optimize.py` file.
+    using default search spaces defined in :code:`method_params_and_bounds` at the top of :code:`pynumdiff/optimize.py`.
     This routine will take a few minutes to run.
     
     Excluded:

@@ -117,7 +117,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
         innovation to :math:`[-\\pi, \\pi]`. The input :code:`x` must be in radians; convert degrees with :code:`np.deg2rad`.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`.
-             When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.
+               When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
     N = x.shape[axis]

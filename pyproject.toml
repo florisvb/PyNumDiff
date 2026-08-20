@@ -26,7 +26,8 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
-    "pywavelets"
+    "pywavelets",
+    "tqdm" # optimize module imports this
 ]
 
 [project.urls]
@@ -36,8 +37,7 @@ package = "https://pypi.org/project/pynumdiff/"
 
 [project.optional-dependencies]
 advanced = [
-    "cvxpy",
-    "tqdm"
+    "cvxpy"
 ]
 dev = [
     "pylint",
@@ -49,8 +49,7 @@ docs = [
     "sphinx",
     "sphinx_rtd_theme",
     "myst-parser",
-    "cvxpy", # necessary to document modules which import this
-    "tqdm" # optimize module imports this
+    "cvxpy" # necessary to document modules which import this
 ]
 
 [tool.setuptools_scm]

@@ -58,8 +58,8 @@ method_params_and_bounds = {
           'num_iterations': (1, 10)}),
     spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
                   'pad_to_zero_dxdt': {True, False},
-                  'high_freq_cutoff': [1e-3, 5e-2, 1e-2, 5e-2, 1e-1]}, # give numerical params in a list to scipy.optimize over them
-                 {'high_freq_cutoff': (1e-5, 1-1e-5)}),
+                  'high_freq_cutoff': [1e-2, 5e-2, 1e-1, 5e-1]}, # give numerical params in a list to scipy.optimize over them
+                 {'high_freq_cutoff': (1e-3, 1-1e-5)}), # cutoffs below ~2/N round down to 0 FFT bins, where the loss is flat, see #209
     rbfdiff: ({'sigma': [1e-2, 1e-1, 1],
                 'lmbd': [1e-3, 1e-2, 1e-1]},
               {'sigma': (1e-2, 1e3),

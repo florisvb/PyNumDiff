@@ -64,7 +64,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     # Filter to zero out higher wavenumbers
     discrete_cutoff = int(high_freq_cutoff * N / 2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
     filt = np.ones(k.shape) # start with all frequencies passing
-    filt[discrete_cutoff:-discrete_cutoff] = 0 # zero out high-frequency components
+    filt[discrete_cutoff:N-discrete_cutoff] = 0 # zero out high-frequency components
 
     # Smoothed signal
     X = np.fft.fft(x, axis=axis)

@@ -93,6 +93,9 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
         if window_size % 2 == 0:
             window_size += 1
             warn("Kernel window size should be odd. Added 1 to length.")
+        if step_size > window_size:
+            step_size = window_size
+            warn("`step_size` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
         kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
     def _polydiff(x, dt_or_t, degree, weights=None):

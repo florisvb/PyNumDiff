@@ -140,6 +140,9 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     if window_size % 2 == 0:
         window_size += 1
         warn("Kernel window size should be odd. Added 1 to length.")
+    if step_size > window_size:
+        step_size = window_size
+        warn("`step_size` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
 
     kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 

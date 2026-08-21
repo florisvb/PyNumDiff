@@ -26,7 +26,7 @@ affiliations:
     index: 3
   - name: Department of Applied Mathematics, University of Washington, USA
     index: 4
-date: 1 April 2026
+date: 21 August 2026
 bibliography: paper.bib
 ---
 
@@ -34,7 +34,7 @@ bibliography: paper.bib
 
 Derivatives of measured data are a prerequisite across science and engineering: identifying governing equations, designing controllers, and processing sensor streams alike. The textbook remedy, finite differencing, amplifies noise as $1/\Delta t$ and deteriorates rapidly as data grows noisier or more finely sampled. Smoothing before differencing helps, but algorithm choice and tuning substantially affect the result, and no single approach wins universally.
 
-PyNumDiff is an open-source Python package consolidating a broad suite of numerical differentiation methods under a unified API. Seven algorithm families are implemented: (1) prefiltering followed by finite difference calculation; (2) iterated finite differencing; (3) polynomial fitting [@savitzky1964]; (4) spectral, radial basis function, and wavelet fitting; (5) total variation regularization [@chartrand2011numerical]; (6) Kalman smoothing [@kalman1960; @rauch1965]; and (7) local approximation with linear models. @ahnert2007 provides a useful taxonomy of these families, distinguishing local methods (which estimate derivatives from a surrounding window) from global methods that fit the entire signal at once. All PyNumDiff methods return a matched pair `(x_hat, dxdt_hat)`. A companion paper [@komarov2025] benchmarks all methods across test signals and guides selection for different application scenarios. This paper describes the package's second generation. Its release numbers stay below 1.0 by convention, and the version described here is 0.2.3.
+PyNumDiff is an open-source Python package consolidating a broad suite of numerical differentiation methods under a unified API. Seven algorithm families are implemented: (1) prefiltering followed by finite difference calculation; (2) iterated finite differencing; (3) polynomial fitting [@savitzky1964]; (4) spectral, radial basis function, and wavelet fitting; (5) total variation regularization [@chartrand2011numerical]; (6) Kalman smoothing [@kalman1960; @rauch1965]; and (7) local approximation with linear models. @ahnert2007 provides a useful taxonomy of these families, distinguishing local methods (which estimate derivatives from a surrounding window) from global methods that fit the entire signal at once. All PyNumDiff methods return a matched pair `(x_hat, dxdt_hat)`. A companion paper [@komarov2025] benchmarks all methods across test signals and guides selection for different application scenarios. This paper describes the package's second generation, the 0.2.x release series.
 
 
 # Statement of Need
@@ -88,19 +88,21 @@ Table: Specialized capabilities by method.
 
 **Circular and wrapped domains.** `rtsdiff` accepts `circular=True` for quantities like angles on a periodic domain. Innovation residuals are wrapped to $[-\pi, \pi]$ before each Kalman update via an `innovation_fn` hook, and `x_hat` is returned in the same range, avoiding the large spurious spikes naive smoothers produce when a signal crosses the $\pm\pi$ boundary.
 
-**Hyperparameter optimization.** `pynumdiff.optimize` minimizes the weighted combination described above [@vanBreugel2020numerical], and the smoothness weight `tvgamma` can be initialized automatically from the signal's estimated cutoff frequency. This version robustifies the loss with a Huber penalty so outliers do not bias parameter selection, and it reduces the Kalman parameter space from two independent noise variances to their log-ratio, the only salient factor [@komarov2025]. Categorical and boolean hyperparameters are now supported natively, so discrete choices such as derivative order can be optimized jointly with continuous ones. Repeated evaluations are cached to avoid redundant work. A single call to `suggest_method` runs this search across nearly every method in the package and reports the best fit, which is the practical payoff of putting them all behind one interface.
+**Hyperparameter optimization.** `pynumdiff.optimize` selects hyperparameters $\Phi$ by minimizing
+$$L(\Phi) = \text{RMSE}\big(\textstyle\int\hat{\dot{x}}(\Phi) + c,\; x\big) + \gamma\,\text{TV}\big(\hat{\dot{x}}(\Phi)\big),$$
+which requires no ground truth, because fidelity is measured by integrating the estimated derivative back against the measured signal [@vanBreugel2020numerical]. The smoothness weight $\gamma$, exposed as `tvgamma`, can be initialized automatically from the signal's estimated cutoff frequency. This version robustifies the first term with a Huber penalty so outliers do not bias parameter selection, and it reduces the Kalman parameter space from two independent noise variances to their log-ratio, the only salient factor [@komarov2025]. Categorical and boolean hyperparameters are now supported natively, so discrete choices such as derivative order can be optimized jointly with continuous ones. Repeated evaluations are cached to avoid redundant work. A single call to `suggest_method` runs this search across nearly every method in the package and reports the best fit, which is the practical payoff of putting them all behind one interface.
 
 **Testing and continuous integration.** The test suite validates all methods against analytic functions with known derivatives, covering both noiseless and noisy cases. Care was taken to avoid tautological tests where the implementation directly determines the expected result. GitHub Actions runs the suite on every push and pull request, and Coveralls tracks line coverage, currently 90%.
 
 
-# Research Impact
+# Research Impact Statement
 
 The original PyNumDiff paper [@vanBreugel2022] has been applied in experimental biology (flight kinematics from motion capture), control engineering (observer design), and data-driven dynamics identification via SINDy [@brunton2016discovering]. Tutorial notebooks and full API documentation are published at [pynumdiff.readthedocs.io](https://pynumdiff.readthedocs.io/master/). The companion Taxonomy paper [@komarov2025], submitted to the Journal of Computational Physics, provides the theoretical underpinning and benchmarks all included methods. The PySINDy project [@pysindy] maintains its own differentiation submodule substantially overlapping with PyNumDiff's capabilities; integration discussions are ongoing.
 
 
 # AI Usage Disclosure
 
-This paper was drafted with assistance from Claude Sonnet 4.6 and Claude Opus 4.8 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
+This paper was drafted with assistance from Claude Sonnet 4.6 and Claude Opus 4.8 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and code contributions were checked against the test suite and continuous integration described above. The authors take full responsibility for accuracy.
 
 
 # Acknowledgements

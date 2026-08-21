@@ -168,8 +168,11 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
                 Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R, innovation_fn=innovation_fn) # Use same Q matrices as before, because noise should still grow in reverse time
             xhat_smooth = rts_smooth(A_d_bwd, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
 
-            x_hat[s] = x_hat[s] * w + xhat_smooth[:, 0][::-1] * (1-w)
-            dxdt_hat[s] = dxdt_hat[s] * w + xhat_smooth[:, 1][::-1] * (1-w)
+            if circular: # forward and backward passes track unwrapped angle and can sit whole turns apart, so de-alias, see #208
+                xhat_smooth[:,0][::-1] -= 2*np.pi*np.round(np.median((xhat_smooth[:,0][::-1] - x_hat[s])/(2*np.pi)))
+
+            x_hat[s] = x_hat[s] * w + xhat_smooth[:,0][::-1] * (1-w)
+            dxdt_hat[s] = dxdt_hat[s] * w + xhat_smooth[:,1][::-1] * (1-w) # the derivative isn't affected by aliasing rotations
 
     if circular: x_hat = (x_hat + np.pi) % (2*np.pi) - np.pi # wrap output to match the input domain, see #178
     return x_hat, dxdt_hat

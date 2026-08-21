@@ -417,18 +417,22 @@ def test_multidimensionality(multidim_method_and_params, request):
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
 
 
-def test_circular_rtsdiff(request):
+@mark.parametrize("fwdbwd", [False, True])
+def test_circular_rtsdiff(request, fwdbwd):
     """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
     dthdt = 5 # constant angular velocity in rad/s
     th = dthdt * t # linearly increasing angle, crosses 2*pi boundaries
     th_noisy = np.angle(np.exp(1j * (th + noise))) # add noise and wrap to [-pi, pi]
 
-    th_hat_naive, dthdt_hat_naive = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=False)
-    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True)
+    th_hat_naive, dthdt_hat_naive = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=False, forwardbackward=fwdbwd)
+    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True, forwardbackward=fwdbwd)
     
     naive_rmse = np.sqrt(np.mean((dthdt_hat_naive - dthdt)**2))
     wrapped_rmse = np.sqrt(np.mean((dthdt_hat - dthdt)**2))
     assert wrapped_rmse < naive_rmse
+
+    th_rmse = np.sqrt(np.mean(np.angle(np.exp(1j * (th_hat - th)))**2)) # angular error
+    assert th_rmse < 0.1 # the forward and backward estimates must be blended on a common branch, see #208
 
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
@@ -444,7 +448,7 @@ def test_circular_rtsdiff(request):
         ax2.set_ylabel(r'$\dot{\theta}$ (rad/time)')
         ax2.set_xlabel('t')
         ax2.legend()
-        fig.suptitle('rtsdiff with circular domain', fontsize=16)
+        fig.suptitle(f'rtsdiff with circular domain, forwardbackward={fwdbwd}', fontsize=16)
 
 
 # List of methods that can handle missing values

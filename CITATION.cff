@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use this software, please at least cite the JOSS publication referenced below."
-title: "PyNumDiff: Practical Numerical Differentiation for Noisy Data"
+message: "If you use this software, please cite the article under preferred-citation."
+title: PyNumDiff
 authors:
   - family-names: Komarov
     given-names: Pavel
@@ -16,21 +16,37 @@ authors:
 version: 0.2.3
 date-released: 2026-06-12
 doi: 10.5281/zenodo.6366704
+preferred-citation:
+  type: article
+  title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+  authors:
+    - family-names: van Breugel
+      given-names: Floris
+    - family-names: Liu
+      given-names: Yuying
+    - family-names: Brunton
+      given-names: Bingni W.
+    - family-names: Kutz
+      given-names: J. Nathan
+  journal: Journal of Open Source Software
+  year: 2022
+  volume: 7
+  number: 71
+  pages: 4078
+  doi: 10.21105/joss.04078
+  version: 0.1.2.4
+  notes: "Describes the package through version 0.1.x. A second article covering the 0.2.x generation is under review at the Journal of Open Source Software."
 references:
   - type: article
-    title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+    title: A Taxonomy of Numerical Differentiation Methods
     authors:
+      - family-names: Komarov
+        given-names: Pavel
       - family-names: van Breugel
         given-names: Floris
-      - family-names: Liu
-        given-names: Yuying
-      - family-names: Brunton
-        given-names: Bing W.
       - family-names: Kutz
         given-names: J. Nathan
-    journal: Journal of Open Source Software
-    year: 2022
-    volume: 7
-    number: 71
-    pages: 4078
-    doi: 10.21105/joss.04078
+    year: 2025
+    status: submitted
+    url: "https://arxiv.org/abs/2512.09090"
+    notes: "Companion paper. Benchmarks the methods implemented here and provides their theoretical grounding."

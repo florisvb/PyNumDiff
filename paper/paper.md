@@ -51,7 +51,7 @@ PyNumDiff addresses this gap. Its unified interface lets users compare methods o
 
 Relevant Python tools exist, but none covers PyNumDiff's breadth. `numpy.gradient` and `scipy.signal.savgol_filter` [@virtanen2020scipy] handle only a sliver of the method space; `findiff` offers high-order finite difference stencils suited to clean simulation data, not noisy measurements. Historically, practitioners have had to stitch together PyKalman, PyDMD, and standalone TVR scripts [@chartrand2011numerical] with no shared API or principled way to compare results. The `derivative` package [@derivative_pkg] overlaps substantially but lacks multidimensional support, NaN handling, and hyperparameter optimization. No existing package spans PyNumDiff's seven method families with a consistent interface.
 
-The original PyNumDiff publication [@vanBreugel2022] established the core method set and optimization framework. This second generation rewrites it from the ground up and consolidates it. `kerneldiff`, `rtsdiff`, and `tvrdiff` each cover by parameter what had been separate functions, so the package presents fewer entry points than before while spanning more methods. `rbfdiff`, `waveletdiff`, and `robustdiff` are new, bringing the set to twelve methods, all organized into the seven families above behind one keyword-argument signature. A single optimizer serves every one of them, and four capabilities now span the package, covering multidimensional data, irregular sample spacing, missing observations, and circular domains.
+The original PyNumDiff publication [@vanBreugel2022] established the core method set and optimization framework. This second generation rewrites it from the ground up and consolidates it. `kerneldiff`, `rtsdiff`, and `tvrdiff` each cover by parameter what had been separate functions, so the package presents fewer entry points than before while spanning more methods. `rbfdiff`, `waveletdiff`, and `robustdiff` are new, bringing the set to the twelve methods of Table 1, all organized into the seven families above behind one keyword-argument signature. A single optimizer serves every one of them, and four capabilities now span the package, covering multidimensional data, irregular sample spacing, missing observations, and circular domains.
 
 
 # Software Design
@@ -66,18 +66,17 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 
 **Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules in a flat structure. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; PyWavelets [@lee2019pywavelets] provides the discrete wavelet transform for `waveletdiff`; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff` as an optional dependency. The public `kalman_filter` and `rts_smooth` primitives let users with known dynamics bypass `rtsdiff`'s constant-derivative model.
 
-**Method capabilities.** All twelve non-deprecated methods support multidimensional data via `axis`. Table 1 lists the six with further specialized capabilities.
+**Method capabilities.** Table 1 groups the twelve non-deprecated methods by capability. All handle multidimensional data via `axis`, and several go further.
 
-| Method | Variable step | Missing Data | Outlier Robust | Circular Domain |
-|---|:---:|:---:|:---:|:---:|
-| `polydiff` | $\checkmark$ | $\checkmark$ | | |
-| `splinediff` | $\checkmark$ | $\checkmark$ | | |
-| `rbfdiff` | $\checkmark$ | | | |
-| `tvrdiff` | | | $\checkmark$ | |
-| `rtsdiff` | $\checkmark$ | $\checkmark$ | | $\checkmark$ |
-| `robustdiff` | $\checkmark$ | $\checkmark$ | $\checkmark$ | |
+| Capability | Methods |
+|---|---|
+| Multidimensional data | `kerneldiff`, `finitediff`, `polydiff`, `savgoldiff`, `splinediff`, `spectraldiff`, `rbfdiff`, `waveletdiff`, `tvrdiff`, `rtsdiff`, `robustdiff`, `lineardiff` |
+| Variable step | `polydiff`, `splinediff`, `rbfdiff`, `rtsdiff`, `robustdiff` |
+| Missing data | `polydiff`, `splinediff`, `rtsdiff`, `robustdiff` |
+| Outlier robustness | `tvrdiff`, `robustdiff` |
+| Circular domain | `rtsdiff` |
 
-Table: Specialized capabilities by method.
+Table: Methods by capability.
 
 **Irregular and incomplete sampling.** Methods that support variable step size accept an array of sample locations in place of a scalar step, and Kalman-based methods then compute the transition matrix by matrix exponential at each actual interval. NaN entries are treated as missing observations, excluded from fitting and imputed from the model, so sensors that drop samples need no preprocessing.
 

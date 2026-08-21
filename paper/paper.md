@@ -66,17 +66,19 @@ where `x` is a NumPy array [@harris2020array] of measurements; `dt_or_t` is eith
 
 **Software architecture.** PyNumDiff is organized into seven method modules plus shared `utils` and `optimize` modules in a flat structure. Where strong alternatives exist, PyNumDiff delegates rather than reimplements: SciPy [@virtanen2020scipy] provides spline fitting, Savitzky-Golay filtering, and signal processing routines; NumPy [@harris2020array] provides the FFT; PyWavelets [@lee2019pywavelets] provides the discrete wavelet transform for `waveletdiff`; CVXPY [@diamond2016cvxpy] handles convex optimization for `robustdiff` and `tvrdiff` as an optional dependency. The public `kalman_filter` and `rts_smooth` primitives let users with known dynamics bypass `rtsdiff`'s constant-derivative model.
 
-**Method capabilities.** Table 1 groups the twelve non-deprecated methods by capability. All handle multidimensional data via `axis`, and several go further.
+**Method capabilities.** All twelve non-deprecated methods support multidimensional data via `axis`. Table 1 shows which offer more.
 
-| Capability | Methods |
-|---|---|
-| Multidimensional data | `kerneldiff`, `finitediff`, `polydiff`, `savgoldiff`, `splinediff`, `spectraldiff`, `rbfdiff`, `waveletdiff`, `tvrdiff`, `rtsdiff`, `robustdiff`, `lineardiff` |
-| Variable step | `polydiff`, `splinediff`, `rbfdiff`, `rtsdiff`, `robustdiff` |
-| Missing data | `polydiff`, `splinediff`, `rtsdiff`, `robustdiff` |
-| Outlier robustness | `tvrdiff`, `robustdiff` |
-| Circular domain | `rtsdiff` |
+| Method | Variable step | Missing Data | Outlier Robust | Circular Domain |
+|---|:---:|:---:|:---:|:---:|
+| `polydiff` | $\checkmark$ | $\checkmark$ | | |
+| `splinediff` | $\checkmark$ | $\checkmark$ | | |
+| `rbfdiff` | $\checkmark$ | | | |
+| `tvrdiff` | | | $\checkmark$ | |
+| `rtsdiff` | $\checkmark$ | $\checkmark$ | | $\checkmark$ |
+| `robustdiff` | $\checkmark$ | $\checkmark$ | $\checkmark$ | |
+| `kerneldiff`, `finitediff`, `savgoldiff`, `spectraldiff`, `waveletdiff`, `lineardiff` | | | | |
 
-Table: Methods by capability.
+Table: Specialized capabilities by method.
 
 **Irregular and incomplete sampling.** Methods that support variable step size accept an array of sample locations in place of a scalar step, and Kalman-based methods then compute the transition matrix by matrix exponential at each actual interval. NaN entries are treated as missing observations, excluded from fitting and imputed from the model, so sensors that drop samples need no preprocessing.
 

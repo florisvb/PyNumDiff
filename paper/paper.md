@@ -12,10 +12,12 @@ authors:
     corresponding: true
     affiliation: 1
   - name: Floris van Breugel
+    orcid: 0000-0001-6538-7179
     affiliation: 2
   - name: Maria Protogerou
     affiliation: 4
   - name: J. Nathan Kutz
+    orcid: 0000-0002-6004-2275
     affiliation: 3
 affiliations:
   - name: Department of Electrical and Computer Engineering, University of Washington, USA
@@ -26,7 +28,7 @@ affiliations:
     index: 3
   - name: Department of Applied Mathematics, University of Washington, USA
     index: 4
-date: 21 August 2026
+date: 1 April 2026
 bibliography: paper.bib
 ---
 
@@ -102,7 +104,7 @@ The original PyNumDiff paper [@vanBreugel2022] has been applied in experimental 
 
 # AI Usage Disclosure
 
-This paper was drafted with assistance from Claude Sonnet 4.6 and Claude Opus 4.8 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and code contributions were checked against the test suite and continuous integration described above. The authors take full responsibility for accuracy.
+This paper was drafted with assistance from Claude Sonnet 4.6 and Claude Opus 4.8 (Anthropic), which also implemented successive code revisions to address recent issues and author feedback. All outputs were reviewed and further edited by hand, and the authors take full responsibility for accuracy.
 
 
 # Acknowledgements

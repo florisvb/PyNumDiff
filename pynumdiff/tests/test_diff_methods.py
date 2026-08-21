@@ -324,7 +324,8 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
                 print(f"Improvement detected for method {diff_method.__name__}; consider tightening its bound")
 
 
-T1, T2 = np.meshgrid(np.linspace(-1, 1, 101), np.linspace(-1, 1, 101)) # a 101 x 101 grid
+T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 101 x 100 grid, deliberately not square, so a method measuring a
+# wrong dimension can't accidentally get an agreeing figure. Shorten the domain rather than point count, so both axes have same dt2 spacing.
 dt2 = 0.02 # distance between samples in the 2D T grids
 x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
 

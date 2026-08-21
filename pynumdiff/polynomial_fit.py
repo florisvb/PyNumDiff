@@ -143,11 +143,11 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     elif degree is None or window_size is None or smoothing_win is None:
         raise ValueError("`degree`, `window_size`, and `smoothing_win` must be given.")
 
-    window_size = np.clip(window_size, degree + 1, len(x)-1)
+    window_size = np.clip(window_size, degree + 1, x.shape[axis]-1)
     if window_size % 2 == 0:
         window_size += 1 # window_size needs to be odd
         warn("Kernel window size should be odd. Added 1 to length.")
-    smoothing_win = min(smoothing_win, len(x)-1)
+    smoothing_win = min(smoothing_win, x.shape[axis]-1)
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, degree, deriv=1, axis=axis)/dt
 

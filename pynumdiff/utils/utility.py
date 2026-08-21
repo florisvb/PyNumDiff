@@ -1,4 +1,5 @@
 """Simple, short, reusable helper functions"""
+from itertools import chain
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
@@ -123,6 +124,7 @@ def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False
              - **dxdt_hat** -- estimated derivative of x
     """
     if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
+    if stride > len(kernel): raise ValueError("`stride` must be <= `len(kernel)` so consecutive windows touch or overlap.")
     half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
     equispaced = np.isscalar(dt_or_t)
 
@@ -130,7 +132,8 @@ def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False
     dxdt_hat = np.zeros(x.shape)
     weight_sum = np.zeros(x.shape)
 
-    for i,midpoint in enumerate(range(0, len(x), stride)): # iterate window midpoints
+    # iterate window midpoints, plus the last index when the final window otherwise doesn't reach the tail of the array.
+    for midpoint in chain(range(0, len(x), stride), () if (len(x)-1) % stride <= half_window_size else (len(x)-1,)):
         # find where to index data and kernel, taking care at edges
         start = max(0, midpoint - half_window_size)
         end = min(len(x), midpoint + half_window_size + 1) # +1 because slicing is exclusive of end

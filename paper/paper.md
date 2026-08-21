@@ -9,6 +9,7 @@ tags:
   - signal processing
 authors:
   - name: Pavel Komarov
+    orcid: 0009-0007-7482-2807
     corresponding: true
     affiliation: 1
   - name: Floris van Breugel

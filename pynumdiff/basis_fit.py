@@ -59,23 +59,15 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     # Form wavenumbers
     N = x.shape[axis]
     k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
-    if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
 
-    # Filter to zero out higher wavenumbers
-    discrete_cutoff = int(np.ceil(high_freq_cutoff * N / 2)) # Nyquist is at N/2 location, and we're cutting off as a fraction
-        # of that. Round up so any positive cutoff keeps DC and only high_freq_cutoff=0 asks for all terms to be zeroed.
-    filt = np.ones(k.shape) # start with all frequencies passing
-    filt[discrete_cutoff:N-discrete_cutoff+1] = 0 # zero out high-frequency components. The wavenumbers live in FFT order:
-        # 0,1,..,N/2,-N/2+1,..,-1, so this slice erases everything with |k| >= cutoff, keeping survivors conjugate-symmetric.
-        # Use N-cutoff+1 rather than -cutoff+1 so that when cutoff=0, [0:N+1] indexes everything vs [0:1] indexing only DC.
-
-    # Smoothed signal
-    X = np.fft.fft(x, axis=axis)
-    x_hat = np.real(np.fft.ifft(filt[s] * X, axis=axis))
+    # Smoothed signal, with the high wavenumbers zeroed out. Nyquist is at wavenumber N/2, and we're cutting off as a fraction of that.
+    X = np.fft.fft(x, axis=axis) * (np.abs(k) < high_freq_cutoff * N/2)[s]
+    x_hat = np.real(np.fft.ifft(X, axis=axis))
 
     # Derivative = 90 deg phase shift
+    if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out, see https://pavelkomarov.com/spectral-derivatives/math.pdf section 3.1
     omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    dxdt_hat = np.real(np.fft.ifft(1j * k[s] * omega * filt[s] * X, axis=axis))
+    dxdt_hat = np.real(np.fft.ifft(1j * k[s] * omega * X, axis=axis))
 
     return x_hat[m], dxdt_hat[m]
 

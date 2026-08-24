@@ -166,12 +166,13 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
 
-    b, a = scipy.signal.butter(filter_order, cutoff_freq)
+    sos = scipy.signal.butter(filter_order, cutoff_freq, output='sos') # second-order sections rather than the (b, a) transfer
+        # function, whose coefficients lose all precision when many poles bunch up near z = 1 at high order and low cutoff
 
     x_hat = x
-    padlen = x.shape[axis]-1 if x.shape[axis] < 9 else None
+    padlen = min(3*(filter_order + 1), x.shape[axis]-1) # scipy's own default, can overwhelm short data
     for _ in range(num_iterations):
-        x_hat = scipy.signal.filtfilt(b, a, x_hat, axis=axis, method="pad", padlen=padlen) # applies forward and backward pass so zero phase
+        x_hat = scipy.signal.sosfiltfilt(sos, x_hat, axis=axis, padlen=padlen) # applies forward and backward pass so zero phase
 
     return finitediff(x_hat, dt, order=2, axis=axis)
 

@@ -16,7 +16,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :param dict options: (**deprecated**, prefer :code:`even_extension`
             and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
     :param float high_freq_cutoff: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
-            and 1. Frequencies below this threshold will be kept, and above will be zeroed.
+            and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
             zero before taking FFT.
@@ -62,9 +62,12 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out
 
     # Filter to zero out higher wavenumbers
-    discrete_cutoff = int(high_freq_cutoff * N / 2) # Nyquist is at N/2 location, and we're cutting off as a fraction of that
+    discrete_cutoff = int(np.ceil(high_freq_cutoff * N / 2)) # Nyquist is at N/2 location, and we're cutting off as a fraction
+        # of that. Round up so any positive cutoff keeps DC and only high_freq_cutoff=0 asks for all terms to be zeroed.
     filt = np.ones(k.shape) # start with all frequencies passing
-    filt[discrete_cutoff:N-discrete_cutoff] = 0 # zero out high-frequency components. N-cutoff because when cutoff=0, [0:-0] indexes nothing
+    filt[discrete_cutoff:N-discrete_cutoff+1] = 0 # zero out high-frequency components. The wavenumbers live in FFT order:
+        # 0,1,..,N/2,-N/2+1,..,-1, so this slice erases everything with |k| >= cutoff, keeping survivors conjugate-symmetric.
+        # Use N-cutoff+1 rather than -cutoff+1 so that when cutoff=0, [0:N+1] indexes everything vs [0:1] indexing only DC.
 
     # Smoothed signal
     X = np.fft.fft(x, axis=axis)

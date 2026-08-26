@@ -455,7 +455,7 @@ def test_circular_rtsdiff(request, fwdbwd):
 # List of methods that can handle missing values
 nan_methods_and_params = [
     (splinediff, {'degree': 5, 's': 2}),
-    (polydiff, {'degree': 2, 'window_size': 3}),
+    (polydiff, {'degree': 2, 'window_size': 9}),
     (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
     (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
 ]
@@ -466,8 +466,9 @@ def test_missing_data(diff_method_and_params):
     diff_method, params = diff_method_and_params
 
     x_nan = np.sin(t)
-    x_nan[[5, 10, 15, 20]] = np.nan # introduce missing data at several locations
+    x_nan[[5, 10, 15]] = np.nan # introduce missing data at several point locations
+    x_nan[22:26] = np.nan # and a contiguous run
     x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
-    
+
     assert np.all(np.isfinite(x_hat))
     assert np.all(np.isfinite(dxdt_hat))

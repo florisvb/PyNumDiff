@@ -8,7 +8,7 @@ from pynumdiff.utils import utility
 
 def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iterations=1, axis=0):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
-    scipy.interpolate.UnivariateSpline. Variable step size is supported with equal ease as uniform step size.
+    scipy.interpolate.make_splrep. Variable step size is supported with equal ease as uniform step size.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
         fitting and imputed by spline interpolation. May be multidimensional; see :code:`axis`.
@@ -101,7 +101,9 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     def _polydiff(x, dt_or_t, degree, weights=None):
         t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
         mask = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
-        if not np.any(mask): warn("Window of all NaNs encountered. `polyfit` will fail. Choose a wider `window_size`?")
+        if mask.sum() <= degree: # too few points to pin down the coefficients, so polyfit will fail
+            raise ValueError(f"Window encountered with only {mask.sum()} non-NaN samples < {degree+1} samples needed for degree"
+                f"{degree} fit. Widen `window_size` or lower `degree`.")
 
         r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
         dr = np.polyder(r) # power rule already implemented for us

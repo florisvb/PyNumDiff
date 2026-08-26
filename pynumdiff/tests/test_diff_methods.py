@@ -63,7 +63,7 @@ diff_methods_and_params = [
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11, 'solver':'CLARABEL'}), (lineardiff, [3, 0.01, 11], {'solver':'CLARABEL'})
+    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11}), (lineardiff, [3, 0.01, 11])
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the closeness to the

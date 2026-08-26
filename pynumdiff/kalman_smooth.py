@@ -382,7 +382,7 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     # function https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber, so correct with a factor of 0.5.
 
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
-    try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND)
+    try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND) # huber isn't in the C++ canonicalization backend, so fell back to SCIPY with a warning
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
 
     if x_states.value is None: return np.full((N, state_dim), np.nan) # There can be solver failure, even without error

@@ -3,7 +3,7 @@ from warnings import warn
 import math, scipy
 import numpy as np
 
-from pynumdiff.finite_difference import second_order as finite_difference
+from pynumdiff.finite_difference import finitediff
 from pynumdiff.polynomial_fit import savgoldiff as _savgoldiff # patch through
 from pynumdiff.polynomial_fit import polydiff as _polydiff # patch through
 from pynumdiff.basis_fit import spectraldiff as _spectraldiff # patch through
@@ -30,7 +30,7 @@ def spectraldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-fu
 
 
 def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
-                                           solver=None, A_known=None, epsilon=1e-6):
+                                           solver='CLARABEL', A_known=None, epsilon=1e-6):
     """Given state and the derivative, find the system evolution and measurement matrices."""
     # Set up the variables
     A = cvxpy.Variable((X.shape[0], X.shape[0]))
@@ -69,7 +69,7 @@ def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e
     return np.array(A.value), np.array(C.value)
 
 def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
-    step_size=10, kernel='friedrichs', solver=None):
+    step_size=10, kernel='friedrichs', solver='CLARABEL'):
     """Slide a smoothing derivative function across data, with specified window size.
 
     :param np.array[float] x: data to differentiate
@@ -82,7 +82,8 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     :param int window_size: size of the sliding window (ignored if not sliding)
     :param int step_size: step size for sliding
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`
+    :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`. CLARABEL converges reliably,
+            but OSQP stalls on the badly-scaled subproblems short windows produce, returning half-converged iterates
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -161,4 +162,4 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
 
     # merge
     x_hat = x_hat_forward*w/norm + x_hat_backward*w[::-1]/norm
-    return finite_difference(x_hat, dt)
+    return finitediff(x_hat, dt) # defaults to second order

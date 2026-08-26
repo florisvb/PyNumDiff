@@ -25,7 +25,7 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, "
             "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
         high_freq_cutoff = params[0] if isinstance(params, list) else params
         if options is not None:

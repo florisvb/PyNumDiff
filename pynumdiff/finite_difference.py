@@ -84,8 +84,8 @@ def first_order(x, dt, params=None, options={}, num_iterations=1):
     :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    warn("`first_order` in past releases was actually calculating a second-order FD. Use `second_order` to achieve " +
-        "approximately the same behavior. Note that odd-order methods have asymmetrical stencils, which causes " +
+    warn("`first_order` in past releases was actually calculating a second-order FD. Use `second_order` to achieve "
+        "approximately the same behavior. Note that odd-order methods have asymmetrical stencils, which causes "
         "horizontal drift in the answer, especially when iterating.", DeprecationWarning)
     if params is not None and 'iterate' in options:
         warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)

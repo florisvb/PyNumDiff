@@ -196,7 +196,7 @@ def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardb
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options is not None:
@@ -226,7 +226,7 @@ def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forw
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options is not None:
@@ -256,7 +256,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
             "`q`, and `forwardbackward` instead.", DeprecationWarning)
         r, q = params
         if options is not None:

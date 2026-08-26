@@ -26,7 +26,7 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and "
             "`num_iterations` instead.", DeprecationWarning)
         degree, s = params[0:2]
         if options is not None:
@@ -76,7 +76,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None:
-        warn("`params` and `options` parameters will be removed in a future version. Use `degree` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `degree` "
             "and `window_size` instead.", DeprecationWarning)
         degree = params[0]
         if len(params) > 1: window_size = params[1]
@@ -102,7 +102,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
         t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
         mask = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
         if mask.sum() <= degree: # too few points to pin down the coefficients, so polyfit will fail
-            raise ValueError(f"Window encountered with only {mask.sum()} non-NaN samples < {degree+1} samples needed for degree"
+            raise ValueError(f"Window encountered with only {mask.sum()} non-NaN samples < {degree+1} samples needed for degree "
                 f"{degree} fit. Widen `window_size` or lower `degree`.")
 
         r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
@@ -142,7 +142,7 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `degree`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `degree`, "
             "`window_size`, and `smoothing_win` instead.", DeprecationWarning)
         degree, window_size, smoothing_win = params
     elif degree is None or window_size is None or smoothing_win is None:

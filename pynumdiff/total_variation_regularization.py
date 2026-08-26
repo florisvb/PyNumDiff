@@ -34,7 +34,7 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, "
             "`gamma`, `cg_maxiter`, and `scale` instead.", DeprecationWarning)
         num_iterations, gamma = params
         if options is not None:
@@ -137,7 +137,7 @@ def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
         if options is not None:
@@ -165,7 +165,7 @@ def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
         if options is not None:
@@ -193,7 +193,7 @@ def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
             "and `solver` instead.", DeprecationWarning)
         gamma = params[0] if isinstance(params, list) else params
         if options is not None:
@@ -223,7 +223,7 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
             "and `solver` instead.", DeprecationWarning)
         gamma, window_size = params
         if options is not None:

@@ -15,17 +15,17 @@ except ImportError: pass
 
 def savgoldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
     warn("`savgoldiff` has moved to `polynomial_fit.savgoldiff` and will be removed from "
-        + "`linear_model` in a future release.", DeprecationWarning)
+        "`linear_model` in a future release.", DeprecationWarning)
     return _savgoldiff(*args, **kwargs)
 
 def polydiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
     warn("`polydiff` has moved to `polynomial_fit.polydiff` and will be removed from "
-        + "`linear_model` in a future release.", DeprecationWarning)
+        "`linear_model` in a future release.", DeprecationWarning)
     return _polydiff(*args, **kwargs)
 
 def spectraldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
     warn("`spectraldiff` has moved to `basis_fit.spectraldiff` and will be removed from "
-        + "`linear_model` in a future release.", DeprecationWarning)
+        "`linear_model` in a future release.", DeprecationWarning)
     return _spectraldiff(*args, **kwargs)
 
 
@@ -89,7 +89,7 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None:
-        warn("`params` and `options` parameters will be removed in a future version. Use `order`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `order`, "
             "`gamma`, and `window_size` instead.", DeprecationWarning)
         order, gamma = params[:2]
         if len(params) > 2: window_size = params[2]

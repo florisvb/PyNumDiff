@@ -55,7 +55,7 @@ def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
         if 'iterate' in options and options['iterate']:
@@ -80,7 +80,7 @@ def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
         if 'iterate' in options and options['iterate']:
@@ -106,7 +106,7 @@ def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
         if 'iterate' in options and options['iterate']:
@@ -132,7 +132,7 @@ def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
             "and `num_iterations` instead.", DeprecationWarning)
         window_size = params[0] if isinstance(params, list) else params
         if 'iterate' in options and options['iterate']:
@@ -160,7 +160,7 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `filter_order`, " +
+        warn("`params` and `options` parameters will be removed in a future version. Use `filter_order`, "
             "`cutoff_freq`, and `num_iterations` instead.", DeprecationWarning)
         filter_order, cutoff_freq = params[0:2]
         if 'iterate' in options and options['iterate']:
@@ -179,5 +179,5 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
 
 def splinediff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
     warn("`splindiff` has moved to `polynomial_fit.splinediff` and will be removed from "
-        + "`smooth_finite_difference` in a future release.", DeprecationWarning)
+        "`smooth_finite_difference` in a future release.", DeprecationWarning)
     return _splinediff(*args, **kwargs)

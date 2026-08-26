@@ -57,7 +57,9 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        return minimize(lambda c: np.sum(huber(M*sigma, x_hat + c.reshape(s) - x)), # fn to minimize in 1st argument
+        return minimize(lambda c: np.sum(huber(M, (x_hat + c.reshape(s) - x)/sigma)), # fn to minimize in 1st argument.
+            # Normalize residuals rather than scaling M, so the cumulative square (from inside huber) can't overflow the
+            # sum. huber(M*s, r) == s**2 * huber(M, r/s), so the argmin is unchanged. See #217
             np.zeros(np.prod(s)), method='SLSQP').x.reshape(s) # initial guess is zeros; vector result must be reshaped
 
 

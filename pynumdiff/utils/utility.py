@@ -36,7 +36,7 @@ def integrate_dxdt_hat(dxdt_hat, dt_or_t, axis=0):
 def estimate_integration_constant(x, x_hat, M=6, axis=0):
     """Integration leaves an unknown integration constant. This function finds a best fit integration
     constant to correct the DC of :code:`x_hat` (the integral of dxdt_hat) by optimizing
-    :math:`\\min_c J(x - \\hat{x} + c)`, where :math:`J` is the Huber loss function or the :math:`\\ell_1`
+    :math:`\\min_c J(\\hat{x} + c - x)`, where :math:`J` is the Huber loss function or the :math:`\\ell_1`
     or :math:`\\ell_2` norm.
 
     :param np.array[float] x: timeseries of measurements
@@ -51,16 +51,22 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
              :math:`\\mathbf{\\hat{x}}` with :math:`\\mathbf{x}`
     """
     s = list(x_hat.shape); s[axis] = 1; s = tuple(s) # proper shape for multidimensional integration constants
-    sigma = median_abs_deviation(x - x_hat, axis=axis, scale='normal').reshape(s) # M is in units of this robust scatter metric
-    if M == float('inf') or np.all(sigma < 1e-3): # If no scatter, then no outliers, so use L2
+    if M == float('inf'): # large M looks like l2 loss
         return np.mean(x - x_hat, axis=axis).reshape(s) # Solves the l2 distance minimization, argmin_c ||x_hat + c - x||_2^2
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        return minimize(lambda c: np.sum(huber(M, (x_hat + c.reshape(s) - x)/sigma)), # fn to minimize in 1st argument.
-            # Normalize residuals rather than scaling M, so the cumulative square (from inside huber) can't overflow the
-            # sum. huber(M*s, r) == s**2 * huber(M, r/s), so the argmin is unchanged. See #217
-            np.zeros(np.prod(s)), method='SLSQP').x.reshape(s) # initial guess is zeros; vector result must be reshaped
+        sigma = median_abs_deviation(x - x_hat, axis=axis, keepdims=True, scale='normal') # M is in units of this robust scatter metric
+        sigma[sigma == 0] = 1 # avert divide-by-zero below; a σ == 0 entry means the corresponding vector in x - x_hat == some C everywhere
+            # -> cost fn has argmin of exactly C in the corresponding entry of the c vector, regardless of scale -> choose scale 1 so
+            # initial guess can capture these exactly, because optimization might otherwise ignore small offsets
+        z = (x_hat - x)/sigma # compute once to avoid rework during optimization. The residual is normalized rather than scaling M so the cumulative
+            # (sum below) square (from inside huber) doesn't overflow. huber(M*σ, r) \propto huber(M, r/σ), so the argmin is unchanged. See #217
+        # Solve for the constant w = c/σ in units of σ rather than data units to counteract normalization, which makes cost 1/σ times as
+        # sensitive to c, since SLSQP's fixed step and tolerance don't natively adapt to data scale. See #220
+        return sigma*minimize(lambda w: np.sum(huber(M, z + w.reshape(s))), # fn to minimize in 1st argument.
+            np.ravel(np.median(x - x_hat, axis=axis, keepdims=True)/sigma), # seed with robust l1 solution, exactly the Cs when residuals are constant
+            method='SLSQP').x.reshape(s) # vector result must be reshaped
 
 
 def mean_kernel(window_size):

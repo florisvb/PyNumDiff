@@ -31,16 +31,17 @@ def test_estimate_integration_constant():
         x0 = utility.estimate_integration_constant(x, x_hat, axis=-1)
         assert np.allclose(x0, c, rtol=1e-3)
 
-    x_hat = np.sin(np.arange(400)*0.01)
-    x = x_hat + np.random.normal(0, 0.1, 400) + 1 # shift data by 1
-    x0 = utility.estimate_integration_constant(x, x_hat, M=float('inf'))
-    assert 0.95 < x0 < 1.05 # The result should be close to 1.0, but not exactly due to noise
+    for amp in [1, 1e-4]: # nothing here should depend on the magnitude of the data, per #220
+        x_hat = amp*np.sin(np.arange(400)*0.01)
+        x = x_hat + amp*np.random.normal(0, 0.1, 400) + amp # shift data by amp
+        x0 = utility.estimate_integration_constant(x, x_hat, M=float('inf'))
+        assert 0.95*amp < x0 < 1.05*amp # The result should be close to amp, but not exactly due to noise
 
-    x[100] = 100 # outlier case
-    x0 = utility.estimate_integration_constant(x, x_hat, M=0)
-    assert 0.95 < x0 < 1.05
-    x0 = utility.estimate_integration_constant(x, x_hat, M=6)
-    assert 0.95 < x0 < 1.05
+        x[100] = 100*amp # outlier case
+        x0 = utility.estimate_integration_constant(x, x_hat, M=0)
+        assert 0.95*amp < x0 < 1.05*amp
+        x0 = utility.estimate_integration_constant(x, x_hat, M=6)
+        assert 0.95*amp < x0 < 1.05*amp
 
 
 def test_convolutional_smoother():

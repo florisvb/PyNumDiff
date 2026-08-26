@@ -59,7 +59,7 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
         sigma = median_abs_deviation(x - x_hat, axis=axis, keepdims=True, scale='normal') # M is in units of this robust scatter metric
         sigma[sigma == 0] = 1 # avert divide-by-zero below; a σ == 0 entry means the corresponding vector in x - x_hat == some C everywhere
             # -> cost fn has argmin of exactly C in the corresponding entry of the c vector, regardless of scale -> choose scale 1 so
-            # initial guess can capture these exactly, because optimization might otherwise ignore small offsets
+            # initial guess using median residuals captures these exactly, because optimization might otherwise ignore small offsets
         z = (x_hat - x)/sigma # compute once to avoid rework during optimization. The residual is normalized rather than scaling M so the cumulative
             # (sum below) square (from inside huber) doesn't overflow. huber(M*σ, r) \propto huber(M, r/σ), so the argmin is unchanged. See #217
         # Solve for the constant w = c/σ in units of σ rather than data units to counteract normalization, which makes cost 1/σ times as

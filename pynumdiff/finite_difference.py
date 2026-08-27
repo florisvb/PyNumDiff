@@ -19,6 +19,8 @@ def finitediff(x, dt, num_iterations=1, order=2, axis=0):
     :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Differencing spreads a NaN to its neighbors, and iterating spreads it further.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Difference stencils assume uniformly spaced samples.")
     if num_iterations < 1: raise ValueError("num_iterations must be >0")
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
 

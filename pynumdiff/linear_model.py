@@ -101,6 +101,9 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     elif order is None or gamma is None or window_size is None:
         raise ValueError("`order`, `gamma`, and `window_size` must be given.")
 
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem over NaN data.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
+
     def _lineardiff(x, dt, order, gamma, solver=None):
         """Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative"""
         mean = np.mean(x)

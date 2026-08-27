@@ -1,8 +1,8 @@
 """Apply smoothing method before finite difference."""
 from warnings import warn
+import numpy as np
 import scipy.signal
 
-# included code
 from pynumdiff.finite_difference import finitediff
 from pynumdiff.polynomial_fit import splinediff as _splinediff # patch through
 from pynumdiff.utils import utility
@@ -23,6 +23,9 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Convolution spreads a NaN across many windows.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Convolving with a fixed-width kernel assumes uniformly sampled data.")
+
     if kernel in ['mean', 'gaussian', 'friedrichs']:
         kernel = getattr(utility, f"{kernel}_kernel")(window_size)
         x_hat = utility.convolutional_smoother(x, kernel, num_iterations, axis=axis)
@@ -165,6 +168,9 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, cutoff_freq=0.5, 
         filter_order, cutoff_freq = params[0:2]
         if 'iterate' in options and options['iterate']:
             num_iterations = params[2]
+
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Filtering carries a NaN through the whole signal.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. A Butterworth filter is designed against a fixed sample rate.")
 
     sos = scipy.signal.butter(filter_order, cutoff_freq, output='sos') # second-order sections rather than the (b, a) transfer
         # function, whose coefficients lose all precision when many poles bunch up near z = 1 at high order and low cutoff

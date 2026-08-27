@@ -147,6 +147,8 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
         degree, window_size, smoothing_win = params
     elif degree is None or window_size is None or smoothing_win is None:
         raise ValueError("`degree`, `window_size`, and `smoothing_win` must be given.")
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the filter.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Savitzky-Golay assumes fixed-width windows with uniform sampling.")
 
     window_size = np.clip(window_size, degree + 1, x.shape[axis]-1)
     if window_size % 2 == 0:

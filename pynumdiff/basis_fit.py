@@ -34,6 +34,9 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     elif high_freq_cutoff is None:
         raise ValueError("`high_freq_cutoff` must be given.")
 
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the FFT to make the whole spectrum NaN.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The FFT assumes uniformly sampled data.")
+
     L = x.shape[axis]
 
     # Make derivative go to zero at the ends (optional)
@@ -88,6 +91,8 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values cause the interpolation to return NaN everywhere.")
+
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0) # bring axis of differentiation to front so each N repeats comprise vector
     plump = x.shape
@@ -182,17 +187,11 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if not np.isscalar(dt):
-        raise ValueError("`dt` must be a scalar. The DWT requires uniformly sampled data. "
-            "For variable step sizes, use rbfdiff or splinediff instead.")
-
-    # The Haar scaling function is a step, so it has no pointwise derivative and the
-    # connection-coefficient operator below is undefined for it. Haar/db1 is the only
-    # orthonormal wavelet with a 2-tap filter, so dec_len identifies it.
-    if pywt.Wavelet(wavelet).dec_len == 2:
-        raise ValueError("The Haar/db1 wavelet has a discontinuous (piecewise-constant) scaling "
-            "function with no derivative, so it cannot be used to differentiate. Pick a smoother "
-            "wavelet such as 'db4', 'sym4', or 'coif2'.")
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the DWT to make every coefficient NaN.")
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The DWT requires uniformly sampled data.")
+    if pywt.Wavelet(wavelet).dec_len == 2: # 2-tap filter identifies Haar under any of its names: haar, db1, bior1.1, rbio1.1.
+        raise ValueError("The Haar/db1 wavelet has a discontinuous (piecewise-constant) scaling function with no derivative,"
+            " so it cannot be used to differentiate. Pick a smoother wavelet such as 'db4', 'sym4', or 'coif2'.")
 
     N = x.shape[axis]
     x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0)) # differentiation axis to front

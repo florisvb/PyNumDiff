@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy",
-    "scipy",
+    "scipy>=1.15", # splinediff calls make_splrep, added in this version
     "matplotlib",
     "pywavelets",
     "tqdm" # optimize module imports this

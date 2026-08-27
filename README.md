@@ -24,7 +24,7 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 
 ## Introduction
 
-PyNumDiff is a Python package that implements many methods for computing numerical derivatives and smooth estimates of noisy data, which can be a critical step in developing dynamic models or designing control. There are seven different families of methods implemented in this repository:
+PyNumDiff is a Python package that implements many methods for computing numerical derivatives and smooth estimates from noisy data, which can be a critical step in developing dynamic models or designing control. There are seven different families of methods in this repository:
 
 1. prefiltering followed by finite difference calculation
 2. iterated finite differencing
@@ -34,17 +34,15 @@ PyNumDiff is a Python package that implements many methods for computing numeric
 6. generalized Kalman smoothing
 7. local approximation with linear model
 
-All are ultimately smoothing with similar runtime and accuracy, but some have situational advantages over others, summarized in the table under [Usage](#usage) below.
+All are ultimately smoothing with similar runtime and accuracy, but some have flexibility advantages over others, summarized in the table under [Usage](#usage) below. For further details and comparison, see section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090).
 
-For a full list and comparison, see section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090) and explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
-
-All methods have hyperparameters, so we take a principled approach and propose a multi-objective optimization framework for choosing settings that minimize a loss function to balance the faithfulness and smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
+All methods have hyperparameters, described in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/). We take a principled approach and propose a multi-objective optimization framework for choosing settings that minimize a loss function that balances faithfulness to data with smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
 
 ## Installing
 
-Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, plus `pywavelets` for `waveletdiff` and `tqdm` for the optimizer, and optionally `cvxpy`.
+Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, plus `pywavelets` for `waveletdiff`, `tqdm` for the optimizer, and `cvxpy` for `robustdiff` and `tvrdiff`.
 
-The code is compatible with >=Python 3.10. Install from PyPI with `pip install pynumdiff`, from source with `pip install git+https://github.com/florisvb/PyNumDiff`, or from local download with `pip install .`. Call `pip install pynumdiff[advanced]` to automatically install optional dependencies from the advanced list, like [CVXPY](https://www.cvxpy.org).
+The code is compatible with >=Python 3.11. Install from PyPI with `pip install pynumdiff`, from source with `pip install git+https://github.com/florisvb/PyNumDiff`, or from local download with `pip install .`. Call `pip install pynumdiff[advanced]` to automatically install optional dependencies from the advanced list, like [CVXPY](https://www.cvxpy.org).
 
 ## Usage
 
@@ -54,7 +52,7 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 somethingdiff(x, dt, **kwargs)
 ```
 
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Handing a method data it doesn't support raises a `ValueError` explaining why rather than returning `NaN`s.
+where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Handing a method data it doesn't support raises a `ValueError` explaining why.
 
 | Method | Multidim | Variable step | Missing data | Outliers | Circular domain | Needs CVXPY |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -72,9 +70,9 @@ where `x` is data, `dt` is a step size, and various keyword arguments control th
 | `robustdiff` | ✓ | ✓ | ✓ | ✓ | | ✓ |
 | `lineardiff` | | | | | | ✓ |
 
-`lineardiff` is the one method that does not yet accept `axis`; generalizing it is tracked in [#223](https://github.com/florisvb/PyNumDiff/issues/223).
+There is also presently a swathe of deprecated methods. Don't use them, but if you do you'll just get warnings telling you how to use whichever new-and-improved version. There are also a few minor methods kept for general interest (`iterative_velocity` and `smooth_acceleration`) but in practice dominated by or redundant with others from the table.
 
-You can set the hyperparameters:
+You can set the hyperparameters manually with a construction like:
 ```python
 from pynumdiff.submodule import method
 
@@ -95,9 +93,7 @@ params, val = optimize(somethingdiff, x, dt, tvgamma=tvgamma, # smoothness hyper
 print('Optimal parameters: ', params)
 x_hat, dxdt_hat = somethingdiff(x, dt, **params)
 ```
-If no `search_space_updates` is given, a default search space is used. See the top of `optimize.py`.
-
-The following heuristic works well for choosing `tvgamma`, where `cutoff_frequency` is the highest frequency content of the signal in your data, and `dt` is the timestep: `tvgamma=np.exp(-1.6*np.log(cutoff_frequency)-0.71*np.log(dt)-5.1)`. Larger values of `tvgamma` produce smoother derivatives. The value of `tvgamma` is largely universal across methods, making it easy to compare method results. Be aware the optimization is a fairly heavy process.
+`tvgamma` governs the smoothness targeted by the optimization procedure, with larger values yielding smoother derivatives. Its value is dependent upon sampling rate and frequency content of the underlying signal, and it is universal across methods, making it possible to compare results post optimization. A default search space is used to initialize and perform optimiation, defined at the top of `optimize.py`, with overwrites from `search_space_updates`. Be aware the optimization is a fairly heavy process.
 
 ### Notebook examples
 
@@ -128,7 +124,7 @@ Much more extensive usage is demonstrated in Jupyter notebooks, described furthe
 
 ## Citation
 
-See CITATION.cff file as well as the following references.
+See CITATION.cff file, but here are some possible BibTeX entries for convenience.
 
 ### PyNumDiff python package:
 

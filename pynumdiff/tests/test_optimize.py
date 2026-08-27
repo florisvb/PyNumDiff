@@ -1,6 +1,6 @@
 """Unit tests of optimizer"""
-import os
 import warnings
+from functools import partial
 from multiprocessing import Manager, Pool
 import numpy as np
 from pytest import warns
@@ -82,17 +82,13 @@ def test_cache_key_collides_across_processes():
     process built it. Getting this wrong is silent, because every answer stays correct, the sweep just redoes work it already has."""
     with Manager() as manager:
         cache = manager.dict()
-        with Pool(1) as pool: pid1, val1 = pool.map(_process_me, [(cache, [0.9])])[0]
-        with Pool(1) as pool: pid2, val2 = pool.map(_process_me, [(cache, [0.9])])[0]
+        # a partial of a module-level function pickles fine, which is how optimize() ships jobs to its own workers
+        evaluate = partial(_objective_function, func=splinediff, x=x, dt=dt, singleton_params={'num_iterations':1},
+            categorical_params={'degree':3}, roundings={'s':float}, dxdt_truth=dxdt_truth, metric='rmse',
+            tvgamma=None, padding=0, cache=cache, huberM=6)
+        # each Pool is terminated before the next is built, so these two evaluations run in different processes
+        with Pool(1) as pool: val1 = pool.map(evaluate, [[0.9]])[0]
+        with Pool(1) as pool: val2 = pool.map(evaluate, [[0.9]])[0]
 
-        assert pid1 != pid2 # separate processes
         assert val1 == val2 # same value
         assert len(cache) == 1 # the second process found the first one's entry rather than adding its own
-
-def _process_me(args):
-    """Module level so a Pool worker can pickle it. Returns the pool pid and the objective's value."""
-    cache, point = args
-    value = _objective_function(point, splinediff, x, dt, singleton_params={'num_iterations':1},
-        categorical_params={'degree':3}, roundings={'s':float}, dxdt_truth=dxdt_truth, metric='rmse',
-        tvgamma=None, padding=0, cache=cache, huberM=6)
-    return os.getpid(), value

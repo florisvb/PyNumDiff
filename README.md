@@ -34,7 +34,7 @@ PyNumDiff is a Python package that implements many methods for computing numeric
 6. generalized Kalman smoothing
 7. local approximation with linear model
 
-All are ultimately smoothing with similar runtime and accuracy, but some have situational advantages over others: For example, `robustdiff` is specialized to handle outliers; `splinediff`, `polydiff`, `rtsdiff`, and `robustdiff` can handle missing data; `splinediff`, `polydiff`, `rbfdiff`, `rtsdiff`, and `robustdiff` can handle irregularly-spaced data; and `rtsdiff` can handle inputs on a wrapped domain, like angles. All methods can accept blocks of multidimensional data, differentiating all vectors along the dimension given by the `axis` parameter.
+All are ultimately smoothing with similar runtime and accuracy, but some have situational advantages over others, summarized in the table under [Usage](#usage) below.
 
 For a full list and comparison, see section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090) and explore modules in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/).
 
@@ -42,7 +42,7 @@ All methods have hyperparameters, so we take a principled approach and propose a
 
 ## Installing
 
-Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, but also optionally `cvxpy`.
+Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, plus `pywavelets` for `waveletdiff` and `tqdm` for the optimizer, and optionally `cvxpy`.
 
 The code is compatible with >=Python 3.10. Install from PyPI with `pip install pynumdiff`, from source with `pip install git+https://github.com/florisvb/PyNumDiff`, or from local download with `pip install .`. Call `pip install pynumdiff[advanced]` to automatically install optional dependencies from the advanced list, like [CVXPY](https://www.cvxpy.org).
 
@@ -54,7 +54,25 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 somethingdiff(x, dt, **kwargs)
 ```
 
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Some methods support variable step size, in which case the second parameter is renamed `dt_or_t` and can receive either a constant step size or an array of values to denote sample locations. All major methods support multidimensional data, so look for an `axis` argument to control the dimension differentiated along.
+where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Handing a method data it doesn't support raises a `ValueError` explaining why rather than returning `NaN`s.
+
+| Method | Multidim | Variable step | Missing data | Outliers | Circular domain | Needs CVXPY |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: |
+| `kerneldiff` | ✓ | | | | | |
+| `butterdiff` | ✓ | | | | | |
+| `finitediff` | ✓ | | | | | |
+| `polydiff` | ✓ | ✓ | ✓ | | | |
+| `savgoldiff` | ✓ | | | | | |
+| `splinediff` | ✓ | ✓ | ✓ | | | |
+| `spectraldiff` | ✓ | | | | | |
+| `rbfdiff` | ✓ | ✓ | | | | |
+| `waveletdiff` | ✓ | | | | | |
+| `tvrdiff` | ✓ | | | ✓ | | ✓ |
+| `rtsdiff` | ✓ | ✓ | ✓ | | ✓ | |
+| `robustdiff` | ✓ | ✓ | ✓ | ✓ | | ✓ |
+| `lineardiff` | | | | | | ✓ |
+
+`lineardiff` is the one method that does not yet accept `axis`; generalizing it is tracked in [#223](https://github.com/florisvb/PyNumDiff/issues/223).
 
 You can set the hyperparameters:
 ```python
@@ -83,11 +101,14 @@ The following heuristic works well for choosing `tvgamma`, where `cutoff_frequen
 
 ### Notebook examples
 
-Much more extensive usage is demonstrated in Jupyter notebooks:
-* Differentiation with different methods: [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb)
-* Parameter Optimization:  [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2_optimizing_hyperparameters.ipynb)
-
-See the README in the `notebooks/` folder for a full guide to all demos and experiments.
+Much more extensive usage is demonstrated in Jupyter notebooks, described further in the README in the `notebooks/` folder:
+* [1_basic_tutorial.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/1_basic_tutorial.ipynb) invokes all the major methods on 1D data.
+* [2_optimizing_hyperparameters.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/2_optimizing_hyperparameters.ipynb) covers the metrics worth optimizing and how to use `optimize` to choose hyperparameters.
+* [3_automatic_method_suggestion.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/3_automatic_method_suggestion.ipynb) lets `pynumdiff` pick a method for your data.
+* [4_performance_analysis.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/4_performance_analysis.ipynb) compares methods' accuracy and bias across simulations.
+* [5_robust_outliers_demo.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/5_robust_outliers_demo.ipynb) puts `rtsdiff` and `robustdiff` head to head on data with outliers.
+* [6_multidimensionality_demo.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/6_multidimensionality_demo.ipynb) differentiates multidimensional data along particular axes.
+* [7_circular_domain.ipynb](https://github.com/florisvb/PyNumDiff/blob/master/notebooks/7_circular_domain.ipynb) handles data on a wrapped domain, like angles, with `rtsdiff`.
 
 ## Repo Structure
 
@@ -149,7 +170,7 @@ See CITATION.cff file as well as the following references.
 
 ## Running the tests
 
-We are using GitHub Actions for continuous intergration testing.
+We are using GitHub Actions for continuous integration testing.
 
 Run tests locally by navigating to the repo in a terminal and calling
 ```bash

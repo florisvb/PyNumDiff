@@ -163,6 +163,7 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
         window_size += 1 # window_size needs to be odd
         warn("Kernel window size should be odd. Added 1 to length.")
     smoothing_win = min(smoothing_win, x.shape[axis]-1)
+    if smoothing_win % 2 == 0: smoothing_win += 1; warn("Smoothing window size should be odd. Added 1 to length.")
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, degree, deriv=1, axis=axis)/dt
 

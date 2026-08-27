@@ -1,12 +1,14 @@
 """Unit tests of optimizer"""
+import os
 import warnings
+from multiprocessing import Manager, Pool
 import numpy as np
 from pytest import warns
 
 from ..smooth_finite_difference import butterdiff
 from ..polynomial_fit import splinediff
 from ..kalman_smooth import rtsdiff
-from ..optimize import optimize
+from ..optimize import optimize, _objective_function
 from ..utils.simulate import pi_cruise_control
 from ..utils.evaluate import rmse
 
@@ -73,3 +75,24 @@ def test_categorical_only_search_space():
     scores = {order:rmse(dxdt_truth, butterdiff(x, dt, filter_order=order, **fixed)[1]) for order in [2, 3]}
     assert opt_params['filter_order'] == min(scores, key=scores.get) # the better of the two, not just either one
     assert np.isclose(val, min(scores.values()))
+
+
+def test_cache_key_collides_across_processes():
+    """The cache is shared between workers. To avoid duplicate work, a key must collide for the same parameters no matter which
+    process built it. Getting this wrong is silent, because every answer stays correct, the sweep just redoes work it already has."""
+    with Manager() as manager:
+        cache = manager.dict()
+        with Pool(1) as pool: pid1, val1 = pool.map(_process_me, [(cache, [0.9])])[0]
+        with Pool(1) as pool: pid2, val2 = pool.map(_process_me, [(cache, [0.9])])[0]
+
+        assert pid1 != pid2 # separate processes
+        assert val1 == val2 # same value
+        assert len(cache) == 1 # the second process found the first one's entry rather than adding its own
+
+def _process_me(args):
+    """Module level so a Pool worker can pickle it. Returns the pool pid and the objective's value."""
+    cache, point = args
+    value = _objective_function(point, splinediff, x, dt, singleton_params={'num_iterations':1},
+        categorical_params={'degree':3}, roundings={'s':float}, dxdt_truth=dxdt_truth, metric='rmse',
+        tvgamma=None, padding=0, cache=cache, huberM=6)
+    return os.getpid(), value

@@ -1,5 +1,4 @@
 """Optimization functionality"""
-from hashlib import sha1
 from itertools import product
 from functools import partial
 from warnings import catch_warnings, filterwarnings, warn
@@ -20,13 +19,13 @@ from .linear_model import lineardiff
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
     kerneldiff: ({'kernel': {'mean', 'median', 'gaussian', 'friedrichs'},
-             'window_size': [5, 15, 30, 50],
+             'window_size': [5, 15, 31, 51],
           'num_iterations': [1, 5, 10]},
-            {'window_size': (1, 1e6),
-          'num_iterations': (1, 100)}),
-    meandiff: ({'window_size': [5, 15, 30, 50], # Deprecated method
+            {'window_size': (1, 1e6, 'odd'), # an even-width kernel has no center, so convolving with it
+          'num_iterations': (1, 100)}),         # shifts the signal half a sample before differencing
+    meandiff: ({'window_size': [5, 15, 31, 51], # Deprecated method
              'num_iterations': [1, 5, 10]},
-               {'window_size': (1, 1e6),
+               {'window_size': (1, 1e6, 'odd'),
              'num_iterations': (1, 100)}),
     butterdiff: ({'filter_order': set(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
                    'cutoff_freq': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
@@ -44,13 +43,13 @@ method_params_and_bounds = {
               'window_size': [11, 31, 51, 91, 131]},
                {'step_size': (1, 100),
                    'degree': (1, 8),
-              'window_size': (10, 1000)}),
+              'window_size': (10, 1000, 'odd')}),
     savgoldiff: ({'degree': [2, 3, 5, 7, 10],
-             'window_size': [3, 10, 30, 50, 90, 130, 200, 300],
-           'smoothing_win': [3, 10, 30, 50, 90, 130, 200, 300]},
+             'window_size': [3, 11, 31, 51, 91, 131, 201, 301],
+           'smoothing_win': [3, 11, 31, 51, 91, 131, 201, 301]},
                  {'degree': (1, 12),
-             'window_size': (3, 1000),
-           'smoothing_win': (3, 1000)}),
+             'window_size': (3, 1000, 'odd'), # savgol_filter accepts even windows but silently returns a
+           'smoothing_win': (3, 1000, 'odd')}), # derivative evaluated half a sample late
     splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
                        's': [0.5, 1, 1.5], # multiples of the noise energy, so these hold at any N and noise level
           'num_iterations': [1, 3]}, # 5 and 10 never won across 24 sim/step/noise combinations
@@ -81,9 +80,9 @@ method_params_and_bounds = {
                 {'num_iterations': (1, 100), # gets expensive with more iterations
                           'gamma': (1e-4, 1e7)}),
     smooth_acceleration: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-                     'window_size': [3, 10, 30, 50, 90, 130]},
+                     'window_size': [3, 11, 31, 51, 91, 131]},
                           {'gamma': (1e-4, 1e7),
-                     'window_size': (3, 1000)}),
+                     'window_size': (3, 1000, 'odd')}),
     rtsdiff: ({'forwardbackward': {True, False},
                          'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                   'log_qr_ratio': [float(k) for k in range(-9, 10, 2)] + [12, 16]},
@@ -120,8 +119,14 @@ for method in [constant_acceleration, constant_jerk]: # Deprecated, redundant me
     method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
 
 
+# How to round float coordinates from the minimizer into possibly-discrete values
+ROUND = {float: lambda v: v,
+           int: lambda v: int(np.round(v)),
+         'odd': lambda v: 2*int(np.round((v - 1)/2)) + 1}
+
+
 # This function has to be at the top level for multiprocessing but is only used by optimize.
-def _objective_function(point, func, x, dt, singleton_params, categorical_params, search_space_types,
+def _objective_function(point, func, x, dt, singleton_params, categorical_params, roundings,
     dxdt_truth, metric, tvgamma, padding, cache, huberM):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
     This is mildly complicated, because "point" controls the settings of a differentiation function, but
@@ -131,22 +136,21 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     :param np.array point: a numerical vector scipy chooses to try in the objective function
     :param dict singleton_params: maps parameter names to singleton values
     :param dict categorical_params: maps parameter names to values
-    :param dict search_space_types: maps parameter names to types, for turning float vector point into dict point_params
+    :param dict roundings: maps parameter names to their key in :code:`ROUND`, for turning the float vector point into a dict
     :param multiprocessing.manager.dict cache: available across processes to save results and work
     Other params documented in `optimize`
 
     :return: float, cost of this objective at the point
     """
-    # Short circuit if this hyperparam combo has already been queried, ~10% savings per #160
-    key = sha1((''.join(f"{v:.6e}" for v in point) + # This hash is stable across processes. Takes bytes
-               ''.join(str(v) for k,v in sorted(categorical_params.items()))).encode()).digest()
-    if key in cache: return cache[key]
+    point_params = {k:ROUND[roundings[k]](v) for k,v in zip(roundings, point)} # point -> dict, rounding for discrete parameters
+
+    # Short circuit if this hyperparam combo (with rounding applied) has already been queried, ~10% savings per #160.
+    key = tuple([f"{v:.6e}" if isinstance(v, float) else str(v) for v in point_params.values()] +
+            [str(v) for _,v in sorted(categorical_params.items())])
+    if key in cache: return cache[key] # send tuple(strings) to the manager process to avoid salted hashes in child processes
 
     # Query the differentiation method at this choice of hyperparameters
-    point_params = {k:(v if search_space_types[k] == float else int(np.round(v)))
-                        for k,v in zip(search_space_types, point)} # point -> dict
-    # add back in singletons and categorical choices the numerical minimzation isn't searching over
-    try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # estimate x and dxdt
+    try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # take deriv, add back singletons and categorical choices
     except np.linalg.LinAlgError: cache[key] = 1e10; return 1e10 # some methods can fail numerically
 
     # Evaluate estimate according to a loss function
@@ -214,21 +218,19 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
         product(*[search_space[k] for k in categorical_params])] # ends up [{}] if there are no categorical params
 
     # The minimization's search space is the dimensions where numerical options are given in a list
-    search_space_types = {k:type(v[0]) for k,v in search_space.items() if isinstance(v, list)} # map param name -> type, for converting to and from point
-    if any(v not in [float, int] for v in search_space_types.values()):
-        raise ValueError("To optimize over categorical strings or bools, put them in a tuple, not a list.")
-    # Cast ints to floats, and we're good to go
-    starting_points = list(product(*[np.array(search_space[k]).astype(float) for k in search_space_types]))
-    # The numerical space should have bounds
-    bounds = [bounds[k] if k in bounds else # pass these to minimize(). It should respect them.
-            None for k,v in search_space_types.items()] # None means no bound on a dimension
-
-    if len(search_space_types) == 0 and len(categorical_combos) == 1: # one point is not much of a space
+    roundings = {k:(bounds[k][2] if len(bounds.get(k, ())) > 2 else type(v[0])) # map param name -> its key into ROUND
+        for k,v in search_space.items() if isinstance(v, list)}     # taken from the seeds' type unless the bounds name one
+    if len(roundings) == 0 and len(categorical_combos) == 1: # one point is not much of a space
         warn(f"Nothing to optimize: every parameter of {func.__name__} is pinned to a single value, so the objective is simply evaluated there.")
+
+    # Cast ints to floats for optimization, and set up value boundaries
+    starting_points = list(product(*[np.array(search_space[k]).astype(float) for k in roundings]))
+    bounds = [bounds[k][:2] if k in bounds else # pass these to minimize(). It should respect them.
+            (None, None) for k,v in roundings.items()] # tuple of Nones means no bound on a dimension
 
     # Bind everything that stays the same across jobs, leaving `minimize`'s `fun` and `x0` args positional so one `partial` can serve them all.
     _minimize = partial(scipy.optimize.minimize, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-    obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'search_space_types':search_space_types,
+    obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
         'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 
     with catch_warnings(action="ignore", category=UserWarning): # an extra filtering call because some worker work can actually be
@@ -241,22 +243,20 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
                 jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
                         for categorical_combo in categorical_combos for point in starting_points]
                 with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # The heavy lifting
-                    results = pool.starmap(_minimize, jobs, chunksize=1) if len(search_space_types) > 0 else \
+                    results = pool.starmap(_minimize, jobs, chunksize=1) if len(roundings) > 0 else \
                         [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # no space for minimizer to walk
         else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
             obj_kwargs['cache'] = {} # a plain dict suffices when there are no other processes to share it with
             jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
                 for categorical_combo in categorical_combos for point in starting_points]
-            results = [_minimize(obj, point) for obj, point in jobs] if len(search_space_types) > 0 else \
+            results = [_minimize(obj, point) for obj, point in jobs] if len(roundings) > 0 else \
                 [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # again, nowhere to walk
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x
     # results are going to be floats, but that may not be allowed, so convert back to a dict
-    opt_params = {k:(v if search_space_types[k] == float else
-                    int(np.round(v)) if search_space_types[k] == int else
-                    v > 0.5) for k,v in zip(search_space_types, opt_point)}
-    opt_params.update(singleton_params)
+    opt_params = {k:ROUND[roundings[k]](v) for k,v in zip(roundings, opt_point)} # same rounding the objective used, so we return what ran
+    opt_params.update(singleton_params) # add back in the non-searched params
     opt_params.update(categorical_combos[opt_idx//len(starting_points)]) # there are |starting_points| results for each combo
 
     return opt_params, results[opt_idx].fun

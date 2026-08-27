@@ -26,11 +26,12 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Convolution spreads a NaN across many windows.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Convolving with a fixed-width kernel assumes uniformly sampled data.")
 
+    if window_size % 2 == 0: window_size += 1; warn("Even-width kernels shift answers by half-samples. Added 1 to length.")
+
     if kernel in ['mean', 'gaussian', 'friedrichs']:
         kernel = getattr(utility, f"{kernel}_kernel")(window_size)
         x_hat = utility.convolutional_smoother(x, kernel, num_iterations, axis=axis)
     elif kernel == 'median':
-        if not window_size % 2: window_size += 1 # make sure window_size is odd, else medfilt throws error
         s = [1]*x.ndim; s[axis] = window_size
 
         x_hat = x

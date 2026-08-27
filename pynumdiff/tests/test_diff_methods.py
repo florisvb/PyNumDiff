@@ -154,15 +154,15 @@ error_bounds = {
     splinediff: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                  [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                  [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
-                 [(0, 0), (1, 1), (0, 0), (1, 1)],
-                 [(1, 0), (2, 2), (1, 0), (2, 2)],
-                 [(1, 0), (3, 3), (1, 0), (3, 3)]],
+                 [(0, -1), (1, 1), (0, 0), (1, 1)],
+                 [(1, 1), (2, 2), (1, 1), (2, 2)],
+                 [(0, 0), (3, 3), (1, 0), (3, 3)]],
     spline_irreg_step: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(0, 0), (1, 1), (0, 0), (1, 1)],
-                        [(1, 0), (2, 2), (1, 0), (2, 2)],
-                        [(1, 0), (3, 3), (1, 0), (3, 3)]],
+                        [(1, 1), (2, 2), (1, 1), (2, 2)],
+                        [(0, 0), (2, 2), (1, 0), (2, 2)]],
     spectraldiff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 0), (1, 1), (1, 1), (1, 1)],
@@ -341,7 +341,7 @@ multidim_methods_and_params = [
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
-    (splinediff, {'degree': 9, 's': 1e-6}),
+    (splinediff, {'degree': 9, 's': 0}), # s is now relative to estimated noise, so 0 is how you ask to interpolate
     (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
     (tvrdiff, {'order': 3, 'gamma': 1e-4})
 ]
@@ -360,7 +360,7 @@ multidim_error_bounds = {
     rtsdiff: [(1, -1), (1, 0)],
     spectraldiff: [(2, 1), (3, 2)], # lot of Gibbs ringing in 2nd order derivatives along t1 with t_1^2 sin(3 pi t_2 / 2)
     rbfdiff: [(0, -1), (1, 0)],
-    splinediff: [(0, -1), (1, 0)],
+    splinediff: [(-8, -8), (-6, -7)],
     robustdiff: [(-2, -3), (0, -1)],
     tvrdiff: [(0, -1), (1, 0)]
 }

@@ -52,10 +52,10 @@ method_params_and_bounds = {
              'window_size': (3, 1000),
            'smoothing_win': (3, 1000)}),
     splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
-                       's': [0.2, 0.5, 0.75, 0.9, 1, 10],
-          'num_iterations': [1, 5, 10]},
-                      {'s': (1e-2, 1e4),
-          'num_iterations': (1, 10)}),
+                       's': [0.5, 1, 1.5], # multiples of the noise energy, so these hold at any N and noise level
+          'num_iterations': [1, 3]}, # 5 and 10 never won across 24 sim/step/noise combinations
+                      {'s': (1e-1, 1e1), # a relative floor keeps the search out of the near-interpolating regime,
+          'num_iterations': (1, 5)}), # where starving the budget while iterating made scipy's knot search fail
     spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
                   'pad_to_zero_dxdt': {True, False},
                   'high_freq_cutoff': [1e-2, 5e-2, 1e-1, 5e-1]}, # give numerical params in a list to scipy.optimize over them

@@ -6,7 +6,7 @@ import scipy
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iterations=1, axis=0):
+def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterations=1, axis=0):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.make_splrep. Variable step size is supported with equal ease as uniform step size.
 
@@ -17,8 +17,10 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
     :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
     :param dict options: (**deprecated**, prefer :code:`num_iterations`) a dictionary of {'iterate': (bool)}
     :param int degree: polynomial degree of the spline. A kth degree spline can be differentiated k times.
-    :param float s: positive smoothing factor used to choose the number of knots. Number of knots will be increased
-        until the smoothing condition is satisfied: :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s`
+    :param float s: nonnegative smoothing factor. Number of knots will be increased until the smoothing condition
+        :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s N \\hat\\sigma^2` is met, where :math:`N` is data length and
+        :math:`\\hat\\sigma` is a robust estimate of noise stddev. :math:`s = 1` leaves exactly that much energy for
+        residuals and is a good default; larger over-smooths, smaller under-smooths, and 0 yields an interpolating spline.
     :param int num_iterations: how many times to apply smoothing
     :param int axis: data dimension along which differentiation is performed
 
@@ -45,10 +47,16 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=None, num_iter
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
 
         obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so use only observed points for first fit
-        spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s)
+        # Scale the noise budget by N σ̂² so s stays meaningful across signal lengths and noise levels. Estimate noise level with
+        # MAD on 2nd differences (to nix constants and trends), which has weights (1,-2,1), inflating variance by (1²+−2²+1²)σ̂² = 6σ̂²
+        sigma_hat = scipy.stats.median_abs_deviation(np.diff(x[i][obs], 2), scale='normal')/np.sqrt(6)
+        # If tiny sigma_hat (relative to data scale), the spline fit chases overly fine residuals, so interpolate instead
+        s_abs = s*np.sum(obs)*sigma_hat**2 if sigma_hat > 1e-12*np.max(np.abs(x[i][obs])) else 0
+
+        spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s_abs)
         x_hat[i] = spline(t) # interpolate at all t
         for _ in range(num_iterations-1):
-            spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s)
+            spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s_abs) # hold noise (drift) budget fixed across iterations
             x_hat[i] = spline(t)
         dxdt_hat[i] = spline.derivative()(t) # evaluate derivative at sample points
 

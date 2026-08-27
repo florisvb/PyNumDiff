@@ -101,13 +101,14 @@ method_params_and_bounds = {
                   'log_r': (-5, 16),
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    lineardiff: ({'kernel': 'gaussian',
-                   'order': 3,
-                   'gamma': [1e-1, 1, 10, 100],
-             'window_size': [10, 30, 50, 90, 130]},
-                  {'order': (1, 5),
-                   'gamma': (1e-3, 1000),
-             'window_size': (15, 1000)})
+    lineardiff: ({'kernel': 'gaussian', # order searched rather than pinned: CVXPY fails on ~0%/1%/8% of parameter
+                   'order': {1, 2, 3}, # combinations at orders 1/2/3, so the old pinned 3 sat at the fragile end
+                   'gamma': [1e-2, 1e-1, 1, 10],
+               'step_size': [10, 20, 40], # each step is a convex solve here, so this is the dominant cost knob
+             'window_size': [30, 60, 120, 240]}, # below ~40 the repeated integrals leave cond(integral_X) above 1e3
+                  {'gamma': (1e-4, 1e4),
+               'step_size': (1, 100),
+             'window_size': (20, 1000)})
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]

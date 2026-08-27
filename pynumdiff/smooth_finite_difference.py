@@ -33,7 +33,6 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
         x_hat = utility.convolutional_smoother(x, kernel, num_iterations, axis=axis)
     elif kernel == 'median':
         s = [1]*x.ndim; s[axis] = window_size
-
         x_hat = x
         for _ in range(num_iterations):
             x_hat = scipy.signal.medfilt(x_hat, s)

@@ -101,7 +101,7 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     elif order is None or gamma is None or window_size is None:
         raise ValueError("`order`, `gamma`, and `window_size` must be given.")
 
-    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem over NaN data.")
+    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
 
     def _lineardiff(x, dt, order, gamma, solver=None):
@@ -109,20 +109,29 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
         mean = np.mean(x)
         x = x - mean
 
+        # Work in nondimensional time tau = t/T, so the window spans [0, 1] no matter how wide it is. Each row of the
+        # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the
+        # window duration T: at dt=0.01 and window_size=11 that leaves cond(integral_X) above 1e3 and entries around
+        # 1e-5, small enough that a solver's absolute tolerances stop meaning anything. Integrating in tau instead
+        # holds every row at O(1) and cond near 30 regardless of window_size. A comes back in units of 1/tau, so the
+        # derivative it reconstructs is d/dtau and gets divided by T at the end to return to d/dt.
+        T = len(x)*dt
+        dtau = dt/T
+
         # Generate the matrix of integrals of x
         X = [x]
         for n in range(1, order):
-            X.append(utility.integrate_dxdt_hat(X[-1], dt))
+            X.append(utility.integrate_dxdt_hat(X[-1], dtau))
         X = np.vstack(X[::-1])
         integral_Xdot = X
-        integral_X = np.hstack((np.zeros((X.shape[0], 1)), scipy.integrate.cumulative_trapezoid(X, axis=1)))*dt
+        integral_X = np.hstack((np.zeros((X.shape[0], 1)), scipy.integrate.cumulative_trapezoid(X, axis=1)))*dtau
 
         # Solve for A and the integration constants
-        A, C = _solve_for_A_and_C_given_X_and_Xdot(integral_X, integral_Xdot, order, dt, gamma, solver=solver)
+        A, C = _solve_for_A_and_C_given_X_and_Xdot(integral_X, integral_Xdot, order, dtau, gamma, solver=solver)
 
         # Add the integration constants
         Csum = 0
-        t = np.arange(X.shape[1])*dt
+        t = np.arange(X.shape[1])*dtau
         for n in range(order - 1):
             C_subscript = n
             t_exponent = order - n - 2
@@ -130,9 +139,9 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
             Cn = np.vstack([1/den*C[i, C_subscript]*t**t_exponent for i in range(X.shape[0])])
             Csum = Csum + Cn
 
-        # Use A and C to calculate the derivative
+        # Use A and C to calculate the derivative, then undo the time scaling
         Xdot_reconstructed = A@X + Csum
-        dxdt_hat = np.ravel(Xdot_reconstructed[-1, :])
+        dxdt_hat = np.ravel(Xdot_reconstructed[-1, :])/T
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
         x_hat = x_hat + utility.estimate_integration_constant(x+mean, x_hat)

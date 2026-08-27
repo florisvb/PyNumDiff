@@ -136,54 +136,44 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
 
 
-def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='periodization'):
+def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='symmetric'):
     """Smooth and differentiate noisy data in a wavelet basis.
 
-    Three steps: (1) decompose x with the DWT and soft-threshold the detail
-    coefficients to denoise (Donoho-Johnstone universal threshold), reconstructing
-    a smoothed x_hat; (2) extend x_hat antisymmetrically so the periodic derivative
-    operator stays accurate at the edges; (3) recover the wavelet scaling
-    coefficients of x_hat and apply the analytic derivative of the wavelet basis.
+    Three steps: (1) decompose x with the DWT and soft-threshold the detail coefficients to denoise (Donoho-Johnstone
+    universal threshold), reconstructing a smoothed x_hat; (2) extend x_hat antisymmetrically so the periodic derivative
+    operator stays accurate at the edges; (3) recover the wavelet scaling coefficients of x_hat and apply the analytic
+    derivative of the wavelet basis.
 
-    The derivative differentiates the basis functions themselves rather than
-    finite-differencing the signal. PyWavelets treats the samples as finest-level
-    scaling coefficients, so x_hat is the interpolant x(t) = sum_n a_n phi(t/dt - n)
-    for the scaling function phi. Sampling x and its analytic derivative on the grid
-    gives two convolutions against phi and phi' evaluated at *integers*,
+    The derivative differentiates the basis functions themselves rather than finite-differencing the signal. PyWavelets
+    treats the samples as finest-level scaling coefficients, so x_hat is the interpolant x(t) = sum_n a_n phi(t/dt - n)
+    for the scaling function phi. Sampling x and its analytic derivative on the grid gives two convolutions against phi
+    and phi' evaluated at *integers*,
 
         x_hat = Phi @ a     and     x' = Phi_prime @ a,
 
-    so x' = Phi_prime @ Phi^-1 @ x_hat, exact for signals the basis can represent.
-    The integer samples phi(p), phi'(p) are the eigenvalue-1 and eigenvalue-1/2
-    eigenvectors of the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k)
-    (the "connection coefficients"), normalized to reproduce constants and ramps.
-    This is the wavelet-basis representation of the derivative operator from
-    Beylkin (1992); the connection coefficients follow Latto, Resnikoff &
-    Tenenbaum (1991), for Daubechies' compactly supported wavelets (1988).
-
-    Because the DWT requires uniform spacing, this method only accepts a scalar
-    time step dt (not a vector of sample times). For non-uniformly sampled data,
-    use :func:`rbfdiff` or :func:`splinediff` instead.
+    so x' = Phi_prime @ Phi^-1 @ x_hat, exact for signals the basis can represent. The integer samples phi(p), phi'(p)
+    are the eigenvalue-1 and eigenvalue-1/2 eigenvectors of the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k)
+    (the "connection coefficients"), normalized to reproduce constants and ramps. This is the wavelet-basis representation
+    of the derivative operator from Beylkin (1992); the connection coefficients follow Latto, Resnikoff & Tenenbaum (1991),
+    for Daubechies' compactly supported wavelets (1988).
 
     References:
-        G. Beylkin, "On the representation of operators in bases of compactly
-        supported wavelets," SIAM J. Numer. Anal. 29(6):1716-1740, 1992.
-        A. Latto, H. L. Resnikoff & E. Tenenbaum, "The evaluation of connection
-        coefficients of compactly supported wavelets," Proc. French-USA Workshop
-        on Wavelets and Turbulence, 1991.
+        G. Beylkin, "On the representation of operators in bases of compactly supported wavelets," SIAM J. Numer.
+        Anal. 29(6):1716-1740, 1992.
+        A. Latto, H. L. Resnikoff & E. Tenenbaum, "The evaluation of connection coefficients of compactly supported
+        wavelets," Proc. French-USA Workshop on Wavelets and Turbulence, 1991.
 
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: uniform time step between samples.
-    :param str wavelet: PyWavelets wavelet name. Must have a differentiable scaling
-        function, so smoother wavelets give better derivatives: 'db8' (default) and
-        'sym8' are best for noisy data; 'db4', 'sym4', and 'coif2' also work well.
-    :param int level: decomposition depth. None (default) resolves to
-        min(pywt.dwt_max_level(N, wavelet), 5) to avoid over-decomposing short signals.
+    :param str wavelet: PyWavelets wavelet name. Must have a differentiable scaling function, so smoother wavelets give
+        better derivatives: 'db8' (default) and 'sym8' are best for noisy data; 'db4', 'sym4', and 'coif2' also work well.
+    :param int level: decomposition depth. None (default) resolves to min(pywt.dwt_max_level(N, wavelet), 5) to avoid
+        over-decomposing short signals.
     :param float threshold: soft-thresholding scale factor in [0, inf).
     :param int axis: axis along which to differentiate (default 0).
-    :param str mode: PyWavelets signal extension mode for the denoising transform.
-        'periodization' keeps coefficient arrays compact. The derivative operator is
-        periodic, so x_hat is antisymmetrically extended before it is applied (see below).
+    :param str mode: PyWavelets signal extension mode for the denoising transform. 'symmetric' mirrors the signal, which
+        performs better on aperiodic data than the wrapping modes ('periodization', 'periodic'), which cause discontinuity
+        at beginning and end.
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
@@ -199,9 +189,9 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
     x_flat = x_work.reshape(N, -1)                         # rest of the dims flattened into columns
     Ne = 3 * N - 2                                         # length after the antisymmetric extension in step 2
 
-    # Build the wavelet-basis derivative operator (depends only on the grid and wavelet).
-    # Sampling the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at integers makes
-    # phi(p) the eigenvalue-1 and phi'(p) the eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
+    # Build the wavelet-basis derivative operator (depends only on the grid and wavelet). Sampling the refinement
+    # relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
+    # eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
     h = np.array(pywt.Wavelet(wavelet).rec_lo); h = h / h.sum() * np.sqrt(2) # refinement filter, integral of phi = 1
     L = len(h); p = np.arange(L)                            # phi is supported on the integers [0, L-1]
     shift = 2 * p[:, None] - p[None, :]
@@ -221,18 +211,17 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='p
     if level is None:
         level = min(pywt.dwt_max_level(N, wavelet), 5)
 
-    # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The
-    # noise level is estimated robustly per column from the finest details (coeffs[-1]).
+    # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The noise level is estimated
+    # robustly per column from the finest details (coeffs[-1]).
     coeffs = pywt.wavedec(x_flat, wavelet, level=level, mode=mode, axis=0)
     sigma = np.maximum(np.median(np.abs(coeffs[-1]), axis=0) / 0.6745, 1e-10)
     thresh = threshold * sigma * np.sqrt(2 * np.log(N))
     coeffs = [coeffs[0]] + [pywt.threshold(c, thresh[np.newaxis, :], mode='soft') for c in coeffs[1:]]
     x_hat = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:N]
 
-    # 2. The derivative operator is periodic, but x_hat usually isn't. Extend it
-    # antisymmetrically (reflect through each endpoint: x[-1-k] -> 2*x[0]-x[1+k]) so the
-    # periodic wrap is continuous in both value and slope, which keeps the derivative
-    # accurate at the edges instead of spiking there. This is the odd-symmetry analog of
+    # 2. The derivative operator is periodic, but x_hat usually isn't. Extend it antisymmetrically (reflect
+    # through each endpoint: x[-1-k] -> 2*x[0]-x[1+k]) so the periodic wrap is continuous in both value and slope,
+    # which keeps the derivative accurate at the edges instead of spiking there. This is the odd-symmetry analog of
     # spectraldiff's even extension; a ramp extends to a ramp, so slopes survive exactly.
     left = 2 * x_hat[0] - x_hat[1:][::-1]
     right = 2 * x_hat[-1] - x_hat[:-1][::-1]

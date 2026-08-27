@@ -12,7 +12,7 @@ from .utils import evaluate, utility
 from .finite_difference import finitediff, first_order, second_order, fourth_order
 from .smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
 from .polynomial_fit import polydiff, savgoldiff, splinediff
-from .basis_fit import spectraldiff, rbfdiff
+from .basis_fit import spectraldiff, rbfdiff, waveletdiff
 from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
 from .kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
 from .linear_model import lineardiff
@@ -64,6 +64,10 @@ method_params_and_bounds = {
                 'lmbd': [1e-3, 1e-2, 1e-1]},
               {'sigma': (1e-2, 1e3),
                 'lmbd': (1e-3, 0.5)}),
+    waveletdiff: ({'wavelet': {'db8', 'db12', 'sym8', 'coif1'}, # different data can favor different mother wavelets
+                 'threshold': [0.5, 1, 2]}, # multiplies the Donoho-Johnstone universal threshold, 0 meaning no denoising.
+                 # `level` is left at its adaptive default, min(dwt_max_level(N, wavelet), 5), which tracks both the signal and filter lengths
+                {'threshold': (0.1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
               'huberM': [2., 6]}, # the scale of sigma is mad(x), which is bigger than mad(y-x) residuals, so outliers likely come at lower M values
@@ -264,13 +268,12 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     using default search spaces defined in :code:`method_params_and_bounds` at the top of :code:`pynumdiff/optimize.py`.
     This routine will take a few minutes to run.
     
-    Excluded:
-        - ``first_order``, because iterating causes drift
-        - ``lineardiff``, ``iterative_velocity``, and ``jerk_sliding``, because they either take too long,
-          can be fragile, or tend not to do best
+    Excluded, besides everything deprecated:
+        - ``lineardiff`` and ``iterative_velocity``, because they either take too long, can be fragile,
+          or tend not to do best
         - all ``cvxpy``-based methods if it is not installed
-        - ``velocity`` because it tends to not be best but dominates the optimization process by directly
-          optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
+        - first-order ``tvrdiff`` and ``robustdiff`` because they tend to not be best but dominate the optimization
+          process by directly optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
           \\hat{\\dot{x}}}(\\Phi)) + \\mu, \\mathbf{y} \\Big) + \\gamma \\Big({TV}\\big(\\mathbf{\\hat{
           \\dot{x}}}(\\Phi)\\big)\\Big)`
 
@@ -294,8 +297,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
         tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
 
-    methods = [meandiff, mediandiff, gaussiandiff, friedrichsdiff, butterdiff,
-        polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, finitediff, rtsdiff]
+    methods = [kerneldiff, butterdiff, polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, waveletdiff, finitediff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
         methods += [tvrdiff, smooth_acceleration, robustdiff]

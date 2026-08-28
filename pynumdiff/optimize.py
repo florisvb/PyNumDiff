@@ -94,11 +94,13 @@ method_params_and_bounds = {
                          'r': (1e-10, 1e10)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
                   'log_q': [1., 4, 7, 10, 13], # decimal after first entry ensure this is treated as float type
-                  'log_r': [-1., 2, 5, 8, 11],
+                  'log_r': [0.], # one seed, but allowed to drift. Holding both Huber Ms fixed, the objective is flat along characteristic curves in the
+                                 # (log_q, log_r) plane, but these are sloped such that varying log_q cuts across more of them than varying log_r; extra log_r
+                                 # restarts mostly duplicate each other. 0 is the natural set point for log_r, accepting noise stddev estimates as true.
             'proc_huberM': [0., 2, 6], # 0 is l1 norm, 1.345 is Huber 95% "efficiency", 2 assumes about 5% outliers,
             'meas_huberM': [0., 2, 6]}, # 6 assumes basically no outliers per outlier_portion = (1 - norm.cdf(M))*2
-                 {'log_q': (-5, 16),
-                  'log_r': (-5, 16),
+                 {'log_q': (-1, 14), # outside these the fit saturates: log_q below 0 or log_r above 10 both mean
+                  'log_r': (-4, 10), # ignore the measurements and trust the model, and give identical answers
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
     lineardiff: ({'kernel': 'gaussian',

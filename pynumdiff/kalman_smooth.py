@@ -2,6 +2,7 @@
 from warnings import warn
 import numpy as np
 from scipy.linalg import expm, sqrtm
+from scipy.stats import median_abs_deviation
 try: import cvxpy
 except ImportError: pass
 
@@ -287,16 +288,22 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     multiplying :math:`|\\cdot|` in the Huber function, and leaving behind :math:`\\sqrt{2}`, the proper :math:`\\ell_1` normalization.
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
-    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{1/2})`, but these are still independent enough that for the purposes of
-    optimization we cannot collapse them. Nor can :code:`log_q` and :code:`log_r` be combined into :code:`log_qr_ratio` as in RTS smoothing
-    without the addition of a new absolute scale parameter, becausee :math:`q` and :math:`r` interact with the distinct Huber :math:`M` parameters.
+    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{1/2})`, but we cannot collapse the set of parameters for purposes of
+    optimization like we could combine :code:`log_q` and :code:`log_r` into :code:`log_qr_ratio` for RTS smoothing. Even though scaling both
+    :math:`q` and :math:`r` by :math:`c` while scaling both :math:`M` by :math:`\\sqrt{c}` leaves each huber proportional to its original,
+    thereby leaving its argmin in place while collapsing four parameters to three, the *relative balance* betwen the measurement and process
+    sides of the objective shifts unless the two :math:`M` are equal, because :code:`huber_const`, is a nonlinear function of :math:`M`.
 
     :param np.array[float] x: data series to differentiate. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
-    :param float log_q: base 10 logarithm of process noise variance, so :code:`q = 10**log_q`
-    :param float log_r: base 10 logarithm of measurement noise variance, so :code:`r = 10**log_r`
+    :param float log_q: base 10 logarithm (:code:`q = 10**log_q`) of process noise spectral density, measured in normalized units, i.e.
+        data is normalized by a robust estimate of noise standard deviation, leaving it scale 1. :code:`log_q` is invariant to :code:`dt`
+        but sensitive to :code:`order`. With :code:`log_r=0`, try around 3, 7, or 9 for orders 1, 2, or 3, less for a smooth signal.
+    :param float log_r: base 10 logarithm (:code:`r = 10**log_r`) of measurement noise variance, in normalized units so it remains
+        meaningful at any data scale. :code:`log_r = 0` takes robust noise stddev estimates as gospel, while larger values assume
+        noisier measurements and smooth more aggressively.
     :param float proc_huberM: quadratic-to-linear transition point for process loss
     :param float meas_huberM: quadratic-to-linear transition point for measurement loss
     :param int axis: data dimension along which differentiation is performed
@@ -332,8 +339,19 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
-        x_states = convex_smooth(x[s], A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM) # outsource solution of the convex optimization problem
-        x_hat[s] = x_states[:,0]; dxdt_hat[s] = x_states[:,1]
+
+        lo, hi = np.nanmin(x[s]), np.nanmax(x[s])
+        if lo == hi: x_hat[s] = hi; dxdt_hat[s] = 0.; continue # shortcircuit on constant vectors: σ̂ = 0, but known derivative = 0 too
+        scale = max(-lo, hi) # the vector's size = max(abs(x)) without recomputing
+
+        # Normalize data so scaling `log_q` and `log_r` doesn't quietly reweight process vs measurement term. Estimate noise stddev
+        # with MAD on 2nd diffs (to nix constants and trends), which has weights (1,-2,1), inflating variance by (1²+-2²+1²)σ̂² = 6σ̂²
+        sigma_hat = median_abs_deviation(np.diff(x[s], 2), scale='normal', nan_policy='omit')/np.sqrt(6)
+        if sigma_hat < 1e-12*scale: sigma_hat = scale # avert divide by zero
+        mu_hat = np.nanmedian(x[s]) # center too, like tvrdiff, so large offset can't eat float precision, median so outlier robust
+
+        x_states = convex_smooth((x[s] - mu_hat)/sigma_hat, A_d, Q_d, C, R, proc_huberM=proc_huberM, meas_huberM=meas_huberM)
+        x_hat[s] = x_states[:,0]*sigma_hat + mu_hat; dxdt_hat[s] = x_states[:,1]*sigma_hat # derivative has no offset to add back
 
     return x_hat, dxdt_hat
 

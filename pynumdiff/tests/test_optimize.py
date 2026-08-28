@@ -38,6 +38,7 @@ def test_targeting_rmse_vs_tvgamma_loss():
     # This bound might break if using a different diff method or data series, but the point is they are ballpark similar.
     assert val_rmse <= loss_rmse < 2.5*val_rmse # Claude measures 1.4-2.7x across methods.
 
+
 def test_search_space_updates_applied():
     """Ensure search space updates are used in optimization"""
     params2, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':2}, tvgamma=tvgamma)

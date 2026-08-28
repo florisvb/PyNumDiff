@@ -56,8 +56,8 @@ diff_methods_and_params = [
     (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
     (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
-    (robustdiff, {'order':3, 'log_q':7, 'log_r':2}),
-    (robust_irreg_step, {'order':3, 'log_q':7, 'log_r':2}),
+    (robustdiff, {'order':3, 'log_q':9, 'log_r':0}),
+    (robust_irreg_step, {'order':3, 'log_q':9, 'log_r':0}),
     (velocity, {'gamma':0.5}), (velocity, [0.5]),
     (acceleration, {'gamma':1}), (acceleration, [1]),
     (jerk, {'gamma':10}), (jerk, [10]),
@@ -238,15 +238,15 @@ error_bounds = {
     robustdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                 [(-7, -7), (-2, -2), (0, -1), (1, 1)],
-                 [(0, 0), (2, 2), (0, 0), (2, 2)],
-                 [(1, 1), (3, 3), (1, 1), (3, 3)]],
+                 [(flr, flr), (-2, -2), (0, -1), (1, 1)],
+                 [(-11, -11), (1, 1), (0, 0), (1, 1)],
+                 [(0, 0), (3, 3), (0, 0), (3, 2)]],
     robust_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                         [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                         [(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                        [(-8, -8), (-2, -2), (0, -1), (1, 1)],
-                        [(0, 0), (2, 2), (0, 0), (2, 2)],
-                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
+                        [(flr, flr), (-2, -2), (0, -1), (1, 1)],
+                        [(-11, -11), (1, 1), (0, 0), (1, 1)],
+                        [(1, 1), (3, 2), (0, 0), (2, 2)]],
     lineardiff: [[(-3, -4), (-3, -3), (0, -1), (1, 0)],
                  [(-1, -2), (0, 0), (0, -1), (1, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
@@ -254,6 +254,7 @@ error_bounds = {
                  [(0, 0), (2, 1), (0, 0), (2, 1)],
                  [(0, -1), (3, 3), (0, 0), (3, 3)]]
 }
+
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
 @mark.filterwarnings("ignore::DeprecationWarning") # I want to test the old and new functionality intentionally
@@ -273,12 +274,12 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     x_noisy = x + noise
 
     # differentiate without and with noise, accounting for new and old styles of calling functions
-    x_hat, dxdt_hat = diff_method(x, _t, **params) if isinstance(params, dict) \
-        else diff_method(x, _t, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
-        else diff_method(x, _t, params, options)
-    x_hat_noisy, dxdt_hat_noisy = diff_method(x_noisy, _t, **params) if isinstance(params, dict) \
-        else diff_method(x_noisy, _t, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
-        else diff_method(x_noisy, _t, params, options)
+    def differentiate(data): # TODO remove this line as part of #183, because then only the first branch will be needed
+        return diff_method(data, _t, **params) if isinstance(params, dict) \
+            else diff_method(data, _t, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
+            else diff_method(data, _t, params, options)
+    x_hat, dxdt_hat = differentiate(x)
+    x_hat_noisy, dxdt_hat_noisy = differentiate(x_noisy)
 
     # plotting code
     if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
@@ -303,25 +304,28 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
         axes[i, 1].set_yticklabels([])
         if i == 0: axes[i, 1].set_title('with noise')
 
-    # check x_hat and x_hat_noisy are close to x and that dxdt_hat and dxdt_hat_noisy are close to dxdt
+    # check x_hat and x_hat_noisy are close to known x and that dxdt_hat and dxdt_hat_noisy are close to known dxdt
     if request.config.getoption("--bounds"): print("\n[", end="") # print stuff if the user gave the --bounds flag
     for j,(a,b) in enumerate([(x,x_hat), (dxdt,dxdt_hat), (x,x_hat_noisy), (dxdt,dxdt_hat_noisy)]):
         l2_error = np.linalg.norm(a - b)
         linf_error = np.max(np.abs(a - b))
 
-        # bounds-printing for establishing bounds
-        if request.config.getoption("--bounds"):
+        if request.config.getoption("--bounds"): # bounds-printing for establishing bounds
             #print(f"({l2_error},{linf_error})", end=", ") # <- in case you want to print actual errors rather than powers
             print(f"({'flr' if np.ceil(np.log10(l2_error)) <= flr else int(np.ceil(np.log10(l2_error)))}, "
                   f"{'flr' if np.ceil(np.log10(linf_error)) <= flr else int(np.ceil(np.log10(linf_error)))})", end=", ")
-        # bounds checking
-        else:
+        else: # bounds checking
             log_l2_bound, log_linf_bound = error_bounds[diff_method][i][j]
             assert l2_error < 10**log_l2_bound
             assert linf_error < 10**log_linf_bound
             # when a method beats its prior performance by an order of magnitude, signal the improvement
             if 10**flr < l2_error < 10**(log_l2_bound - 1) or 10**flr < linf_error < 10**(log_linf_bound - 1):
                 print(f"Improvement detected for method {diff_method.__name__}; consider tightening its bound")
+
+    # Differentiation is linear, so a*f(x) == f(a*x) exactly. A hyperparameter carrying absolute units can break this silently. See #222, #218, #220
+    if diff_method not in [lineardiff, iterative_velocity]: # <- methods not yet fixed to handle a*f(x) == f(a*x) exactly
+        for a in [1e-3, 1e3]: # both directions, so an absolute threshold can't pass by being tested only one way
+            assert np.max(np.abs(differentiate(a*x_noisy)[1] - a*dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
 
 
 T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 101 x 100 grid, deliberately not square, so a method measuring a
@@ -342,7 +346,7 @@ multidim_methods_and_params = [
     (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 0}), # s is now relative to estimated noise, so 0 is how you ask to interpolate
-    (robustdiff, {'order':2, 'log_q':7, 'log_r':2}),
+    (robustdiff, {'order':2, 'log_q':9, 'log_r':0}),
     (tvrdiff, {'order': 3, 'gamma': 1e-4})
 ]
 
@@ -361,7 +365,7 @@ multidim_error_bounds = {
     spectraldiff: [(2, 1), (3, 2)], # lot of Gibbs ringing in 2nd order derivatives along t1 with t_1^2 sin(3 pi t_2 / 2)
     rbfdiff: [(0, -1), (1, 0)],
     splinediff: [(-8, -8), (-6, -7)],
-    robustdiff: [(-2, -3), (0, -1)],
+    robustdiff: [(-2, -3), (-1, -2)],
     tvrdiff: [(0, -1), (1, 0)]
 }
 

@@ -53,6 +53,8 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     return x_hat, dxdt_hat
 
 
+@np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
+#  memory just to read off a shape, so they warn when it holds garbage. This wall can come down if they ever fix it upstream.
 def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
     total variation regularized derivative. Other convex-solver-based methods in this module call this function.

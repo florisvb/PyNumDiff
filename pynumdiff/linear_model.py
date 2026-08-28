@@ -29,6 +29,8 @@ def spectraldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-fu
     return _spectraldiff(*args, **kwargs)
 
 
+@np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
+#  memory just to read off a shape, so they warn when it holds garbage. This wall can come down if they ever fix it upstream.
 def _solve_for_A_and_C_given_X_and_Xdot(X, Xdot, num_integrations, dt, gammaC=1e-1, gammaA=1e-6,
                                            solver='CLARABEL', A_known=None, epsilon=1e-6):
     """Given state and the derivative, find the system evolution and measurement matrices."""

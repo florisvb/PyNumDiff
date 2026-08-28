@@ -235,16 +235,15 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
         'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 
-    with catch_warnings(action="ignore", category=Warning): # silence user and runtime warnings, which are expected, because
-        # some worker work can actually be done in the main process; scoped so caller's filters are restored on the way out
-        if parallel:
+    with catch_warnings(action="ignore", category=UserWarning): # some worker work is done in main process;
+        if parallel:                                # scoped so caller's filters restored after. See #206
             with Manager() as manager:
                 obj_kwargs['cache'] = manager.dict() # cache answers to avoid expensive repeat queries
                 # Line up every (objective, starting point) pair across all categorical combos, so the whole sweep can go out at once.
                 # Combo-major, so opt_idx//len(starting_points) works to index results below.
                 jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
                         for categorical_combo in categorical_combos for point in starting_points]
-                with Pool(initializer=filterwarnings, initargs=["ignore", '', Warning]) as pool: # The heavy lifting
+                with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # the heavy lifting
                     results = pool.starmap(_minimize, jobs, chunksize=1) if len(roundings) > 0 else \
                         [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # no space for minimizer to walk
         else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes

@@ -1,5 +1,5 @@
 """Methods based on fitting data with polynomials"""
-from warnings import warn
+from warnings import warn, catch_warnings
 import numpy as np
 import scipy
 
@@ -53,11 +53,12 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
         # If tiny sigma_hat (relative to data scale), the spline fit chases overly fine residuals, so interpolate instead
         s_abs = s*np.sum(obs)*sigma_hat**2 if sigma_hat > 1e-12*np.max(np.abs(x[i][obs])) else 0
 
-        spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s_abs)
-        x_hat[i] = spline(t) # interpolate at all t
-        for _ in range(num_iterations-1):
-            spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s_abs) # hold noise (drift) budget fixed across iterations
-            x_hat[i] = spline(t)
+        with catch_warnings(action="ignore", category=RuntimeWarning): # FITPACK warns at knife-edge values of s, but still solves reliably
+            spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s_abs)
+            x_hat[i] = spline(t) # interpolate at all t
+            for _ in range(num_iterations-1):
+                spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s_abs) # hold noise (drift) budget fixed across iterations
+                x_hat[i] = spline(t)
         dxdt_hat[i] = spline.derivative()(t) # evaluate derivative at sample points
 
     return x_hat, dxdt_hat

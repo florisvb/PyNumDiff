@@ -188,6 +188,7 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
     shape = x_work.shape                                   # remember it to restore the input's dimensionality
     x_flat = x_work.reshape(N, -1)                         # rest of the dims flattened into columns
     Ne = 3 * N - 2                                         # length after the antisymmetric extension in step 2
+    if level is None: level = min(pywt.dwt_max_level(N, wavelet), 5)
 
     # Build the wavelet-basis derivative operator (depends only on the grid and wavelet). Sampling the refinement
     # relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
@@ -208,15 +209,14 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
     Phi = sparse.csr_matrix((phi_vals, (rows, cols)), shape=(Ne, Ne)).tocsc()           # to invert
     Phi_prime = sparse.csr_matrix((dphi_vals, (rows, cols)), shape=(Ne, Ne))            # to apply
 
-    if level is None:
-        level = min(pywt.dwt_max_level(N, wavelet), 5)
-
     # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The noise level is estimated
     # robustly per column from the finest details (coeffs[-1]).
     coeffs = pywt.wavedec(x_flat, wavelet, level=level, mode=mode, axis=0)
     sigma = np.maximum(np.median(np.abs(coeffs[-1]), axis=0) / 0.6745, 1e-10)
     thresh = threshold * sigma * np.sqrt(2 * np.log(N))
-    coeffs = [coeffs[0]] + [pywt.threshold(c, thresh[np.newaxis, :], mode='soft') for c in coeffs[1:]]
+    # coeffs[0] is the coarse approximation and doesn't need to be thresholded. At threshold 0 soft thresholding is the
+    # identity, but pywt hands back NaN for coefficients that are exactly 0 (PyWavelets/pywt#866), so skip the no-op call.
+    if threshold > 0: coeffs = [coeffs[0]] + [pywt.threshold(c, thresh[np.newaxis, :], mode='soft') for c in coeffs[1:]]
     x_hat = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:N]
 
     # 2. The derivative operator is periodic, but x_hat usually isn't. Extend it antisymmetrically (reflect

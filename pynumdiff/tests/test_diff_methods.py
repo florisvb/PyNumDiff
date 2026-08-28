@@ -325,7 +325,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # Differentiation is linear, so a*f(x) == f(a*x) exactly. A hyperparameter carrying absolute units can break this silently. See #222, #218, #220
     if diff_method not in [lineardiff, iterative_velocity]: # <- methods not yet fixed to handle a*f(x) == f(a*x) exactly
         for a in [1e-3, 1e3]: # both directions, so an absolute threshold can't pass by being tested only one way
-            assert np.max(np.abs(differentiate(a*x_noisy)[1] - a*dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
+            assert np.max(np.abs(differentiate(a*x_noisy)[1]/a - dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
 
 
 T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 101 x 100 grid, deliberately not square, so a method measuring a

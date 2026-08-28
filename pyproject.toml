@@ -38,19 +38,19 @@ package = "https://pypi.org/project/pynumdiff/"
 
 [project.optional-dependencies]
 advanced = [
-    "cvxpy"
+    "cvxpy>=1.8" # convex_smooth calls cvxpy.einsum, added in this version
 ]
 dev = [
     "pylint",
     "pytest",
     "cvxopt",
-    "cvxpy"
+    "cvxpy>=1.8"
 ]
 docs = [
     "sphinx",
     "sphinx_rtd_theme",
     "myst-parser",
-    "cvxpy" # necessary to document modules which import this
+    "cvxpy>=1.8" # necessary to document modules which import this
 ]
 
 [tool.setuptools_scm]

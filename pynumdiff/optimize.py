@@ -235,23 +235,19 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
         'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 
-    with catch_warnings(action="ignore", category=UserWarning): # some worker work is done in main process;
-        if parallel:                                # scoped so caller's filters restored after. See #206
-            with Manager() as manager:
-                obj_kwargs['cache'] = manager.dict() # cache answers to avoid expensive repeat queries
-                # Line up every (objective, starting point) pair across all categorical combos, so the whole sweep can go out at once.
-                # Combo-major, so opt_idx//len(starting_points) works to index results below.
-                jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
-                        for categorical_combo in categorical_combos for point in starting_points]
-                with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool: # the heavy lifting
-                    results = pool.starmap(_minimize, jobs, chunksize=1) if len(roundings) > 0 else \
-                        [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # no space for minimizer to walk
-        else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
-            obj_kwargs['cache'] = {} # a plain dict suffices when there are no other processes to share it with
-            jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
+    with catch_warnings(action="ignore", category=UserWarning): # some worker work is done in main process; scoped so caller's filters restored after. See #206.
+        obj_kwargs['cache'] = Manager().dict() if parallel else {} # a Manager's dict can be shared across processes; avoid repeat queries
+        # Line up every (objective, starting point) pair in combo-major order, so the whole sweep can go out at once
+        jobs = [(partial(_objective_function, categorical_params=categorical_combo, **obj_kwargs), point)
                 for categorical_combo in categorical_combos for point in starting_points]
-            results = [_minimize(obj, point) for obj, point in jobs] if len(roundings) > 0 else \
-                [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # again, nowhere to walk
+
+        if len(roundings) == 0: # no space for minimizer to walk, so just evaluate each starting point where it stands
+            results = [scipy.optimize.OptimizeResult(x=point, fun=obj(point)) for obj, point in jobs] # list of opt results to match expected type
+        elif parallel:
+            with Pool(initializer=filterwarnings, initargs=["ignore", '', UserWarning]) as pool:
+                results = pool.starmap(_minimize, jobs, chunksize=1) # the heavy lifting
+        else: # For experiments, where I want to parallelize optimization calls and am not allowed to have each spawn further processes
+            results = [_minimize(obj, point) for obj, point in jobs]
 
     opt_idx = np.nanargmin([r.fun for r in results])
     opt_point = results[opt_idx].x

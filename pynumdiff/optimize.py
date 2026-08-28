@@ -103,14 +103,12 @@ method_params_and_bounds = {
                   'log_r': (-4, 10), # ignore the measurements and trust the model, and give identical answers
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    lineardiff: ({'kernel': 'gaussian', # order searched rather than pinned: CVXPY fails on ~0%/1%/8% of parameter
-                   'order': {1, 2, 3}, # combinations at orders 1/2/3, so the old pinned 3 sat at the fragile end
-                   'gamma': [1e-2, 1e-1, 1, 10],
-               'step_size': [10, 20, 40], # each step is a convex solve here, so this is the dominant cost knob
-             'window_size': [30, 60, 120, 240]}, # below ~40 the repeated integrals leave cond(integral_X) above 1e3
-                  {'gamma': (1e-4, 1e4),
-               'step_size': (1, 100),
-             'window_size': (20, 1000)})
+    lineardiff: ({'kernel': 'gaussian', # `step_size` is gone from the search: it is the dominant cost knob but barely
+                   'order': {2, 3}, # moves accuracy, so it now defaults to window_size//5 and rides along for free.
+                   'gamma': [1e-2, 1e-1, 1], # Order 1 never won across 12 sim/seed sweeps, and gamma is a multiple of
+             'window_size': [41, 81, 161]}, # the data's own scale since #222, so these seeds mean the same thing at any
+                  {'gamma': (1e-4, 1e1), # amplitude. 2*3*3 = 18 restarts, down from 3*4*3*4 = 144.
+             'window_size': (21, 1000, 'odd')}) # odd because an even kernel has no center tap, per #219
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]

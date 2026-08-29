@@ -108,11 +108,12 @@ method_params_and_bounds = {
                    'gamma': [1e-2, 1e-1, 1], # Order 1 never won across 12 sim/seed sweeps, and gamma is a multiple of
              'window_size': [41, 81, 161]}, # the data's own scale since #222, so these seeds mean the same thing at any
                   {'gamma': (1e-4, 1e1), # amplitude. 2*3*3 = 18 restarts, down from 3*4*3*4 = 144.
-             'window_size': (21, 1000, 'odd')}) # each row of the fit has 2*order unknowns, `order` entries of A plus
-                # `order` integration constants, so a window has to carry enough samples per parameter. Below ~21 accuracy
-                # degrades monotonically in every sim at both orders, roughly 2x worse by 11 and 4x by 7, while observed
-                # optima sit at 23-61. Conditioning is not the reason: nondimensional time holds cond near 30 at every
-                # width. Odd because an even kernel has no center tap, per #219
+             'window_size': (11, 1000, 'odd')}) # each row of the fit has 2*order unknowns, `order` entries of A plus
+                # `order` integration constants, so the floor is about samples per parameter: 11 leaves ~1.8 of them at
+                # order 3, and 7 would be near-interpolating. It is a floor rather than a preference; accuracy degrades
+                # monotonically below ~21, roughly 2x worse by 11, so the search leaves that region on its own and
+                # observed optima sit at 23-61. Conditioning is not the constraint, since nondimensional time holds cond
+                # near 30 at every width. Odd because an even kernel has no center tap, per #219
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]

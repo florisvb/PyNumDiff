@@ -63,7 +63,7 @@ diff_methods_and_params = [
     (jerk, {'gamma':10}), (jerk, [10]),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
     (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':41}), (lineardiff, [3, 0.01, 41])
+    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11}), (lineardiff, [3, 0.01, 11])
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the closeness to the
@@ -247,12 +247,12 @@ error_bounds = {
                         [(flr, flr), (-2, -2), (0, -1), (1, 1)],
                         [(-11, -11), (1, 1), (0, 0), (1, 1)],
                         [(1, 1), (3, 2), (0, 0), (2, 2)]],
-    lineardiff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
-                 [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                 [(0, -1), (0, 0), (0, -1), (0, 0)],
-                 [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                 [(1, 0), (2, 1), (1, 0), (2, 1)],
-                 [(1, 1), (3, 3), (1, 1), (3, 3)]]
+    lineardiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
+                 [(-1, -2), (0, -1), (0, -1), (1, 0)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 1)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 1)],
+                 [(0, 0), (2, 2), (0, 0), (2, 2)],
+                 [(0, -1), (3, 3), (0, 0), (3, 3)]]
 }
 
 

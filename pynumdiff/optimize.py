@@ -108,7 +108,11 @@ method_params_and_bounds = {
                    'gamma': [1e-2, 1e-1, 1], # Order 1 never won across 12 sim/seed sweeps, and gamma is a multiple of
              'window_size': [41, 81, 161]}, # the data's own scale since #222, so these seeds mean the same thing at any
                   {'gamma': (1e-4, 1e1), # amplitude. 2*3*3 = 18 restarts, down from 3*4*3*4 = 144.
-             'window_size': (21, 1000, 'odd')}) # odd because an even kernel has no center tap, per #219
+             'window_size': (21, 1000, 'odd')}) # each row of the fit has 2*order unknowns, `order` entries of A plus
+                # `order` integration constants, so a window has to carry enough samples per parameter. Below ~21 accuracy
+                # degrades monotonically in every sim at both orders, roughly 2x worse by 11 and 4x by 7, while observed
+                # optima sit at 23-61. Conditioning is not the reason: nondimensional time holds cond near 30 at every
+                # width. Odd because an even kernel has no center tap, per #219
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
@@ -265,8 +269,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     This routine will take a few minutes to run.
     
     Excluded, besides everything deprecated:
-        - ``lineardiff`` and ``iterative_velocity``, because they either take too long, can be fragile,
-          or tend not to do best
+        - ``iterative_velocity``, because it takes too long, can be fragile, and tends not to do best
         - all ``cvxpy``-based methods if it is not installed
         - first-order ``tvrdiff`` and ``robustdiff`` because they tend to not be best but dominate the optimization
           process by directly optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
@@ -296,9 +299,9 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     methods = [kerneldiff, butterdiff, polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, waveletdiff, finitediff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
-        methods += [tvrdiff, smooth_acceleration, robustdiff]
+        methods += [tvrdiff, smooth_acceleration, robustdiff, lineardiff]
     except ImportError:
-        warn("CVXPY not installed, skipping tvrdiff, smooth_acceleration, and robustdiff")
+        warn("CVXPY not installed, skipping tvrdiff, smooth_acceleration, robustdiff, and lineardiff")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):

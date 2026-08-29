@@ -152,7 +152,7 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     x_work = np.moveaxis(x, axis, 0) # differentiation axis to front
     shape = x_work.shape             # remember it to restore the input's dimensionality
     x_flat = x_work.reshape(shape[0], -1) # rest of the dims flattened into columns
-    x_hat = np.empty(x_flat.shape); dxdt_hat = np.empty(x_flat.shape) # not empty_like, which would inherit an integer dtype and truncate
+    x_hat = np.empty(x_flat.shape, dtype=float); dxdt_hat = np.empty(x_flat.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for i in range(x_flat.shape[1]):
         v = x_flat[:, i]

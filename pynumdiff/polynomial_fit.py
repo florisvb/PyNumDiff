@@ -39,9 +39,11 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
         t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
         if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+            "sample locations make neighbor differences and windows meaningless.")
         t = dt_or_t
 
-    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
@@ -95,6 +97,11 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
             if 'kernel_name' in options: kernel = options['kernel_name']
     elif degree is None: raise ValueError("`degree` must be given.")
 
+    if not np.isscalar(dt_or_t): # check once here rather than per window, since `slide_function` hands slices to `_polydiff`
+        if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+            "sample locations make neighbor differences and windows meaningless.")
+
     if window_size:
         if window_size < degree*3:
             window_size = degree*3 + 1 + degree%2 # parity term to keep this odd
@@ -108,12 +115,12 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
     def _polydiff(x, dt_or_t, degree, weights=None):
         t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
-        mask = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
-        if mask.sum() <= degree: # too few points to pin down the coefficients, so polyfit will fail
-            raise ValueError(f"Window encountered with only {mask.sum()} non-NaN samples < {degree+1} samples needed for degree "
+        obs = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
+        if obs.sum() <= degree: # too few points to pin down the coefficients, so polyfit will fail
+            raise ValueError(f"Window encountered with only {obs.sum()} non-NaN samples < {degree+1} samples needed for degree "
                 f"{degree} fit. Widen `window_size` or lower `degree`.")
 
-        r = np.polyfit(t[mask], x[mask], degree, w=weights[mask] if weights is not None else None) # polyfit returns highest order first
+        r = np.polyfit(t[obs], x[obs], degree, w=np.sqrt(weights[obs]) if weights is not None else None) # sqrt(weights), because (weights*residuals)^2 internally
         dr = np.polyder(r) # power rule already implemented for us
 
         dxdt_hat = np.polyval(dr, t) # evaluate the derivative and original polynomials at points t
@@ -121,7 +128,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
         return x_hat, dxdt_hat
 
-    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]

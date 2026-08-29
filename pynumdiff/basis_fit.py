@@ -102,6 +102,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
         t = np.arange(N)*dt_or_t
     else: # support variable step size for this function
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated sample locations make neighbor differences and windows meaningless.")
         t = dt_or_t
 
     # For each vector along the axis of differentiation, the below does the approximate equivalent of this code,
@@ -202,12 +203,14 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
     dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))]); dphi /= np.dot(p, dphi)*-1 # sum_p p*phi'(p) = -1
     # Phi and Phi_prime hold circulant samples of phi and phi'/dt on the extended grid; both
     # share a common shift that cancels in Phi_prime @ Phi^-1, so the offset choice is cosmetic.
-    rows, cols, phi_vals, dphi_vals = [], [], [], []
-    m = np.arange(Ne)
-    for offset, phi_p, dphi_p in zip(p, phi, dphi / dt):
-        rows.extend(m); cols.extend((m - offset) % Ne); phi_vals.extend([phi_p]*Ne); dphi_vals.extend([dphi_p]*Ne)
-    Phi = sparse.csr_matrix((phi_vals, (rows, cols)), shape=(Ne, Ne)).tocsc()           # to invert
-    Phi_prime = sparse.csr_matrix((dphi_vals, (rows, cols)), shape=(Ne, Ne))            # to apply
+    # Circulant means each is a convolution by its own first column, so the DFT diagonalizes both, and the composition
+    # Phi_prime @ Phi^-1 collapses to multiplication by one transfer function H = fft(phi')/fft(phi). Storing H is the
+    # same operator as the two matrices, just in the basis where they are diagonal, so step 3 becomes an FFT pair
+    # instead of a sparse solve on a (3N-2)-square matrix. Dividing is safe here because phi's integer samples are
+    # concentrated and nearly flat in frequency: |fft(phi)| stays within a factor of ~2 of 1 for every wavelet allowed above.
+    c_phi = np.zeros(Ne); c_phi[:L] = phi            # first column of Phi
+    c_dphi = np.zeros(Ne); c_dphi[:L] = dphi/dt      # first column of Phi_prime
+    H = (np.fft.fft(c_dphi) / np.fft.fft(c_phi))[:, np.newaxis]
 
     # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The noise level is estimated
     # robustly per column from the finest details (coeffs[-1]).
@@ -228,10 +231,9 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
     right = 2 * x_hat[-1] - x_hat[:-1][::-1]
     x_ext = np.concatenate([left, x_hat, right], axis=0)  # length 3N-2, original at [N-1:2N-1]
 
-    # 3. Differentiate the basis: recover the scaling coefficients a = Phi^-1 @ x_ext, then
-    # apply the analytic basis derivative dxdt = Phi_prime @ a, and crop back to the original.
-    a = sparse.linalg.spsolve(Phi, x_ext)
-    dxdt_flat = (Phi_prime @ a.reshape(Ne, -1))[N - 1:2 * N - 1]
+    # 3. Differentiate the basis: multiplying by H both recovers the scaling coefficients a = Phi^-1 @ x_ext and
+    # applies the analytic basis derivative dxdt = Phi_prime @ a, in one pass. Crop back to the original.
+    dxdt_flat = np.real(np.fft.ifft(H * np.fft.fft(x_ext, axis=0), axis=0))[N - 1:2 * N - 1]
 
     x_hat = np.moveaxis(x_hat.reshape(shape), 0, axis)
     dxdt_hat = np.moveaxis(dxdt_flat.reshape(shape), 0, axis)

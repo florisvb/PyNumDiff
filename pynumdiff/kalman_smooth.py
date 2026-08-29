@@ -122,8 +122,10 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
     N = x.shape[axis]
-    if not np.isscalar(dt_or_t) and N != len(dt_or_t):
-        raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
+    if not np.isscalar(dt_or_t):
+        if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+            "sample locations make neighbor differences and windows meaningless.")
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
     r = q/(10**log_qr_ratio)
@@ -150,7 +152,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
 
     innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionally wrap innovation to [-pi, pi], see #178
 
-    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
@@ -312,8 +314,10 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
     N = x.shape[axis]
-    if not np.isscalar(dt_or_t) and N != len(dt_or_t):
-        raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")
+    if not np.isscalar(dt_or_t):
+        if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+            "sample locations make neighbor differences and windows meaningless.")
 
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
@@ -335,7 +339,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T # extract discrete time Q matrix
             if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*1e-12
 
-    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]

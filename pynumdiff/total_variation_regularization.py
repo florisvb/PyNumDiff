@@ -77,7 +77,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The convex problem setup integrates with a cumulative"
         "sum and penalizes variation between consecutive samples, both of which assume uniform steps.")
 
-    x_hat = np.empty_like(x); dxdt_hat = np.empty_like(x)
+    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing this iteration's vector in the overall array

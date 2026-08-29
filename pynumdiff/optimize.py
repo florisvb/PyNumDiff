@@ -103,17 +103,12 @@ method_params_and_bounds = {
                   'log_r': (-4, 10), # ignore the measurements and trust the model, and give identical answers
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    lineardiff: ({'kernel': 'gaussian', # `step_size` is gone from the search: it is the dominant cost knob but barely
-                   'order': {2, 3}, # moves accuracy, so it now defaults to window_size//5 and rides along for free.
-                   'gamma': [1e-2, 1e-1, 1], # Order 1 never won across 12 sim/seed sweeps, and gamma is a multiple of
-             'window_size': [41, 81, 161]}, # the data's own scale since #222, so these seeds mean the same thing at any
-                  {'gamma': (1e-4, 1e1), # amplitude. 2*3*3 = 18 restarts, down from 3*4*3*4 = 144.
-             'window_size': (11, 1000, 'odd')}) # each row of the fit has 2*order unknowns, `order` entries of A plus
-                # `order` integration constants, so the floor is about samples per parameter: 11 leaves ~1.8 of them at
-                # order 3, and 7 would be near-interpolating. It is a floor rather than a preference; accuracy degrades
-                # monotonically below ~21, roughly 2x worse by 11, so the search leaves that region on its own and
-                # observed optima sit at 23-61. Conditioning is not the constraint, since nondimensional time holds cond
-                # near 30 at every width. Odd because an even kernel has no center tap, per #219
+    lineardiff: ({'kernel': 'gaussian', # `step_size` barely moves accuracy so now defaults to window_size//5
+                   'order': {2, 3}, # order 1 never won across 12 sim/seed sweeps
+                   'gamma': [1e-2, 1e-1, 1], # in units of the data's own scale since #222
+             'window_size': [41, 81, 161]},
+                  {'gamma': (1e-4, 1e1),
+             'window_size': (11, 1000, 'odd')})
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
@@ -270,10 +265,10 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     This routine will take a few minutes to run.
     
     Excluded, besides everything deprecated:
-        - ``iterative_velocity``, because it takes too long, can be fragile, and tends not to do best
+        - ``iterative_velocity``, because it's mostly academic
         - all ``cvxpy``-based methods if it is not installed
-        - first-order ``tvrdiff`` and ``robustdiff`` because they tend to not be best but dominate the optimization
-          process by directly optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
+        - first-order ``tvrdiff`` and ``robustdiff`` because they hack the optimization function by directly
+          optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
           \\hat{\\dot{x}}}(\\Phi)) + \\mu, \\mathbf{y} \\Big) + \\gamma \\Big({TV}\\big(\\mathbf{\\hat{
           \\dot{x}}}(\\Phi)\\big)\\Big)`
 

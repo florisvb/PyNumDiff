@@ -33,17 +33,17 @@ _PROBLEM_CACHE = {} # (order, window length) -> a parametrized CVXPY problem, so
 
 def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
     step_size=None, kernel='friedrichs', solver='CLARABEL', axis=0):
-    """Slide a smoothing derivative function across data, with specified window size.
+    """Fit a linear dynamical system to windows of the data, then differentiate that model.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param list[int, float, int] params: (**deprecated**, prefer :code:`order`, :code:`gamma`, and :code:`window_size`)
-    :param dict options: (**deprecated**, prefer :code:`sliding`, :code:`step_size`, :code:`kernel`, and :code:`solver`
-            a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
-    :param int>1 order: order of the polynomial
+    :param dict options: (**deprecated**, prefer :code:`window_size`, :code:`step_size`, :code:`kernel`, and
+            :code:`solver`) a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
+    :param int>0 order: number of states in the linear system, equivalently how many times :code:`x` is integrated
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units. See #222
-    :param int window_size: size of the sliding window (ignored if not sliding)
+    :param int window_size: size of the sliding window, if not given no sliding
     :param int step_size: step size for sliding. Defaults to a fifth of :code:`window_size`, because what matters
             is the overlap ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer
             stride while running several times faster, and strides past about half the window degrade badly
@@ -65,15 +65,15 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
             if 'step_size' in options: step_size = options['step_size']
             if 'kernel_name' in options: kernel = options['kernel_name']
             if 'solver' in options: solver = options['solver']
-    elif order is None or gamma is None or window_size is None:
-        raise ValueError("`order`, `gamma`, and `window_size` must be given.")
+    elif order is None or gamma is None:
+        raise ValueError("`order` and `gamma` must be given.")
 
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
 
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
     def _lineardiff(x, dt, order, gamma, solver=None): # just to read a shape, so it warns when that memory holds garbage
-        """Estimate the parameters for a system xdot = Ax, and use that to calculate the derivative"""
+        """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
         x = x - mean
 
@@ -149,11 +149,10 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
             warn("`step_size` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
         kern = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
-    x = np.asarray(x, dtype=float)
     x_work = np.moveaxis(x, axis, 0) # differentiation axis to front
     shape = x_work.shape             # remember it to restore the input's dimensionality
     x_flat = x_work.reshape(shape[0], -1) # rest of the dims flattened into columns
-    x_hat = np.empty_like(x_flat); dxdt_hat = np.empty_like(x_flat)
+    x_hat = np.empty(x_flat.shape); dxdt_hat = np.empty(x_flat.shape) # not empty_like, which would inherit an integer dtype and truncate
 
     for i in range(x_flat.shape[1]):
         v = x_flat[:, i]
@@ -181,5 +180,4 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
 
         x_hat[:, i] = xh*scale; dxdt_hat[:, i] = dh*scale
 
-    return (np.moveaxis(x_hat.reshape(shape), 0, axis),
-            np.moveaxis(dxdt_hat.reshape(shape), 0, axis))
+    return np.moveaxis(x_hat.reshape(shape), 0, axis), np.moveaxis(dxdt_hat.reshape(shape), 0, axis)

@@ -93,8 +93,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
             if 'sliding' in options and not options['sliding']: window_size = None
             if 'step_size' in options: step_size = options['step_size']
             if 'kernel_name' in options: kernel = options['kernel_name']
-    elif degree is None or window_size is None:
-        raise ValueError("`degree` and `window_size` must be given.")
+    elif degree is None: raise ValueError("`degree` must be given.")
 
     if window_size:
         if window_size < degree*3:

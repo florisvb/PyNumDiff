@@ -247,11 +247,11 @@ error_bounds = {
                         [(flr, flr), (-2, -2), (0, -1), (1, 1)],
                         [(-11, -11), (1, 1), (0, 0), (1, 1)],
                         [(1, 1), (3, 2), (0, 0), (2, 2)]],
-    lineardiff: [[(-3, -4), (-3, -3), (0, -1), (1, 0)],
-                 [(-1, -2), (0, 0), (0, -1), (1, 0)],
+    lineardiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
+                 [(-1, -2), (0, -1), (0, -1), (1, 0)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
-                 [(-1, -2), (0, 0), (0, -1), (1, 1)],
-                 [(0, 0), (2, 1), (0, 0), (2, 1)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 1)],
+                 [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(0, -1), (3, 3), (0, 0), (3, 3)]]
 }
 
@@ -323,7 +323,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
                 print(f"Improvement detected for method {diff_method.__name__}; consider tightening its bound")
 
     # Differentiation is linear, so a*f(x) == f(a*x) exactly. A hyperparameter carrying absolute units can break this silently. See #222, #218, #220
-    if diff_method not in [lineardiff, iterative_velocity]: # <- methods not yet fixed to handle a*f(x) == f(a*x) exactly
+    if diff_method is not iterative_velocity:
         for a in [1e-3, 1e3]: # both directions, so an absolute threshold can't pass by being tested only one way
             assert np.max(np.abs(differentiate(a*x_noisy)[1]/a - dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
 
@@ -347,7 +347,8 @@ multidim_methods_and_params = [
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 0}), # s is now relative to estimated noise, so 0 is how you ask to interpolate
     (robustdiff, {'order':2, 'log_q':9, 'log_r':0}),
-    (tvrdiff, {'order': 3, 'gamma': 1e-4})
+    (tvrdiff, {'order': 3, 'gamma': 1e-4}),
+    (lineardiff, {'order': 3, 'gamma': 1e-6, 'window_size': 41, 'step_size': 41})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
@@ -366,7 +367,8 @@ multidim_error_bounds = {
     rbfdiff: [(0, -1), (1, 0)],
     splinediff: [(-8, -8), (-6, -7)],
     robustdiff: [(-2, -3), (-1, -2)],
-    tvrdiff: [(0, -1), (1, 0)]
+    tvrdiff: [(0, -1), (1, 0)],
+    lineardiff: [(0, -1), (1, -1)] # gamma is near zero because this surface is noise-free; there is no noise to trade fidelity against
 }
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)

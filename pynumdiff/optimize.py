@@ -103,13 +103,12 @@ method_params_and_bounds = {
                   'log_r': (-4, 10), # ignore the measurements and trust the model, and give identical answers
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    lineardiff: ({'kernel': 'gaussian',
-                   'order': 3,
-                   'gamma': [1e-1, 1, 10, 100],
-             'window_size': [10, 30, 50, 90, 130]},
-                  {'order': (1, 5),
-                   'gamma': (1e-3, 1000),
-             'window_size': (15, 1000)})
+    lineardiff: ({'kernel': 'gaussian', # `step_size` barely moves accuracy so now defaults to window_size//5
+                   'order': {2, 3}, # order 1 never won across 12 sim/seed sweeps
+                   'gamma': [1e-2, 1e-1, 1], # in units of the data's own scale since #222
+             'window_size': [41, 81, 161]},
+                  {'gamma': (1e-4, 1e1),
+             'window_size': (11, 1000, 'odd')})
 } # Methods with nonunique parameter sets are aliased in the dictionary below
 for method in [second_order, fourth_order]: # Deprecated, redundant methods
     method_params_and_bounds[method] = method_params_and_bounds[first_order]
@@ -266,11 +265,10 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     This routine will take a few minutes to run.
     
     Excluded, besides everything deprecated:
-        - ``lineardiff`` and ``iterative_velocity``, because they either take too long, can be fragile,
-          or tend not to do best
+        - ``iterative_velocity``, because it's mostly academic
         - all ``cvxpy``-based methods if it is not installed
-        - first-order ``tvrdiff`` and ``robustdiff`` because they tend to not be best but dominate the optimization
-          process by directly optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
+        - first-order ``tvrdiff`` and ``robustdiff`` because they hack the optimization function by directly
+          optimizing the second term of the metric :math:`L = \\text{RMSE} \\Big( \\text{trapz}(\\mathbf{
           \\hat{\\dot{x}}}(\\Phi)) + \\mu, \\mathbf{y} \\Big) + \\gamma \\Big({TV}\\big(\\mathbf{\\hat{
           \\dot{x}}}(\\Phi)\\big)\\Big)`
 
@@ -297,9 +295,9 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     methods = [kerneldiff, butterdiff, polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, waveletdiff, finitediff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
-        methods += [tvrdiff, smooth_acceleration, robustdiff]
+        methods += [tvrdiff, smooth_acceleration, robustdiff, lineardiff]
     except ImportError:
-        warn("CVXPY not installed, skipping tvrdiff, smooth_acceleration, and robustdiff")
+        warn("CVXPY not installed, skipping tvrdiff, smooth_acceleration, robustdiff, and lineardiff")
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):

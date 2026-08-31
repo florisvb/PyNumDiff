@@ -41,7 +41,7 @@ diff_methods_and_params = [
     (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
     (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
     (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
-    (butterdiff, {'filter_order':3, 'cutoff_freq':0.7}), (butterdiff, [3, 0.7]),
+    (butterdiff, {'filter_order':3, 'high_freq_cutoff':0.7}), (butterdiff, [3, 0.7]),
     (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
     (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
     (polydiff, {'degree':5, 'window_size':15}), (polydiff, [5, 15]),
@@ -337,7 +337,7 @@ x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
 # gone, diff_methods_and_params can be used for the multidimensionality test as well
 multidim_methods_and_params = [
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
-    (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
+    (butterdiff, {'filter_order': 3, 'high_freq_cutoff': 1 - 1e-6}),
     (finitediff, {}),
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),

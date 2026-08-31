@@ -21,6 +21,37 @@ def huber_const(M):
     return np.sqrt((2*a*(1 + M**2)/M**2 + b)/(a + b))
 
 
+def robust_data_scale(x, axis=0, center=True, keepdims=False):
+    """A robust stand-in for :code:`np.std`, normalized so it recovers :math:`\\sigma` on Gaussian data but cannot be
+    inflated by a handful of outliers the way a standard deviation can.
+
+    :param np.array[float] x: data whose scale to measure. NaNs are ignored rather than propagated.
+    :param int axis: data dimension along which to measure
+    :param bool center: whether to subtract the median first. :code:`False` gives the uncentered Donoho-Johnstone
+        form, which is correct when the input is already known to be zero-mean, as for wavelet coefficients
+    :param bool keepdims: whether to leave the reduced axis in place with length 1, so the result broadcasts
+        back against the data it came from
+
+    :return: **scale** (float or np.array[float]) -- robust scatter, in the units of :code:`x`
+    """
+    return median_abs_deviation(x, axis=axis, scale='normal', nan_policy='omit', keepdims=keepdims,
+        center=np.median if center else lambda a, axis: 0) # scale='normal' divides by Phi^-1(3/4) = 0.6745
+
+def robust_noise_scale(x, axis=0):
+    """Estimate the standard deviation of the *noise* in :code:`x`, as opposed to the scale of :code:`x` itself.
+    Second differencing annihilates constants and linear trends outright, and turns a quadratic into a constant that
+    the centering inside :code:`robust_data_scale` then removes, so what survives is essentially noise. Its
+    :math:`(1, -2, 1)` stencil inflates variance by :math:`(1^2 + (-2)^2 + 1^2)\\hat\\sigma^2 = 6\\hat\\sigma^2`,
+    hence the :math:`\\sqrt{6}`.
+
+    :param np.array[float] x: noisy data. NaNs are ignored rather than propagated.
+    :param int axis: data dimension along which to measure
+
+    :return: **sigma_hat** (float or np.array[float]) -- robust estimate of the noise standard deviation
+    """
+    return robust_data_scale(np.diff(x, 2, axis=axis), axis=axis)/np.sqrt(6)
+
+
 def integrate_dxdt_hat(dxdt_hat, dt_or_t, axis=0):
     """Wrapper for scipy.integrate.cumulative_trapezoid. Use 0 as first value so lengths match, see #88.
 
@@ -56,7 +87,7 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
         return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
     else:
-        sigma = median_abs_deviation(x - x_hat, axis=axis, keepdims=True, scale='normal') # M is in units of this robust scatter metric
+        sigma = robust_data_scale(x - x_hat, axis=axis, keepdims=True) # keep the axis so it broadcasts against the data
         sigma[sigma == 0] = 1 # avert divide-by-zero below; a σ == 0 entry means the corresponding vector in x - x_hat == some C everywhere
             # -> cost fn has argmin of exactly C in the corresponding entry of the c vector, regardless of scale -> choose scale 1 so
             # initial guess using median residuals captures these exactly, because optimization might otherwise ignore small offsets

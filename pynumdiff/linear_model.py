@@ -44,9 +44,9 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units. See #222
     :param int window_size: size of the sliding window, if not given no sliding
-    :param int step_size: step size for sliding. Defaults to a fifth of :code:`window_size`, because what matters
-            is the overlap ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer
-            stride while running several times faster, and strides past about half the window degrade badly
+    :param int step_size: step size for sliding. Defaults to :code:`window_size/5`, because what matters is overlap
+            ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer stride while
+            running several times faster, and strides past about half the window degrade badly
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
     :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`. CLARABEL converges reliably,
             but OSQP stalls on the badly-scaled subproblems short windows produce, returning half-converged iterates
@@ -155,13 +155,12 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     x_hat = np.empty(x_flat.shape, dtype=float); dxdt_hat = np.empty(x_flat.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for i in range(x_flat.shape[1]):
-        v = x_flat[:, i]
         # gamma weighs an l1 penalty against a squared residual, so on its own it carries the data's units and a
         # rescaled input silently gets a different fidelity/prior balance. Divide by one scale for the whole vector,
         # not per window, which would fit windows against different scales and crossfade incommensurate pieces.
-        scale = scipy.stats.median_abs_deviation(v, scale='normal') # robust like tvrdiff's, so outliers can't inflate
-        if scale == 0: x_hat[:, i] = v; dxdt_hat[:, i] = 0.; continue # quietly weaken gamma. Constant vector -> known 0
-        v = v/scale
+        scale = utility.robust_data_scale(x_flat[:, i]) # robust like tvrdiff's, so outliers can't inflate
+        if scale == 0: x_hat[:, i] = x_flat[:, i]; dxdt_hat[:, i] = 0.; continue # constant vector -> known 0 deriv
+        v = x_flat[:, i]/scale
 
         if not window_size:
             xh, dh = _lineardiff(v, dt, order, gamma, solver)

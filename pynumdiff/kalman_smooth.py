@@ -2,11 +2,10 @@
 from warnings import warn
 import numpy as np
 from scipy.linalg import expm, sqrtm
-from scipy.stats import median_abs_deviation
 try: import cvxpy
 except ImportError: pass
 
-from pynumdiff.utils.utility import huber_const
+from pynumdiff.utils.utility import huber_const, robust_noise_scale
 
 
 def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovation_fn=None):
@@ -124,7 +123,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     N = x.shape[axis]
     if not np.isscalar(dt_or_t):
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
-        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
             "sample locations make neighbor differences and windows meaningless.")
 
     q = 10**int(log_qr_ratio/2) # even-ish split of the powers across 0
@@ -316,20 +315,20 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     N = x.shape[axis]
     if not np.isscalar(dt_or_t):
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")
-        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
             "sample locations make neighbor differences and windows meaningless.")
 
     A_c = np.diag(np.ones(order), 1) # continuous-time A just has 1s on the first diagonal (where 0th is main diagonal)
     Q_c = np.zeros(A_c.shape); Q_c[-1,-1] = 10**log_q # continuous-time uncertainty around the last derivative
     C = np.zeros((1, order+1)); C[0,0] = 1 # we measure only y = noisy x
     R = np.array([[10**log_r]]) # 1 observed state, so this is 1x1
-    M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]])  # exponentiate per step
+    M = np.block([[A_c, Q_c], [np.zeros(A_c.shape), -A_c.T]]) # exponentiate per step
 
     if np.isscalar(dt_or_t): # convert to discrete time using matrix exponential
         eM = expm(M * dt_or_t)
         A_d = eM[:order+1, :order+1]
         Q_d = eM[:order+1, order+1:] @ A_d.T
-        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order+1)*1e-12 # for numerical stability with convex solver. Doesn't change answers appreciably (or at all).
+        if np.linalg.cond(Q_d) > 1e12: Q_d += np.eye(order+1)*np.linalg.eigvalsh(Q_d)[-1]*1e-12 # for numerical stability. Doesn't change answers appreciably (or at all).
     else: # support variable step size for this function
         A_d = np.empty((N-1, order+1, order+1))
         Q_d = np.empty_like(A_d)
@@ -337,7 +336,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
             eM = expm(M * dt)
             A_d[n] = eM[:order+1, :order+1] # extract discrete time A matrix
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T # extract discrete time Q matrix
-            if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*1e-12
+            if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*np.linalg.eigvalsh(Q_d[n])[-1]*1e-12 # end of eigvalsh() is largest eigval
 
     x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
@@ -348,9 +347,8 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
         if lo == hi: x_hat[s] = hi; dxdt_hat[s] = 0.; continue # shortcircuit on constant vectors: σ̂ = 0, but known derivative = 0 too
         scale = max(-lo, hi) # the vector's size = max(abs(x)) without recomputing
 
-        # Normalize data so scaling `log_q` and `log_r` doesn't quietly reweight process vs measurement term. Estimate noise stddev
-        # with MAD on 2nd diffs (to nix constants and trends), which has weights (1,-2,1), inflating variance by (1²+-2²+1²)σ̂² = 6σ̂²
-        sigma_hat = median_abs_deviation(np.diff(x[s], 2), scale='normal', nan_policy='omit')/np.sqrt(6)
+        # Normalize data so scaling `log_q` and `log_r` doesn't quietly reweight process vs measurement term
+        sigma_hat = robust_noise_scale(x[s])
         if sigma_hat < 1e-12*scale: sigma_hat = scale # avert divide by zero
         mu_hat = np.nanmedian(x[s]) # center too, like tvrdiff, so large offset can't eat float precision, median so outlier robust
 
@@ -358,8 +356,6 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
         x_hat[s] = x_states[:,0]*sigma_hat + mu_hat; dxdt_hat[s] = x_states[:,1]*sigma_hat # derivative has no offset to add back
 
     return x_hat, dxdt_hat
-
-
 
 
 @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
@@ -411,5 +407,6 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND) # huber isn't in the C++ canonicalization backend, so fell back to SCIPY with a warning
     except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
 
-    if x_states.value is None: return np.full((N, state_dim), np.nan) # There can be solver failure, even without error
+    if x_states.value is None: raise np.linalg.LinAlgError("Convex smoothing failed to solve because process covariance "
+            "too ill-conditioned. Try larger `proc_huberM` or lower `order`.")
     return x_states.value.T

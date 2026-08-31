@@ -215,12 +215,11 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
     # 1. Denoise: DWT all columns at once, then soft-threshold the detail bands. The noise level is estimated
     # robustly per column from the finest details (coeffs[-1]).
     coeffs = pywt.wavedec(x_flat, wavelet, level=level, mode=mode, axis=0)
-    sigma = np.maximum(np.median(np.abs(coeffs[-1]), axis=0) / 0.6745, 1e-10) # median_abs_deviation(scale='normal') sans centering,
-        # as in Donoho-Johnstone, because a wavelet's vanishing moments annihilate constants; 0.6745 = Phi^-1(3/4) normalizer
+    sigma = np.maximum(utility.robust_data_scale(coeffs[-1], center=False, keepdims=True), 1e-10) # uncentered, as in Donoho-Johnstone, max to guard https://github.com/PyWavelets/pywt/issues/866, TODO remove later
     thresh = threshold * sigma * np.sqrt(2 * np.log(N))
     # coeffs[0] is the coarse approximation and doesn't need to be thresholded. At threshold 0 soft thresholding is the
     # identity, but pywt hands back NaN for coefficients that are exactly 0 (PyWavelets/pywt#866), so skip the no-op call.
-    if threshold > 0: coeffs = [coeffs[0]] + [pywt.threshold(c, thresh[np.newaxis, :], mode='soft') for c in coeffs[1:]]
+    if threshold > 0: coeffs = [coeffs[0]] + [pywt.threshold(c, thresh, mode='soft') for c in coeffs[1:]]
     x_hat = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:N]
 
     # 2. The derivative operator is periodic, but x_hat usually isn't. Extend it antisymmetrically (reflect

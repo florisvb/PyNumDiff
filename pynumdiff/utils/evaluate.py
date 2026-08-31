@@ -95,7 +95,7 @@ def robust_rme(u, v, padding=0, M=6):
     if padding == 'auto': padding = max(1, int(0.025*len(u)))
     s = slice(padding, len(u)-padding) # slice out data we want to measure
 
-    sigma = stats.median_abs_deviation(u[s] - v[s], scale='normal') # M is in units of this robust scatter metric
+    sigma = utility.robust_data_scale(u[s] - v[s]) # M is in units of this robust scatter metric
     if sigma == 0: return 0. # no scatter; shortcircuit to the limit value to avert divide-by-zero below
     # Scale residuals rather than M: huber(M*σ, r) == σ**2 * huber(M, r/σ), so pull σ back out through the sqrt,
     # and normalize residuals so their squared sum (from mean of huber) doesn't overflow. See #217

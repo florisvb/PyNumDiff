@@ -119,6 +119,40 @@ def test_simulations(request):
                 if i == 5: ax.legend(loc='lower right', fontsize=12)
 
 
+def test_robust_data_scale():
+    """Ensure the robust scale recovers sigma on Gaussian data, survives outliers that wreck np.std,
+    handles NaNs and axes, and that center=False gives the uncentered Donoho-Johnstone form."""
+    assert np.isclose(utility.robust_data_scale(np.random.normal(0, 2, 4000)), 2, rtol=0.05) # recovers sigma
+
+    z = np.random.normal(3, 1, 1000); z[:10] = 100 # off-center data, 1% gross outliers
+    assert z.std() > 9 and np.isclose(utility.robust_data_scale(z), 1, rtol=0.1) # std ruined, robust scale is not
+    assert utility.robust_data_scale(z, center=False) > 4 # uncentered measures distance from zero instead
+
+    z = np.random.normal(0, 1, 1000); z[::10] = np.nan # NaNs througout
+    assert np.isclose(utility.robust_data_scale(z), 1, rtol=0.1) # NaNs ignored, not propagated
+
+    z = np.random.normal(0, 1, (1000, 3))*np.array([1, 3, 10]) # different sigmas down each column
+    assert np.allclose(utility.robust_data_scale(z, axis=0), [1, 3, 10], rtol=0.1) # multidim check
+    assert np.allclose(utility.robust_data_scale(z, axis=1).shape, 1000) # and callable along other axis
+
+
+def test_robust_noise_scale():
+    """Ensure noise estimate recovers noise standard deviation, even in the presence of outliers, and is blind to
+    the background function (up to second order)"""
+    t = np.linspace(0, 4, 4000)
+    x = np.sin(3*t)
+    assert utility.robust_noise_scale(x) < 1e-3 # a noiseless smooth signal has essentially no noise
+
+    for sigma in [0.01, 0.1, 1.0]:
+        y = x + np.random.normal(0, sigma, len(t)); y[[100,200]] = 100 # add outliers
+        assert np.isclose(utility.robust_noise_scale(y), sigma, rtol=0.1)
+
+    y = x + np.random.normal(0, 0.1, len(t)); y[[100,200]] = 100 # add outliers
+    sigma_hat = utility.robust_noise_scale(x)
+    for trend in [50, 20*t, 5*t**2]: # constants and linear disappear completely via diff(., 2); quadratics leave a constant, removed by centering in MAD
+        assert np.isclose(utility.robust_noise_scale(x + trend), sigma_hat, rtol=1e-9)
+
+
 def test_robust_rme():
     """Ensure the robust error metric is the same as RMSE for big M, and that it does
     better in the presence of outliers"""

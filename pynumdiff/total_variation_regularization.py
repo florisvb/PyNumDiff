@@ -1,7 +1,6 @@
 """This module implements some common total variation regularization methods."""
 from warnings import warn
 import numpy as np
-from scipy.stats import median_abs_deviation
 try: import cvxpy
 except ImportError: pass
 
@@ -74,7 +73,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
-    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The convex problem setup integrates with a cumulative"
+    if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The convex problem setup integrates with a cumulative "
         "sum and penalizes variation between consecutive samples, both of which assume uniform steps.")
 
     x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
@@ -85,7 +84,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
 
         # Normalize for numerical consistency with convex solver
         mu = np.mean(x_v)
-        sigma = median_abs_deviation(x_v, scale='normal') # robust alternative to std()
+        sigma = utility.robust_data_scale(x_v)
         if sigma == 0: sigma = 1 # safety guard
         y = (x_v-mu)/sigma
 

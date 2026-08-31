@@ -28,9 +28,9 @@ method_params_and_bounds = {
                {'window_size': (1, 1e6, 'odd'),
              'num_iterations': (1, 100)}),
     butterdiff: ({'filter_order': set(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
-                   'cutoff_freq': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
+                   'high_freq_cutoff': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
                 'num_iterations': [1, 5, 10]},
-                  {'cutoff_freq': (1e-4, 1-1e-2),
+                  {'high_freq_cutoff': (1e-4, 1-1e-2),
                 'num_iterations': (1, 1000)}),
     finitediff: ({'num_iterations': [5, 10, 30, 50],
                            'order': {2, 4}}, # order is categorical here, because it can't be 3
@@ -173,16 +173,18 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         cache[key] = cost; return cost
 
 
-def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}, metric='rmse',
-    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6):
+def optimize(func, x, dt, dxdt_truth=None, cutoff_freq=None, search_space_updates={}, metric='rmse',
+    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6, tvgamma=None):
     """Find the optimal hyperparameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. kalman_smooth.rtsdiff
     :param np.array[float] x: data to differentiate
     :param float dt: step size
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
-    :param float tvgamma: Only used if :code:`dxdt_truth` is *not* given. Regularization value used to select for parameters
-                    that yield a smooth derivative. Larger value results in a smoother derivative.
+    :param float cutoff_freq: Only used if :code:`dxdt_truth` is *not* given. The bandlimit of underlying signal, in Hz.
+                    Estimate by counting peaks per second, or by reading where the power spectrum falls off. Lower -> smoother
+    :param float tvgamma: (**deprecated**, prefer :code:`cutoff_freq`) the smoothness weight itself, which is harder to
+                    interpret because its meaning depends on the sampling rate as well as the signal
     :param dict search_space_updates: Each method has a default search space of parameter settings, encoded as
                     :code:`{param1:[numerical, values], param2:{categorical, values}, param3:value, ...}` (defined at the top of
                     :code:`pynumdiff/optimize.py`). The Cartesian product of dictionary values serves as initialization points,
@@ -205,6 +207,11 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function
     """
+    if tvgamma is not None:
+        warn("`tvgamma` will be removed in a future version. Use `cutoff_freq` instead, from which it is calculated.", DeprecationWarning)
+    elif cutoff_freq is not None: # See https://ieeexplore.ieee.org/document/9241009
+        tvgamma = np.exp(-1.6*np.log(cutoff_freq) - 0.71*np.log(dt) - 5.1)
+    elif dxdt_truth is None: raise ValueError("Either `dxdt_truth` or `cutoff_freq` must be given.")
     if metric not in ['rmse','error_correlation']: raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
 
     default_search_space, bounds = method_params_and_bounds[func]
@@ -258,7 +265,7 @@ def optimize(func, x, dt, dxdt_truth=None, tvgamma=1e-2, search_space_updates={}
     return opt_params, results[opt_idx].fun
 
 
-def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
+def suggest_method(x, dt, dxdt_truth=None, cutoff_freq=None):
     """This is meant as an easy-to-use, automatic way for users with some time on their hands to determine
     a good method and settings for their data. It calls the optimizer over (almost) all methods in the repo
     using default search spaces defined in :code:`method_params_and_bounds` at the top of :code:`pynumdiff/optimize.py`.
@@ -275,8 +282,8 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
     :param np.array[float] x: data to differentiate
     :param float dt: step size, because most methods are not designed to work with variable step sizes
     :param np.array[float] dxdt_truth: if known, you can pass true derivative values; otherwise you must use
-            :code: `cutoff_frequency`
-    :param float cutoff_frequency: in Hz, the highest dominant frequency of interest in the signal,
+            :code: `cutoff_freq`
+    :param float cutoff_freq: in Hz, the highest dominant frequency of interest in the signal,
             used to find parameter :math:`\\gamma` for regularization of the optimization process
             in the absence of ground truth. See https://ieeexplore.ieee.org/document/9241009.
             Estimate by (a) counting real number of peaks per second in the data, (b) looking at
@@ -286,12 +293,6 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
             - **method** -- a reference to the function handle of the differentiation method that worked best
             - **opt_params** -- optimal parameter settings for the differentation method
     """
-    tvgamma = None
-    if dxdt_truth is None: # parameter checking
-        if cutoff_frequency is None:
-            raise ValueError('Either dxdt_truth or cutoff_frequency must be provided.')
-        tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
-
     methods = [kerneldiff, butterdiff, polydiff, savgoldiff, splinediff, spectraldiff, rbfdiff, waveletdiff, finitediff, rtsdiff]
     try: # optionally skip some methods
         import cvxpy
@@ -301,7 +302,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_frequency=None):
 
     best_value = float('inf') # core loop
     for func in tqdm(methods):
-        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, tvgamma=tvgamma, search_space_updates=(
+        p, v = optimize(func, x, dt, dxdt_truth=dxdt_truth, cutoff_freq=cutoff_freq, search_space_updates=(
             {'order':{2,3}} if func in [tvrdiff, robustdiff] else {})) # convex-based with order 1 hack the cost function
         if v < best_value:
             method = func

@@ -39,7 +39,7 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
         t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
         if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
-        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
             "sample locations make neighbor differences and windows meaningless.")
         t = dt_or_t
 
@@ -49,10 +49,9 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
 
         obs = ~np.isnan(x[i]) # make_splrep can't handle NaN, so use only observed points for first fit
-        # Scale the noise budget by N σ̂² so s stays meaningful across signal lengths and noise levels. Estimate noise level with
-        # MAD on 2nd differences (to nix constants and trends), which has weights (1,-2,1), inflating variance by (1²+−2²+1²)σ̂² = 6σ̂²
-        sigma_hat = scipy.stats.median_abs_deviation(np.diff(x[i][obs], 2), scale='normal')/np.sqrt(6)
-        # If tiny sigma_hat (relative to data scale), the spline fit chases overly fine residuals, so interpolate instead
+        # Scale the noise budget by N σ̂² so s stays meaningful across signal lengths and noise levels. If tiny sigma_hat
+        # (relative to data scale), the spline fit chases overly fine residuals, so interpolate instead by setting budget to 0
+        sigma_hat = utility.robust_noise_scale(x[i][obs])
         s_abs = s*np.sum(obs)*sigma_hat**2 if sigma_hat > 1e-12*np.max(np.abs(x[i][obs])) else 0
 
         with catch_warnings(action="ignore", category=RuntimeWarning): # FITPACK warns at knife-edge values of s, but still solves reliably
@@ -99,7 +98,7 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
 
     if not np.isscalar(dt_or_t): # check once here rather than per window, since `slide_function` hands slices to `_polydiff`
         if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
-        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated"
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
             "sample locations make neighbor differences and windows meaningless.")
 
     if window_size:

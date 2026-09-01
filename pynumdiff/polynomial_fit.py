@@ -6,7 +6,7 @@ import scipy
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterations=1, axis=0):
+def splinediff(x, dt_or_t, degree=3, s=1, num_iterations=1, axis=0):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.make_splrep. Variable step size is supported with equal ease as uniform step size.
 
@@ -14,8 +14,6 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
         fitting and imputed by spline interpolation. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
-    :param list params: (**deprecated**, prefer :code:`degree`, :code:`cutoff_freq`, and :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) a dictionary of {'iterate': (bool)}
     :param int degree: polynomial degree of the spline. A kth degree spline can be differentiated k times.
     :param float s: nonnegative smoothing factor. Number of knots will be increased until the smoothing condition
         :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s N \\hat\\sigma^2` is met, where :math:`N` is data length and
@@ -27,13 +25,6 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `order`, `s`, and "
-            "`num_iterations` instead.", DeprecationWarning)
-        degree, s = params[0:2]
-        if options is not None:
-            if 'iterate' in options and options['iterate']: num_iterations = params[2]
-
     if num_iterations < 1: raise ValueError("`num_iterations` should be >=1")
     if np.isscalar(dt_or_t):
         t = np.arange(x.shape[axis]) * dt_or_t
@@ -65,17 +56,13 @@ def splinediff(x, dt_or_t, params=None, options=None, degree=3, s=1, num_iterati
     return x_hat, dxdt_hat
 
 
-def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=None, step_size=1,
-    kernel='friedrichs', axis=0):
+def polydiff(x, dt_or_t, degree, window_size=None, step_size=1, kernel='friedrichs', axis=0):
     """Fit polynomials to the data, and differentiate the polynomials.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
         fitting and imputed by polynomial interpolation. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
-    :param list[int] params: (**deprecated**, prefer :code:`degree` and :code:`window_size`)
-    :param dict options: (**deprecated**, prefer :code:`step_size` and :code:`kernel`)
-            a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str)}
     :param int degree: degree of the polynomial
     :param int window_size: size of the sliding window, if not given no sliding
     :param int step_size: step size for sliding
@@ -85,17 +72,6 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None:
-        warn("`params` and `options` parameters will be removed in a future version. Use `degree` "
-            "and `window_size` instead.", DeprecationWarning)
-        degree = params[0]
-        if len(params) > 1: window_size = params[1]
-        if options is not None:
-            if 'sliding' in options and not options['sliding']: window_size = None
-            if 'step_size' in options: step_size = options['step_size']
-            if 'kernel_name' in options: kernel = options['kernel_name']
-    elif degree is None: raise ValueError("`degree` must be given.")
-
     if not np.isscalar(dt_or_t): # check once here rather than per window, since `slide_function` hands slices to `_polydiff`
         if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
@@ -137,15 +113,13 @@ def polydiff(x, dt_or_t, params=None, options=None, degree=None, window_size=Non
     return x_hat, dxdt_hat
 
 
-def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, smoothing_win=None, axis=0):
+def savgoldiff(x, dt, degree, window_size, smoothing_win, axis=0):
     """Use the Savitzky-Golay to smooth the data and calculate the first derivative. It uses
     scipy.signal.savgol_filter. The Savitzky-Golay is very similar to the sliding polynomial fit,
     but slightly noisier and much faster.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param list params: (**deprecated**, prefer :code:`degree`, :code:`window_size`, and :code:`smoothing_win`)
-    :param dict options: (**deprecated**)
     :param int degree: degree of the polynomial
     :param int window_size: size of the sliding window, must be odd (if not, 1 is added)
     :param int smoothing_win: size of the window used for gaussian smoothing, a good default is
@@ -155,12 +129,6 @@ def savgoldiff(x, dt, params=None, options=None, degree=None, window_size=None, 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `degree`, "
-            "`window_size`, and `smoothing_win` instead.", DeprecationWarning)
-        degree, window_size, smoothing_win = params
-    elif degree is None or window_size is None or smoothing_win is None:
-        raise ValueError("`degree`, `window_size`, and `smoothing_win` must be given.")
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the filter.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Savitzky-Golay assumes fixed-width windows with uniform sampling.")
 

@@ -8,12 +8,12 @@ import numpy as np
 from tqdm import tqdm
 
 from .utils import evaluate, utility
-from .finite_difference import finitediff, first_order, second_order, fourth_order
-from .smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from .finite_difference import finitediff
+from .smooth_finite_difference import kerneldiff, butterdiff
 from .polynomial_fit import polydiff, savgoldiff, splinediff
 from .basis_fit import spectraldiff, rbfdiff, waveletdiff
-from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
-from .kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
+from .total_variation_regularization import tvrdiff, iterative_velocity, smooth_acceleration
+from .kalman_smooth import rtsdiff, robustdiff
 from .linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -23,10 +23,6 @@ method_params_and_bounds = {
           'num_iterations': [1, 5, 10]},
             {'window_size': (1, 1e6, 'odd'), # an even-width kernel has no center, so convolving with it
           'num_iterations': (1, 100)}),         # shifts the signal half a sample before differencing
-    meandiff: ({'window_size': [5, 15, 31, 51], # Deprecated method
-             'num_iterations': [1, 5, 10]},
-               {'window_size': (1, 1e6, 'odd'),
-             'num_iterations': (1, 100)}),
     butterdiff: ({'filter_order': set(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
                    'high_freq_cutoff': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
                 'num_iterations': [1, 5, 10]},
@@ -35,8 +31,6 @@ method_params_and_bounds = {
     finitediff: ({'num_iterations': [5, 10, 30, 50],
                            'order': {2, 4}}, # order is categorical here, because it can't be 3
                  {'num_iterations': (1, 1000)}),
-    first_order: ({'num_iterations': [5, 10, 30, 50]}, # Separated because optimizing over this one is rare due to shifted answer
-                  {'num_iterations': (1, 1000)}),
     polydiff: ({'step_size': [1, 2, 5],
                    'kernel': {'friedrichs', 'gaussian'}, # categorical
                    'degree': [2, 3, 5, 7],
@@ -72,8 +66,6 @@ method_params_and_bounds = {
               'huberM': [2., 6]}, # the scale of sigma is mad(x), which is bigger than mad(y-x) residuals, so outliers likely come at lower M values
               {'gamma': (1e-4, 1e7),
               'huberM': (2, 6)}), # huberM too low seeks sparse solutions, which hack the tvgamma loss function
-    velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]}, # Deprecated method
-               {'gamma': (1e-4, 1e7)}),
     iterative_velocity: ({'scale': 'small', # Rare to optimize this one, because it's longer-running than convex version
                  'num_iterations': [1, 5, 10],
                           'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
@@ -87,11 +79,6 @@ method_params_and_bounds = {
                          'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                   'log_qr_ratio': [float(k) for k in range(-9, 10, 2)] + [12, 16]},
                  {'log_qr_ratio': (-10, 20)}), # qr_ratio is usually >>1
-    constant_velocity: ({'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8], # Deprecated method
-                         'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
-           'forwardbackward': {True, False}},
-                        {'q': (1e-10, 1e10),
-                         'r': (1e-10, 1e10)}),
     robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
                   'log_q': [1., 4, 7, 10, 13], # decimal after first entry ensure this is treated as float type
                   'log_r': [0.], # one seed, but allowed to drift. Holding both Huber Ms fixed, the objective is flat along characteristic curves in the
@@ -109,15 +96,7 @@ method_params_and_bounds = {
              'window_size': [41, 81, 161]},
                   {'gamma': (1e-4, 1e1),
              'window_size': (11, 1000, 'odd')})
-} # Methods with nonunique parameter sets are aliased in the dictionary below
-for method in [second_order, fourth_order]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[first_order]
-for method in [mediandiff, gaussiandiff, friedrichsdiff]: # Deprecated methods
-    method_params_and_bounds[method] = method_params_and_bounds[meandiff]
-for method in [acceleration, jerk]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[velocity]
-for method in [constant_acceleration, constant_jerk]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
+}
 
 
 # How to round float coordinates from the minimizer into possibly-discrete values
@@ -271,7 +250,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_freq=None):
     using default search spaces defined in :code:`method_params_and_bounds` at the top of :code:`pynumdiff/optimize.py`.
     This routine will take a few minutes to run.
     
-    Excluded, besides everything deprecated:
+    Excluded:
         - ``iterative_velocity``, because it's mostly academic
         - all ``cvxpy``-based methods if it is not installed
         - first-order ``tvrdiff`` and ``robustdiff`` because they hack the optimization function by directly

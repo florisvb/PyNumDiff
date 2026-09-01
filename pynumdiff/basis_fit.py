@@ -1,20 +1,15 @@
 """Methods based on fitting basis functions to data"""
-from warnings import warn
 import numpy as np
 from scipy import sparse
 import pywt
 
 from pynumdiff.utils import utility
 
-def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_extension=True,
-    pad_to_zero_dxdt=True, axis=0):
+def spectraldiff(x, dt, high_freq_cutoff, even_extension=True, pad_to_zero_dxdt=True, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param list[float] or float params: (**deprecated**, prefer :code:`high_freq_cutoff`)
-    :param dict options: (**deprecated**, prefer :code:`even_extension`
-            and :code:`pad_to_zero_dxdt`) a dictionary consisting of {'even_extension': (bool), 'pad_to_zero_dxdt': (bool)}
     :param float high_freq_cutoff: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
             and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
@@ -24,16 +19,6 @@ def spectraldiff(x, dt, params=None, options=None, high_freq_cutoff=None, even_e
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `high_freq_cutoff`, "
-            "`even_extension`, and `pad_to_zero_dxdt` instead.", DeprecationWarning)
-        high_freq_cutoff = params[0] if isinstance(params, list) else params
-        if options is not None:
-            if 'even_extension' in options: even_extension = options['even_extension']
-            if 'pad_to_zero_dxdt' in options: pad_to_zero_dxdt = options['pad_to_zero_dxdt']
-    elif high_freq_cutoff is None:
-        raise ValueError("`high_freq_cutoff` must be given.")
-
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the FFT to make the whole spectrum NaN.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The FFT assumes uniformly sampled data.")
 

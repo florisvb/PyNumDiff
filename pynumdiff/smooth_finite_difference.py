@@ -4,13 +4,11 @@ import numpy as np
 import scipy.signal
 
 from pynumdiff.finite_difference import finitediff
-from pynumdiff.polynomial_fit import splinediff as _splinediff # patch through
 from pynumdiff.utils import utility
 
 
 def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis=0):
     """Differentiate by applying a smoothing kernel to the signal, then performing 2nd-order finite difference.
-    :code:`meandiff`, :code:`mediandiff`, :code:`gaussiandiff`, and :code:`friedrichsdiff` call this function.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
@@ -42,117 +40,11 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
     return finitediff(x_hat, dt, order=2, axis=axis)
 
 
-def meandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform mean smoothing by convolving mean kernel with x followed by second order finite difference\n
-    **Deprecated**, prefer :code:`kerneldiff` with kernel :code:`'mean'` instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
-        :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int window_size: filter window size
-    :param int num_iterations: how many times to apply mean smoothing
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
-            "and `num_iterations` instead.", DeprecationWarning)
-        window_size = params[0] if isinstance(params, list) else params
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[1]
-
-    warn("`meandiff` is deprecated. Call `kerneldiff` with kernel 'mean' instead.", DeprecationWarning)
-    return kerneldiff(x, dt, kernel='mean', window_size=window_size, num_iterations=num_iterations)
-
-
-def mediandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform median smoothing using scipy.signal.medfilt followed by second order finite difference\n
-    **Deprecated**, prefer :code:`kerneldiff` with kernel :code:`'median'` instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int window_size: filter window size
-    :param int num_iterations: how many times to apply median smoothing
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
-            "and `num_iterations` instead.", DeprecationWarning)
-        window_size = params[0] if isinstance(params, list) else params
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[1]
-
-    warn("`mediandiff` is deprecated. Call `kerneldiff` with kernel 'median' instead.", DeprecationWarning)
-    return kerneldiff(x, dt, kernel='median', window_size=window_size, num_iterations=num_iterations)
-
-
-def gaussiandiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform gaussian smoothing by convolving gaussian kernel with x followed by second order finite difference\n
-    **Deprecated**, prefer :code:`kerneldiff` with kernel :code:`'gaussian'` instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
-        :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int window_size: filter window size
-    :param int num_iterations: how many times to apply gaussian smoothing
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
-            "and `num_iterations` instead.", DeprecationWarning)
-        window_size = params[0] if isinstance(params, list) else params
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[1]
-
-    warn("`gaussiandiff` is deprecated. Call `kerneldiff` with kernel 'gaussian' instead.", DeprecationWarning)
-    return kerneldiff(x, dt, kernel='gaussian', window_size=window_size, num_iterations=num_iterations)
-
-
-def friedrichsdiff(x, dt, params=None, options={}, window_size=5, num_iterations=1):
-    """Perform friedrichs smoothing by convolving friedrichs kernel with x followed by second order finite difference\n
-    **Deprecated**, prefer :code:`kerneldiff` with kernel :code:`'friedrichs'` instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`window_size` and :code:`num_iterations`)
-        :code:`[window_size]` or, :code:`if 'iterate' in options`, :code:`[window_size, num_iterations]`
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
-    :param int window_size: filter window size
-    :param int num_iterations: how many times to apply smoothing
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `window_size` "
-            "and `num_iterations` instead.", DeprecationWarning)
-        window_size = params[0] if isinstance(params, list) else params
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[1]
-
-    warn("`friedrichsdiff` is deprecated. Call `kerneldiff` with kernel 'friedrichs' instead.", DeprecationWarning)
-    return kerneldiff(x, dt, kernel='friedrichs', window_size=window_size, num_iterations=num_iterations)
-
-
-def butterdiff(x, dt, params=None, options={}, filter_order=2, high_freq_cutoff=0.5, num_iterations=1, axis=0):
+def butterdiff(x, dt, filter_order=2, high_freq_cutoff=0.5, num_iterations=1, axis=0):
     """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by second order finite difference
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param list[int] params: (**deprecated**, prefer :code:`filter_order`, :code:`high_freq_cutoff`,
-        and :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) an empty dictionary or {'iterate': (bool)}
     :param int filter_order: order of the filter
     :param float high_freq_cutoff: cutoff frequency as a fraction of Nyquist, in :math:`\\in [0, 1]`
     :param int num_iterations: how many times to apply smoothing
@@ -161,13 +53,6 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, high_freq_cutoff=
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `filter_order`, "
-            "`high_freq_cutoff`, and `num_iterations` instead.", DeprecationWarning)
-        filter_order, high_freq_cutoff = params[0:2]
-        if 'iterate' in options and options['iterate']:
-            num_iterations = params[2]
-
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Filtering carries a NaN through the whole signal.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. A Butterworth filter is designed against a fixed sample rate.")
 
@@ -181,8 +66,3 @@ def butterdiff(x, dt, params=None, options={}, filter_order=2, high_freq_cutoff=
 
     return finitediff(x_hat, dt, order=2, axis=axis)
 
-
-def splinediff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
-    warn("`splindiff` has moved to `polynomial_fit.splinediff` and will be removed from "
-        "`smooth_finite_difference` in a future release.", DeprecationWarning)
-    return _splinediff(*args, **kwargs)

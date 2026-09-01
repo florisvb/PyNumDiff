@@ -1,6 +1,5 @@
 """This module implements some common finite difference schemes.
 This is handy for this module https://web.media.mit.edu/~crtaylor/calculator.html"""
-from warnings import warn
 import numpy as np
 from pynumdiff.utils import utility
 
@@ -71,59 +70,3 @@ def finitediff(x, dt, num_iterations=1, order=2, axis=0):
 
     return np.moveaxis(x_hat, 0, axis), np.moveaxis(dxdt_hat, 0, axis) # reorder axes back to original
 
-
-def first_order(x, dt, params=None, options={}, num_iterations=1):
-    """First-order difference method\n
-    **Deprecated**, prefer :code:`finitediff` with order 1 instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param list[float] or float params: (**deprecated**, prefer :code:`num_iterations`)
-    :param dict options: (**deprecated**, prefer :code:`num_iterations`) a dictionary consisting of {'iterate': (bool)}
-    :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
-            rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
-
-    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    warn("`first_order` in past releases was actually calculating a second-order FD. Use `second_order` to achieve "
-        "approximately the same behavior. Note that odd-order methods have asymmetrical stencils, which causes "
-        "horizontal drift in the answer, especially when iterating.", DeprecationWarning)
-    if params is not None and 'iterate' in options:
-        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations` instead.", DeprecationWarning)
-        num_iterations = params[0] if isinstance(params, list) else params
-
-    warn("`first_order` is deprecated. Call `finitediff` with order 1 instead.", DeprecationWarning)
-    return finitediff(x, dt, num_iterations, 1)
-
-
-def second_order(x, dt, num_iterations=1):
-    """Second-order centered difference method, with special endpoint formulas.\n
-    **Deprecated**, prefer :code:`finitediff` with order 2 instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
-            rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
-
-    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    warn("`second_order` is deprecated. Call `finitediff` with order 2 instead.", DeprecationWarning)
-    return finitediff(x, dt, num_iterations, 2)
-
-
-def fourth_order(x, dt, num_iterations=1):
-    """Fourth-order centered difference method, with special endpoint formulas.\n
-    **Deprecated**, prefer :code:`finitediff` with order 4 instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param int num_iterations: number of iterations. If >1, the derivative is integrated with trapezoidal
-            rule, that result is finite-differenced again, and the cycle is repeated num_iterations-1 times
-
-    :return: - **x_hat** (np.array) -- original x if :code:`num_iterations=1`, else smoothed x that yielded dxdt_hat
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    warn("`fourth_order` is deprecated. Call `finitediff` with order 4 instead.", DeprecationWarning)
-    return finitediff(x, dt, num_iterations, 4)

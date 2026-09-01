@@ -1,5 +1,4 @@
 """This module implements some common total variation regularization methods."""
-from warnings import warn
 import numpy as np
 try: import cvxpy
 except ImportError: pass
@@ -7,7 +6,7 @@ except ImportError: pass
 from pynumdiff.utils import _chartrand_tvregdiff, utility
 
 
-def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, gamma=None, cg_maxiter=1000, scale='small'):
+def iterative_velocity(x, dt, num_iterations, gamma, cg_maxiter=1000, scale='small'):
     """Use an iterative solver to find the total variation regularized 1st derivative. See
     _chartrand_tvregdiff.py for details, author info, and license. Methods described in:
     Rick Chartrand, "Numerical differentiation of noisy, nonsmooth data," ISRN Applied Mathematics,
@@ -15,9 +14,6 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
-    :param list params: (**deprecated**, prefer :code:`num_iterations` and :code:`gamma`)
-    :param dict options: (**deprecated**, prefer :code:`cg_maxiter` and :code:`scale`)
-        a dictionary consisting of {'cg_maxiter': (int), 'scale': (str)}
     :param int num_iterations: number of iterations to run the solver. More iterations results in
         blockier derivatives, which approach the convex result
     :param float gamma: regularization parameter
@@ -32,16 +28,6 @@ def iterative_velocity(x, dt, params=None, options=None, num_iterations=None, ga
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `num_iterations`, "
-            "`gamma`, `cg_maxiter`, and `scale` instead.", DeprecationWarning)
-        num_iterations, gamma = params
-        if options is not None:
-            if 'cg_maxiter' in options: cg_maxiter = options['cg_maxiter']
-            if 'scale' in options: scale = options['scale']
-    elif num_iterations is None or gamma is None:
-        raise ValueError("`num_iterations` and `gamma` must be given.")
-
     dxdt_hat = _chartrand_tvregdiff.TVRegDiff(x, num_iterations, gamma, dx=dt,
                                                 maxit=cg_maxiter, scale=scale,
                                                 ep=1e-6, u0=None, plotflag=False)
@@ -126,99 +112,13 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     return x_hat, dxdt_hat
 
 
-def velocity(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the velocity total variation regularized derivative.\n
-    **Deprecated**, prefer :code:`tvrdiff` with order 1 instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param params: (**deprecated**, prefer :code:`gamma`)
-    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
-    :param float gamma: the regularization parameter
-    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
-                If not given, fall back to CVXPY's default.
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
-            "and `solver` instead.", DeprecationWarning)
-        gamma = params[0] if isinstance(params, list) else params
-        if options is not None:
-            if 'solver' in options: solver = options['solver']
-    elif gamma is None:
-        raise ValueError("`gamma` must be given.")
-
-    warn("`velocity` is deprecated. Call `tvrdiff` with order 1 instead.", DeprecationWarning)
-    return tvrdiff(x, dt, 1, gamma, solver=solver)
-
-
-def acceleration(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative.\n
-    **Deprecated**, prefer :code:`tvrdiff` with order 2 instead.
-    
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param params: (**deprecated**, prefer :code:`gamma`)
-    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
-    :param float gamma: the regularization parameter
-    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
-                In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
-            "and `solver` instead.", DeprecationWarning)
-        gamma = params[0] if isinstance(params, list) else params
-        if options is not None:
-            if 'solver' in options: solver = options['solver']
-    elif gamma is None:
-        raise ValueError("`gamma` must be given.")
-
-    warn("`acceleration` is deprecated. Call `tvrdiff` with order 2 instead.", DeprecationWarning)
-    return tvrdiff(x, dt, 2, gamma, solver=solver)
-
-
-def jerk(x, dt, params=None, options=None, gamma=None, solver=None):
-    """Use convex optimization (cvxpy) to solve for the jerk total variation regularized derivative.\n
-    **Deprecated**, prefer :code:`tvrdiff` with order 3 instead.
-
-    :param np.array[float] x: data to differentiate
-    :param float dt: step size
-    :param params: (**deprecated**, prefer :code:`gamma`)
-    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
-    :param float gamma: the regularization parameter
-    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
-                In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
-            "and `solver` instead.", DeprecationWarning)
-        gamma = params[0] if isinstance(params, list) else params
-        if options is not None:
-            if 'solver' in options: solver = options['solver']
-    elif gamma is None:
-        raise ValueError("`gamma` must be given.")
-
-    warn("`jerk` is deprecated. Call `tvrdiff` with order 3 instead.", DeprecationWarning)
-    return tvrdiff(x, dt, 3, gamma, solver=solver)
-
-
-def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_size=None, solver=None):
+def smooth_acceleration(x, dt, gamma, window_size, solver=None):
     """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative,
     and then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
     The end result is similar to the jerk method, but can be more time-efficient.
 
     :param np.array[float] x: data to differentiate
     :param float dt: step size
-    :param params: (**deprecated**, prefer :code:`gamma` and :code:`window_size`)
-    :param dict options: (**deprecated**, prefer :code:`solver`) a dictionary consisting of {'solver': (str)}
     :param float gamma: the regularization parameter
     :param int window_size: window size for gaussian kernel
     :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
@@ -227,15 +127,6 @@ def smooth_acceleration(x, dt, params=None, options=None, gamma=None, window_siz
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None: # Warning to support old interface for a while. Remove these lines along with params in a future release.
-        warn("`params` and `options` parameters will be removed in a future version. Use `gamma` "
-            "and `solver` instead.", DeprecationWarning)
-        gamma, window_size = params
-        if options is not None:
-            if 'solver' in options: solver = options['solver']
-    elif gamma is None or window_size is None:
-        raise ValueError("`gamma` and `window_size` must be given.")
-
     _, dxdt_hat = tvrdiff(x, dt, 2, gamma, solver=solver)
 
     kernel = utility.gaussian_kernel(window_size)

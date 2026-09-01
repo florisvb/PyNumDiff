@@ -1,5 +1,4 @@
 """This module implements constant-derivative model-based smoothers based on Kalman filtering and its generalization."""
-from warnings import warn
 import numpy as np
 from scipy.linalg import expm, sqrtm
 try: import cvxpy
@@ -100,7 +99,7 @@ def rts_smooth(A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
 
 def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circular=False):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
-    and :code:`rts_smooth`, which are made public. :code:`constant_X` methods in this module call this function.
+    and :code:`rts_smooth`, which are made public.
 
     :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are excluded
         from fitting and imputed by dynamical model evolution. May be multidimensional; see :code:`axis`.
@@ -180,98 +179,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     return x_hat, dxdt_hat
 
 
-def constant_velocity(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant velocity RTS Kalman smoother to estimate the derivative.\n
-    **Deprecated**, prefer :code:`rtsdiff` with order 1 instead.
-
-    :param np.array[float] x: data series to differentiate
-    :param float dt: step size
-    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
-    :param options: (**deprecated**, prefer :code:`forwardbackward`)
-        a dictionary consisting of {'forwardbackward': (bool)}
-    :param float r: variance of the signal noise
-    :param float q: variance of the constant velocity model
-    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
-        (usually achieves better estimate at end points)
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
-            "`q`, and `forwardbackward` instead.", DeprecationWarning)
-        r, q = params
-        if options is not None:
-            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r is None or q is None:
-        raise ValueError("`q` and `r` must be given.")
-
-    warn("`constant_velocity` is deprecated. Call `rtsdiff` with order 1 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 1, np.log10(q/r), forwardbackward)
-
-
-def constant_acceleration(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant acceleration RTS Kalman smoother to estimate the derivative.\n
-    **Deprecated**, prefer :code:`rtsdiff` with order 2 instead.
-
-    :param np.array[float] x: data series to differentiate
-    :param float dt: step size
-    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
-    :param options: (**deprecated**, prefer :code:`forwardbackward`)
-        a dictionary consisting of {'forwardbackward': (bool)}
-    :param float r: variance of the signal noise
-    :param float q: variance of the constant acceleration model
-    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
-        (usually achieves better estimate at end points)
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
-            "`q`, and `forwardbackward` instead.", DeprecationWarning)
-        r, q = params
-        if options is not None:
-            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r is None or q is None:
-        raise ValueError("`q` and `r` must be given.")
-
-    warn("`constant_acceleration` is deprecated. Call `rtsdiff` with order 2 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 2, np.log10(q/r), forwardbackward)
-
-
-def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackward=True):
-    """Run a forward-backward constant jerk RTS Kalman smoother to estimate the derivative.\n
-    **Deprecated**, prefer :code:`rtsdiff` with order 3 instead.
-
-    :param np.array[float] x: data series to differentiate
-    :param float dt: step size
-    :param list[float] params: (**deprecated**, prefer :code:`r` and :code:`q`)
-    :param options: (**deprecated**, prefer :code:`forwardbackward`)
-        a dictionary consisting of {'forwardbackward': (bool)}
-    :param float r: variance of the signal noise
-    :param float q: variance of the constant jerk model
-    :param bool forwardbackward: indicates whether to run smoother forwards and backwards
-        (usually achieves better estimate at end points)
-
-    :return: - **x_hat** (np.array) -- estimated (smoothed) x
-             - **dxdt_hat** (np.array) -- estimated derivative of x
-    """
-    if params is not None: # boilerplate backwards compatibility code
-        warn("`params` and `options` parameters will be removed in a future version. Use `r`, "
-            "`q`, and `forwardbackward` instead.", DeprecationWarning)
-        r, q = params
-        if options is not None:
-            if 'forwardbackward' in options: forwardbackward = options['forwardbackward']
-    elif r is None or q is None:
-        raise ValueError("`q` and `r` must be given.")
-
-    warn("`constant_jerk` is deprecated. Call `rtsdiff` with order 3 instead.", DeprecationWarning)
-    return rtsdiff(x, dt, 3, np.log10(q/r), forwardbackward)
-
-
 def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, axis=0):
-    """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
+    """Perform outlier-robust differentiation by solving the *maximum a posteriori* optimization problem:
     :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q_{n-1}^{-1/2}(x_n - A_{n-1} x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant-derivative model (see `Section 7.7 of this paper <https://arxiv.org/pdf/2512.09090>`_)
     and :math:`V,J` are the :math:`\\ell_1` norm or Huber loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is

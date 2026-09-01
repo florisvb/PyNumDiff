@@ -48,7 +48,7 @@ diff_methods_and_params = [
     (kerneldiff_median, {'kernel':'median', 'window_size':3, 'num_iterations':2}),
     (kerneldiff_gaussian, {'kernel':'gaussian', 'window_size':5}),
     (kerneldiff, {'window_size':5}), # 'friedrichs' is the default kernel
-    (butterdiff, {'filter_order':3, 'high_freq_cutoff':0.7}),
+    (butterdiff, {'filter_order':3, 'cutoff_freq':0.7}),
     (finitediff_1, {'order':1}), (finitediff, {}), (finitediff_4, {'order':4}), # 2 is the default order
     (iterated_finitediff, {'num_iterations':5}), (iterated_finitediff_4, {'num_iterations':10, 'order':4}),
     (polydiff, {'degree':5, 'window_size':15}),
@@ -56,7 +56,7 @@ diff_methods_and_params = [
     (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}),
     (splinediff, {'degree':5, 's':2}),
     (spline_irreg_step, {'degree':5, 's':2}),
-    (spectraldiff, {'high_freq_cutoff':0.2}),
+    (spectraldiff, {'cutoff_freq':0.2}),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
     (waveletdiff, {'wavelet':'db8', 'threshold':1.0}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
@@ -323,13 +323,13 @@ x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
 
 multidim_methods_and_params = [ # single parameterizations, chosen to do well on the noiseless 2D example
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
-    (butterdiff, {'filter_order': 3, 'high_freq_cutoff': 1 - 1e-6}),
+    (butterdiff, {'filter_order': 3, 'cutoff_freq': 1 - 1e-6}),
     (finitediff, {}),
     (polydiff, {'degree': 2, 'window_size': 5}),
     (savgoldiff, {'degree': 3, 'window_size': 11, 'smoothing_win': 3}),
     (waveletdiff, {'wavelet': 'db8', 'threshold': 1.0}),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
-    (spectraldiff, {'high_freq_cutoff': 0.25, 'pad_to_zero_dxdt': False}),
+    (spectraldiff, {'cutoff_freq': 0.25, 'pad_to_zero_dxdt': False}),
     (rbfdiff, {'sigma': 0.5, 'lmbd': 1e-6}),
     (splinediff, {'degree': 9, 's': 0}), # s is now relative to estimated noise, so 0 is how you ask to interpolate
     (robustdiff, {'order':2, 'log_q':9, 'log_r':0}),

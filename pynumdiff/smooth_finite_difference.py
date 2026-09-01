@@ -40,13 +40,13 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
     return finitediff(x_hat, dt, order=2, axis=axis)
 
 
-def butterdiff(x, dt, filter_order=2, high_freq_cutoff=0.5, num_iterations=1, axis=0):
+def butterdiff(x, dt, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0):
     """Perform butterworth smoothing on x with scipy.signal.filtfilt followed by second order finite difference
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param int filter_order: order of the filter
-    :param float high_freq_cutoff: cutoff frequency as a fraction of Nyquist, in :math:`\\in [0, 1]`
+    :param float cutoff_freq: cutoff frequency as a fraction of Nyquist, in :math:`\\in [0, 1]`
     :param int num_iterations: how many times to apply smoothing
     :param int axis: data dimension along which differentiation is performed
 
@@ -56,7 +56,7 @@ def butterdiff(x, dt, filter_order=2, high_freq_cutoff=0.5, num_iterations=1, ax
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Filtering carries a NaN through the whole signal.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. A Butterworth filter is designed against a fixed sample rate.")
 
-    sos = scipy.signal.butter(filter_order, high_freq_cutoff, output='sos') # second-order sections rather than the (b, a) transfer
+    sos = scipy.signal.butter(filter_order, cutoff_freq, output='sos') # second-order sections rather than the (b, a) transfer
         # function, whose coefficients lose all precision when many poles bunch up near z = 1 at high order and low cutoff
 
     x_hat = x

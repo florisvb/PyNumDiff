@@ -15,13 +15,13 @@ from ..utils.evaluate import rmse
 
 dt = 0.01
 x, x_truth, dxdt_truth = pi_cruise_control(duration=2, noise_type='normal', noise_parameters=[0, 0.01], dt=dt)
-cutoff_freq = 3 # in Hz; optimize derives the smoothness weight from this internally
+bandlimit = 3 # in Hz; optimize derives the smoothness weight from this internally
 
 
 def test_parallel_same_as_serial():
     """Ensure running optimize across several processes returns the same result as running in a single process"""
-    params_parallel, val_parallel = optimize(rtsdiff, x, dt, cutoff_freq=cutoff_freq, parallel=True)
-    params_serial, val_serial = optimize(rtsdiff, x, dt, cutoff_freq=cutoff_freq, parallel=False)
+    params_parallel, val_parallel = optimize(rtsdiff, x, dt, bandlimit=bandlimit, parallel=True)
+    params_serial, val_serial = optimize(rtsdiff, x, dt, bandlimit=bandlimit, parallel=False)
 
     assert np.allclose(val_serial, val_parallel)
     assert np.allclose([params_serial[k] for k in params_serial], [params_parallel[k] for k in params_serial])
@@ -30,7 +30,7 @@ def test_parallel_same_as_serial():
 def test_targeting_rmse_vs_tvgamma_loss():
     """Ensure optimization properly targets different metrics"""
     params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth, parallel=False) # so coverage picks it up, because multiprocessing coverage is broken
-    params_loss, val_loss = optimize(splinediff, x, dt, cutoff_freq=cutoff_freq)
+    params_loss, val_loss = optimize(splinediff, x, dt, bandlimit=bandlimit)
 
     x_hat, dxdt_hat = splinediff(x, dt, **params_loss)
     loss_rmse = rmse(dxdt_truth, dxdt_hat)
@@ -40,8 +40,8 @@ def test_targeting_rmse_vs_tvgamma_loss():
 
 def test_search_space_updates_applied():
     """Ensure search space updates are used in optimization"""
-    params2, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':2}, cutoff_freq=cutoff_freq)
-    params3, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':3}, cutoff_freq=cutoff_freq)
+    params2, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':2}, bandlimit=bandlimit)
+    params3, _ = optimize(butterdiff, x, dt, search_space_updates={'filter_order':3}, bandlimit=bandlimit)
 
     assert params2['filter_order'] == 2
     assert params3['filter_order'] == 3
@@ -50,15 +50,15 @@ def test_search_space_updates_applied():
 def test_warning_filters_restored():
     """Ensure the UserWarning silencing inside optimize() doesn't leak out and mute the caller's warnings"""
     before = list(warnings.filters) # a copy, because filterwarnings() mutates this list in place
-    optimize(butterdiff, x, dt, cutoff_freq=cutoff_freq, parallel=False, maxiter=1,
-        search_space_updates={'filter_order':2, 'high_freq_cutoff':[0.1], 'num_iterations':1})
+    optimize(butterdiff, x, dt, bandlimit=bandlimit, parallel=False, maxiter=1,
+        search_space_updates={'filter_order':2, 'cutoff_freq':[0.1], 'num_iterations':1})
 
     assert warnings.filters == before
 
 
 def test_search_space_with_no_dimensions():
     """Ensure pinning every parameter scores that lone point instead of handing scipy an empty one"""
-    pinned = {'filter_order':2, 'high_freq_cutoff':0.1, 'num_iterations':1}
+    pinned = {'filter_order':2, 'cutoff_freq':0.1, 'num_iterations':1}
     with warns(UserWarning, match="Nothing to optimize"):
         opt_params, val = optimize(butterdiff, x, dt, dxdt_truth=dxdt_truth, parallel=False, search_space_updates=pinned)
 
@@ -68,7 +68,7 @@ def test_search_space_with_no_dimensions():
 
 def test_categorical_only_search_space():
     """Ensure categoricals still get compared when there are no numerical dimensions left to search"""
-    fixed = {'high_freq_cutoff':0.1, 'num_iterations':1}
+    fixed = {'cutoff_freq':0.1, 'num_iterations':1}
     opt_params, val = optimize(butterdiff, x, dt, dxdt_truth=dxdt_truth, parallel=False,
         search_space_updates={'filter_order':{2, 3}, **fixed})
 

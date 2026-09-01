@@ -5,12 +5,12 @@ import pywt
 
 from pynumdiff.utils import utility
 
-def spectraldiff(x, dt, high_freq_cutoff, even_extension=True, pad_to_zero_dxdt=True, axis=0):
+def spectraldiff(x, dt, cutoff_freq, even_extension=True, pad_to_zero_dxdt=True, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param float high_freq_cutoff: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
+    :param float cutoff_freq: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
             and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
@@ -49,7 +49,7 @@ def spectraldiff(x, dt, high_freq_cutoff, even_extension=True, pad_to_zero_dxdt=
     k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
 
     # Smoothed signal, with the high wavenumbers zeroed out. Nyquist is at wavenumber N/2, and we're cutting off as a fraction of that.
-    X = np.fft.fft(x, axis=axis) * (np.abs(k) < high_freq_cutoff * N/2)[s]
+    X = np.fft.fft(x, axis=axis) * (np.abs(k) < cutoff_freq * N/2)[s]
     x_hat = np.real(np.fft.ifft(X, axis=axis))
 
     # Derivative = 90 deg phase shift

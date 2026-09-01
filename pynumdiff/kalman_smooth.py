@@ -271,7 +271,7 @@ def constant_jerk(x, dt, params=None, options=None, r=None, q=None, forwardbackw
 
 
 def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, axis=0):
-    """Perform outlier-robust differentiation by solving the Maximum A Priori optimization problem:
+    """Perform outlier-robust differentiation by solving the *maximum a posteriori* optimization problem:
     :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q_{n-1}^{-1/2}(x_n - A_{n-1} x_{n-1}))`,
     where :math:`A,Q,C,R` come from an assumed constant-derivative model (see `Section 7.7 of this paper <https://arxiv.org/pdf/2512.09090>`_)
     and :math:`V,J` are the :math:`\\ell_1` norm or Huber loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is

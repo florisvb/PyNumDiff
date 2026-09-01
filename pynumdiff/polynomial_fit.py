@@ -133,10 +133,8 @@ def savgoldiff(x, dt, degree, window_size, smoothing_win, axis=0):
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. Savitzky-Golay assumes fixed-width windows with uniform sampling.")
 
     window_size = np.clip(window_size, degree + 1 + degree%2, x.shape[axis] - 1 + x.shape[axis]%2) # returns odd numbers
-    if window_size % 2 == 0:
-        window_size += 1 # window_size needs to be odd
-        warn("Kernel window size should be odd. Added 1 to length.")
-    smoothing_win = min(smoothing_win, x.shape[axis]-1)
+    if window_size % 2 == 0: window_size += 1; warn("Kernel window size should be odd. Added 1 to length.")
+    smoothing_win = min(smoothing_win, x.shape[axis] - 1 + x.shape[axis]%2) # parity check so an odd window can't be clamped even
     if smoothing_win % 2 == 0: smoothing_win += 1; warn("Smoothing window size should be odd. Added 1 to length.")
 
     dxdt_hat = scipy.signal.savgol_filter(x, window_size, degree, deriv=1, axis=axis)/dt

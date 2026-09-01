@@ -2,20 +2,28 @@
 import numpy as np
 from pytest import mark
 
-from ..smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
-from ..finite_difference import finitediff, first_order, second_order, fourth_order
+from ..smooth_finite_difference import kerneldiff, butterdiff
+from ..finite_difference import finitediff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
-from ..total_variation_regularization import velocity, acceleration, jerk, iterative_velocity, smooth_acceleration, tvrdiff
-from ..kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
+from ..total_variation_regularization import iterative_velocity, smooth_acceleration, tvrdiff
+from ..kalman_smooth import rtsdiff, robustdiff
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
-def iterated_second_order(*args, **kwargs): return second_order(*args, **kwargs)
-def iterated_fourth_order(*args, **kwargs): return fourth_order(*args, **kwargs)
+def kerneldiff_mean(*args, **kwargs): return kerneldiff(*args, **kwargs)
+def kerneldiff_median(*args, **kwargs): return kerneldiff(*args, **kwargs)
+def kerneldiff_gaussian(*args, **kwargs): return kerneldiff(*args, **kwargs)
+def finitediff_1(*args, **kwargs): return finitediff(*args, **kwargs)
+def finitediff_4(*args, **kwargs): return finitediff(*args, **kwargs)
+def iterated_finitediff(*args, **kwargs): return finitediff(*args, **kwargs)
+def iterated_finitediff_4(*args, **kwargs): return finitediff(*args, **kwargs)
+def tvrdiff_1(*args, **kwargs): return tvrdiff(*args, **kwargs)
+def tvrdiff_3(*args, **kwargs): return tvrdiff(*args, **kwargs)
 def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
 def robust_irreg_step(*args, **kwargs): return robustdiff(*args, **kwargs)
 def polydiff_irreg_step(*args, **kwargs): return polydiff(*args, **kwargs)
-irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff, robust_irreg_step] # methods to test with irregular time steps
+def rtsdiff_irreg_step(*args, **kwargs): return rtsdiff(*args, **kwargs)
+irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff_irreg_step, robust_irreg_step] # methods to test with irregular time steps
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -35,35 +43,32 @@ test_funcs_and_derivs = [
     (5, r"$x(t)=\frac{\sin(8t)}{(t+0.1)^{3/2}}$", lambda t: np.sin(8*t)/((t + 0.1)**(3/2)), # steep challenger
                                 lambda t: ((0.8 + 8*t)*np.cos(8*t) - 1.5*np.sin(8*t))/(0.1 + t)**(5/2))]
 
-# Call both ways, with kwargs (new) and with params list and optional options dict (legacy), to ensure both work
 diff_methods_and_params = [
-    (meandiff, {'window_size':3, 'num_iterations':2}), (meandiff, [3, 2], {'iterate':True}),
-    (mediandiff, {'window_size':3, 'num_iterations':2}), (mediandiff, [3, 2], {'iterate':True}),
-    (gaussiandiff, {'window_size':5}), (gaussiandiff, [5]),
-    (friedrichsdiff, {'window_size':5}), (friedrichsdiff, [5]),
-    (butterdiff, {'filter_order':3, 'high_freq_cutoff':0.7}), (butterdiff, [3, 0.7]),
-    (first_order, {}), (second_order, {}), (fourth_order, {}), # empty dictionary for the case of no parameters
-    (iterated_second_order, {'num_iterations':5}), (iterated_fourth_order, {'num_iterations':10}),
-    (polydiff, {'degree':5, 'window_size':15}), (polydiff, [5, 15]),
+    (kerneldiff_mean, {'kernel':'mean', 'window_size':3, 'num_iterations':2}),
+    (kerneldiff_median, {'kernel':'median', 'window_size':3, 'num_iterations':2}),
+    (kerneldiff_gaussian, {'kernel':'gaussian', 'window_size':5}),
+    (kerneldiff, {'window_size':5}), # 'friedrichs' is the default kernel
+    (butterdiff, {'filter_order':3, 'high_freq_cutoff':0.7}),
+    (finitediff_1, {'order':1}), (finitediff, {}), (finitediff_4, {'order':4}), # 2 is the default order
+    (iterated_finitediff, {'num_iterations':5}), (iterated_finitediff_4, {'num_iterations':10, 'order':4}),
+    (polydiff, {'degree':5, 'window_size':15}),
     (polydiff_irreg_step, {'degree':5, 'window_size':15}),
-    (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}), (savgoldiff, [2, 5, 5]),
-    (splinediff, {'degree':5, 's':2}), (splinediff, [5, 2]),
+    (savgoldiff, {'degree':2, 'window_size':5, 'smoothing_win':5}),
+    (splinediff, {'degree':5, 's':2}),
     (spline_irreg_step, {'degree':5, 's':2}),
-    (spectraldiff, {'high_freq_cutoff':0.2}), (spectraldiff, [0.2]),
+    (spectraldiff, {'high_freq_cutoff':0.2}),
     (rbfdiff, {'sigma':0.5, 'lmbd':0.001}),
     (waveletdiff, {'wavelet':'db8', 'threshold':1.0}),
-    (constant_velocity, {'r':1e-2, 'q':1e3}), (constant_velocity, [1e-2, 1e3]),
-    (constant_acceleration, {'r':1e-3, 'q':1e4}), (constant_acceleration, [1e-3, 1e4]),
-    (constant_jerk, {'r':1e-4, 'q':1e5}), (constant_jerk, [1e-4, 1e5]),
     (rtsdiff, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
+    (rtsdiff_irreg_step, {'order':2, 'log_qr_ratio':7, 'forwardbackward':True}),
     (robustdiff, {'order':3, 'log_q':9, 'log_r':0}),
     (robust_irreg_step, {'order':3, 'log_q':9, 'log_r':0}),
-    (velocity, {'gamma':0.5}), (velocity, [0.5]),
-    (acceleration, {'gamma':1}), (acceleration, [1]),
-    (jerk, {'gamma':10}), (jerk, [10]),
-    (iterative_velocity, {'num_iterations':5, 'gamma':0.05}), (iterative_velocity, [5, 0.05]),
-    (smooth_acceleration, {'gamma':2, 'window_size':5}), (smooth_acceleration, [2, 5]),
-    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11}), (lineardiff, [3, 0.01, 11])
+    (tvrdiff_1, {'order':1, 'gamma':0.5}),
+    (tvrdiff, {'order':2, 'gamma':1}),
+    (tvrdiff_3, {'order':3, 'gamma':10}),
+    (iterative_velocity, {'num_iterations':5, 'gamma':0.05}),
+    (smooth_acceleration, {'gamma':2, 'window_size':5}),
+    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the closeness to the
@@ -73,61 +78,61 @@ diff_methods_and_params = [
 flr = -12 # machine-precision floor: methods this accurate are exact up to round-off, with least-significant bits
           # drifting across BLAS/numpy/Python builds, so we don't assert tighter error.
 error_bounds = {
-    meandiff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
-               [(0, 0), (1, 1), (0, 0), (1, 1)],
-               [(0, 0), (1, 1), (0, 0), (1, 1)],
-               [(0, 0), (1, 1), (0, 0), (1, 1)],
-               [(1, 1), (2, 2), (1, 1), (2, 2)],
-               [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    mediandiff: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
+    kerneldiff_mean: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
+                      [(0, 0), (1, 1), (0, 0), (1, 1)],
+                      [(0, 0), (1, 1), (0, 0), (1, 1)],
+                      [(0, 0), (1, 1), (0, 0), (1, 1)],
+                      [(1, 1), (2, 2), (1, 1), (2, 2)],
+                      [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    kerneldiff_median: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
+                        [(0, 0), (1, 1), (0, 0), (1, 1)],
+                        [(0, 0), (1, 1), (0, 0), (1, 1)],
+                        [(-1, -1), (0, 0), (0, 0), (1, 1)],
+                        [(0, 0), (2, 2), (0, 0), (2, 2)],
+                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    kerneldiff_gaussian: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
+                          [(-1, -1), (1, 0), (0, 0), (1, 1)],
+                          [(0, 0), (1, 1), (0, 0), (1, 1)],
+                          [(0, -1), (1, 1), (0, 0), (1, 1)],
+                          [(1, 1), (2, 2), (1, 1), (2, 2)],
+                          [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    kerneldiff: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
+                 [(-1, -1), (1, 0), (0, 0), (1, 1)],
                  [(0, 0), (1, 1), (0, 0), (1, 1)],
-                 [(0, 0), (1, 1), (0, 0), (1, 1)],
-                 [(-1, -1), (0, 0), (0, 0), (1, 1)],
-                 [(0, 0), (2, 2), (0, 0), (2, 2)],
+                 [(0, -1), (1, 1), (0, 0), (1, 1)],
+                 [(1, 1), (2, 2), (1, 1), (2, 2)],
                  [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    gaussiandiff: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
-                   [(-1, -1), (1, 0), (0, 0), (1, 1)],
-                   [(0, 0), (1, 1), (0, 0), (1, 1)],
-                   [(0, -1), (1, 1), (0, 0), (1, 1)],
-                   [(1, 1), (2, 2), (1, 1), (2, 2)],
-                   [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    friedrichsdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
-                     [(-1, -1), (1, 0), (0, 0), (1, 1)],
-                     [(0, 0), (1, 1), (0, 0), (1, 1)],
-                     [(0, -1), (1, 1), (0, 0), (1, 1)],
-                     [(1, 1), (2, 2), (1, 1), (2, 2)],
-                     [(1, 1), (3, 3), (1, 1), (3, 3)]],
     butterdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(-3, -3), (-2, -2), (0, -1), (1, 1)],
                  [(-2, -3), (-1, -1), (0, -1), (1, 1)],
                  [(-3, -3), (0, -1), (0, -1), (1, 1)],
                  [(0, -1), (1, 1), (0, 0), (1, 1)],
                  [(0, 0), (3, 3), (0, 0), (3, 3)]],
-    first_order: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
-                  [(flr, flr), (flr, flr), (0, 0), (1, 1)],
-                  [(flr, flr), (0, 0), (0, 0), (1, 1)],
-                  [(flr, flr), (1, 0), (0, 0), (1, 1)],
-                  [(flr, flr), (2, 2), (0, 0), (2, 2)],
-                  [(flr, flr), (3, 3), (0, 0), (3, 3)]],
-    second_order: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
+    finitediff_1: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
                    [(flr, flr), (flr, flr), (0, 0), (1, 1)],
-                   [(flr, flr), (flr, flr), (0, 0), (1, 1)],
-                   [(flr, flr), (0, -1), (0, 0), (1, 1)],
-                   [(flr, flr), (1, 1), (0, 0), (1, 1)],
+                   [(flr, flr), (0, 0), (0, 0), (1, 1)],
+                   [(flr, flr), (1, 0), (0, 0), (1, 1)],
+                   [(flr, flr), (2, 2), (0, 0), (2, 2)],
                    [(flr, flr), (3, 3), (0, 0), (3, 3)]],
-    iterated_second_order: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
-                           [(flr, flr), (flr, flr), (0, -1), (0, 0)],
-                           [(-1, -1), (0, 0), (0, -1), (0, 0)],
-                           [(0, 0), (1, 0), (0, 0), (1, 0)],
-                           [(1, 1), (2, 2), (1, 1), (2, 2)],
-                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    fourth_order: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
+    finitediff: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                 [(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                 [(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                 [(flr, flr), (0, -1), (0, 0), (1, 1)],
+                 [(flr, flr), (1, 1), (0, 0), (1, 1)],
+                 [(flr, flr), (3, 3), (0, 0), (3, 3)]],
+    finitediff_4: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
                    [(flr, flr), (flr, flr), (0, 0), (1, 1)],
                    [(flr, flr), (flr, flr), (0, 0), (1, 1)],
                    [(flr, flr), (-2, -2), (0, 0), (1, 1)],
                    [(flr, flr), (1, 0), (0, 0), (1, 1)],
                    [(flr, flr), (2, 2), (0, 0), (2, 2)]],
-    iterated_fourth_order: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
+    iterated_finitediff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
+                          [(flr, flr), (flr, flr), (0, -1), (0, 0)],
+                          [(-1, -1), (0, 0), (0, -1), (0, 0)],
+                          [(0, 0), (1, 0), (0, 0), (1, 0)],
+                          [(1, 1), (2, 2), (1, 1), (2, 2)],
+                          [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    iterated_finitediff_4: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
                             [(flr, flr), (flr, flr), (0, -1), (0, 0)],
                             [(-1, -1), (0, 0), (-1, -1), (0, 0)],
                             [(0, -1), (1, 1), (0, 0), (1, 1)],
@@ -181,24 +186,24 @@ error_bounds = {
                   [(-2, -2), (0, 0), (0, -1), (1, 1)],
                   [(-1, -1), (2, 2), (0, 0), (2, 2)],
                   [(-1, -1), (3, 3), (0, 0), (3, 3)]],
-    velocity: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
-               [(flr, flr), (-11, flr), (-1, -1), (-1, -2)],
-               [(0, -1), (1, 0), (0, -1), (1, 0)],
-               [(0, -1), (1, 1), (0, 0), (1, 0)],
-               [(1, 0), (2, 2), (1, 0), (2, 2)],
-               [(0, 0), (3, 3), (0, 0), (3, 3)]],
-    acceleration: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
-                   [(-10, -10), (-9, -9), (-1, -1), (0, -1)],
-                   [(-10, -10), (-9, -10), (-1, -1), (0, -1)],
-                   [(0, -1), (1, 0), (0, -1), (1, 0)],
-                   [(1, 0), (2, 2), (1, 0), (2, 2)],
-                   [(0, 0), (3, 3), (0, 0), (3, 3)]],
-    jerk: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
-           [(-9, -10), (-9, -9), (-1, -1), (0, 0)],
-           [(-10, -10), (-9, -10), (-1, -1), (0, 0)],
-           [(0, 0), (1, 1), (0, 0), (1, 1)],
-           [(1, 1), (2, 2), (1, 1), (2, 2)],
-           [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    tvrdiff_1: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
+                [(flr, flr), (-11, flr), (-1, -1), (-1, -2)],
+                [(0, -1), (1, 0), (0, -1), (1, 0)],
+                [(0, -1), (1, 1), (0, 0), (1, 0)],
+                [(1, 0), (2, 2), (1, 0), (2, 2)],
+                [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    tvrdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
+              [(-10, -10), (-9, -9), (-1, -1), (0, -1)],
+              [(-10, -10), (-9, -10), (-1, -1), (0, -1)],
+              [(0, -1), (1, 0), (0, -1), (1, 0)],
+              [(1, 0), (2, 2), (1, 0), (2, 2)],
+              [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    tvrdiff_3: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
+                [(-9, -10), (-9, -9), (-1, -1), (0, 0)],
+                [(-10, -10), (-9, -10), (-1, -1), (0, 0)],
+                [(0, 0), (1, 1), (0, 0), (1, 1)],
+                [(1, 1), (2, 2), (1, 1), (2, 2)],
+                [(1, 1), (3, 3), (1, 1), (3, 3)]],
     iterative_velocity: [[(-7, -8), (flr, flr), (0, -1), (0, 0)],
                          [(0, 0), (0, 0), (0, 0), (1, 0)],
                          [(0, 0), (1, 0), (1, 0), (1, 0)],
@@ -211,30 +216,18 @@ error_bounds = {
                           [(0, 0), (1, 0), (0, -1), (1, 0)],
                           [(1, 1), (2, 2), (1, 1), (2, 2)],
                           [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    constant_velocity: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                        [(-4, -5), (-3, -3), (0, -1), (1, 1)],
-                        [(-3, -3), (0, 0), (0, -1), (1, 1)],
-                        [(-3, -3), (1, 0), (0, -1), (1, 1)],
-                        [(-1, -1), (2, 2), (0, 0), (2, 2)],
-                        [(-1, -1), (3, 3), (0, 0), (3, 3)]],
-    constant_acceleration: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                            [(-5, -5), (-4, -4), (0, -1), (1, 1)],
-                            [(-4, -5), (-3, -3), (0, -1), (1, 1)],
-                            [(-3, -3), (0, 0), (0, -1), (1, 1)],
-                            [(-1, -1), (1, 1), (0, -1), (1, 1)],
-                            [(0, 0), (3, 3), (0, 0), (3, 3)]],
-    constant_jerk: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                    [(-6, -6), (-5, -5), (0, -1), (1, 1)],
-                    [(-5, -5), (-4, -4), (0, -1), (1, 1)],
-                    [(-3, -3), (-1, -1), (0, -1), (1, 1)],
-                    [(-1, -1), (1, 1), (0, -1), (1, 1)],
-                    [(0, 0), (3, 3), (0, 0), (3, 3)]],
     rtsdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
               [(-5, -5), (-4, -4), (0, -1), (1, 1)],
-              [(-4, -4), (-3, -3), (0, -1), (1, 1)],
-              [(-2, -3), (0, 0), (0, -1), (1, 1)],
-              [(-1, -2), (1, 1), (0, -1), (1, 1)],
+              [(-4, -5), (-3, -3), (0, -1), (1, 1)],
+              [(-3, -3), (0, 0), (0, -1), (1, 1)],
+              [(-1, -1), (1, 1), (0, -1), (1, 1)],
               [(0, 0), (3, 3), (0, 0), (3, 3)]],
+    rtsdiff_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
+                         [(-5, -5), (-4, -4), (0, -1), (1, 1)],
+                         [(-4, -4), (-3, -3), (0, -1), (1, 1)],
+                         [(-2, -3), (0, 0), (0, -1), (1, 1)],
+                         [(-1, -2), (1, 1), (0, -1), (1, 1)],
+                         [(0, 0), (3, 3), (0, 0), (3, 3)]],
     robustdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(flr, flr), (flr, flr), (0, -1), (1, 1)],
@@ -257,14 +250,12 @@ error_bounds = {
 
 
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
-@mark.filterwarnings("ignore::DeprecationWarning") # I want to test the old and new functionality intentionally
 @mark.parametrize("diff_method_and_params", diff_methods_and_params) # things like splinediff, with their parameters
 @mark.parametrize("test_func_and_deriv", test_funcs_and_derivs) # analytic functions, with their true derivatives
 def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # request gives access to context
     """Ensure differentiation methods find accurate derivatives"""
     # unpack
-    diff_method, params = diff_method_and_params[:2]
-    if len(diff_method_and_params) == 3: options = diff_method_and_params[2] # optionally pass old-style `options` dict
+    diff_method, params = diff_method_and_params
     i, latex_name, f, df = test_func_and_deriv
 
     # sample the true function and true derivative, and make noisy samples
@@ -273,16 +264,12 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     _t = dt if diff_method not in irreg_list else t_irreg
     x_noisy = x + noise
 
-    # differentiate without and with noise, accounting for new and old styles of calling functions
-    def differentiate(data): # TODO remove this line as part of #183, because then only the first branch will be needed
-        return diff_method(data, _t, **params) if isinstance(params, dict) \
-            else diff_method(data, _t, params) if (isinstance(params, list) and len(diff_method_and_params) < 3) \
-            else diff_method(data, _t, params, options)
-    x_hat, dxdt_hat = differentiate(x)
-    x_hat_noisy, dxdt_hat_noisy = differentiate(x_noisy)
+    # differentiate without and with noise
+    x_hat, dxdt_hat = diff_method(x, _t, **params)
+    x_hat_noisy, dxdt_hat_noisy = diff_method(x_noisy, _t, **params)
 
     # plotting code
-    if request.config.getoption("--plot") and not isinstance(params, list): # Get the plot flag from pytest configuration
+    if request.config.getoption("--plot"): # Get the plot flag from pytest configuration
         fig, axes = request.config.plots[diff_method] # get the appropriate plot, set up by the store_plots fixture in conftest.py
         t_ = t_irreg if diff_method in irreg_list else t
         axes[i, 0].plot(t_, f(t_))
@@ -325,7 +312,7 @@ def test_diff_method(diff_method_and_params, test_func_and_deriv, request): # re
     # Differentiation is linear, so a*f(x) == f(a*x) exactly. A hyperparameter carrying absolute units can break this silently. See #222, #218, #220
     if diff_method is not iterative_velocity:
         for a in [1e-3, 1e3]: # both directions, so an absolute threshold can't pass by being tested only one way
-            assert np.max(np.abs(differentiate(a*x_noisy)[1]/a - dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
+            assert np.max(np.abs(diff_method(a*x_noisy, _t, **params)[1]/a - dxdt_hat_noisy))/np.max(np.abs(dxdt_hat_noisy)) < 1e-9
 
 
 T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 101 x 100 grid, deliberately not square, so a method measuring a
@@ -333,9 +320,8 @@ T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 10
 dt2 = 0.02 # distance between samples in the 2D T grids
 x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
 
-# When one day all or most methods support multidimensionality, and the legacy way of calling methods is
-# gone, diff_methods_and_params can be used for the multidimensionality test as well
-multidim_methods_and_params = [
+
+multidim_methods_and_params = [ # single parameterizations, chosen to do well on the noiseless 2D example
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
     (butterdiff, {'filter_order': 3, 'high_freq_cutoff': 1 - 1e-6}),
     (finitediff, {}),
@@ -351,10 +337,9 @@ multidim_methods_and_params = [
     (lineardiff, {'order': 3, 'gamma': 1e-6, 'window_size': 41, 'step_size': 41})
 ]
 
-# Similar to the error_bounds table, index by method first. But then we test against only one 2D function,
-# and only in the absence of noise, since the other test covers that. Instead, because multidimensional
-# derivatives can be combined in interesting fashions, we find d^2 / dt_1 dt_2 and the Laplacian,
-# d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf) distances.
+# Similar to the error_bounds table, index by method first. But then we test against only one 2D function, and only
+# in the absence of noise, since the other test covers that. Instead, because multidim derivs can be combined in
+# interesting ways, we find d^2 / dt_1 dt_2 and the Laplacian, d^2/dt_1^2 + d^2/dt_2^2. Tuples are again (L2,Linf).
 multidim_error_bounds = {
     kerneldiff: [(2, 1), (3, 2)],
     butterdiff: [(0, -1), (1, -1)],
@@ -391,7 +376,8 @@ def test_multidimensionality(multidim_method_and_params, request):
     linf_error_lap = np.max(np.abs(analytic_laplacian - computed_laplacian))
 
     if request.config.getoption("--bounds"):
-        print([(int(np.ceil(np.log10(l2_error_d2))), int(np.ceil(np.log10(linf_error_d2)))), (int(np.ceil(np.log10(l2_error_lap))), int(np.ceil(np.log10(linf_error_lap))))])
+        print([(int(np.ceil(np.log10(l2_error_d2))), int(np.ceil(np.log10(linf_error_d2)))),
+            (int(np.ceil(np.log10(l2_error_lap))), int(np.ceil(np.log10(linf_error_lap))))])
     else:
         (log_l2_bound_d2, log_linf_bound_d2), (log_l2_bound_lap, log_linf_bound_lap) = multidim_error_bounds[diff_method]
         assert l2_error_d2 < 10**log_l2_bound_d2
@@ -422,6 +408,27 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+
+
+nan_methods_and_params = [ # List of methods that can handle missing values
+    (splinediff, {'degree': 5, 's': 2}),
+    (polydiff, {'degree': 2, 'window_size': 9}),
+    (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
+    (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
+]
+
+@mark.parametrize("diff_method_and_params", nan_methods_and_params)
+def test_missing_data(diff_method_and_params):
+    """Ensure methods that support missing data return finite outputs when NaN values are present"""
+    diff_method, params = diff_method_and_params
+
+    x_nan = np.sin(t)
+    x_nan[[5, 10, 15]] = np.nan # introduce missing data at several point locations
+    x_nan[22:26] = np.nan # and a contiguous run
+    x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
+
+    assert np.all(np.isfinite(x_hat))
+    assert np.all(np.isfinite(dxdt_hat))
 
 
 @mark.parametrize("fwdbwd", [False, True])
@@ -456,25 +463,3 @@ def test_circular_rtsdiff(request, fwdbwd):
         ax2.set_xlabel('t')
         ax2.legend()
         fig.suptitle(f'rtsdiff with circular domain, forwardbackward={fwdbwd}', fontsize=16)
-
-
-# List of methods that can handle missing values
-nan_methods_and_params = [
-    (splinediff, {'degree': 5, 's': 2}),
-    (polydiff, {'degree': 2, 'window_size': 9}),
-    (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
-    (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
-]
-
-@mark.parametrize("diff_method_and_params", nan_methods_and_params)
-def test_missing_data(diff_method_and_params):
-    """Ensure methods that support missing data return finite outputs when NaN values are present"""
-    diff_method, params = diff_method_and_params
-
-    x_nan = np.sin(t)
-    x_nan[[5, 10, 15]] = np.nan # introduce missing data at several point locations
-    x_nan[22:26] = np.nan # and a contiguous run
-    x_hat, dxdt_hat = diff_method(x_nan, dt, **params)
-
-    assert np.all(np.isfinite(x_hat))
-    assert np.all(np.isfinite(dxdt_hat))

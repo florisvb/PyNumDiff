@@ -4,42 +4,19 @@ import math, scipy
 import numpy as np
 
 from pynumdiff.finite_difference import finitediff
-from pynumdiff.polynomial_fit import savgoldiff as _savgoldiff # patch through
-from pynumdiff.polynomial_fit import polydiff as _polydiff # patch through
-from pynumdiff.basis_fit import spectraldiff as _spectraldiff # patch through
 from pynumdiff.utils import utility
 
 try: import cvxpy
 except ImportError: pass
 
 
-def savgoldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
-    warn("`savgoldiff` has moved to `polynomial_fit.savgoldiff` and will be removed from "
-        "`linear_model` in a future release.", DeprecationWarning)
-    return _savgoldiff(*args, **kwargs)
-
-def polydiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
-    warn("`polydiff` has moved to `polynomial_fit.polydiff` and will be removed from "
-        "`linear_model` in a future release.", DeprecationWarning)
-    return _polydiff(*args, **kwargs)
-
-def spectraldiff(*args, **kwargs): # pragma: no cover pylint: disable=missing-function-docstring
-    warn("`spectraldiff` has moved to `basis_fit.spectraldiff` and will be removed from "
-        "`linear_model` in a future release.", DeprecationWarning)
-    return _spectraldiff(*args, **kwargs)
-
-
 _PROBLEM_CACHE = {} # (order, window length) -> a parametrized CVXPY problem, so identically shaped windows reuse it
 
-def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_size=None,
-    step_size=None, kernel='friedrichs', solver='CLARABEL', axis=0):
+def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='friedrichs', solver='CLARABEL', axis=0):
     """Fit a linear dynamical system to windows of the data, then differentiate that model.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param list[int, float, int] params: (**deprecated**, prefer :code:`order`, :code:`gamma`, and :code:`window_size`)
-    :param dict options: (**deprecated**, prefer :code:`window_size`, :code:`step_size`, :code:`kernel`, and
-            :code:`solver`) a dictionary consisting of {'sliding': (bool), 'step_size': (int), 'kernel_name': (str), 'solver': (str)}
     :param int>0 order: number of states in the linear system, equivalently how many times :code:`x` is integrated
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units. See #222
@@ -55,19 +32,6 @@ def lineardiff(x, dt, params=None, options=None, order=None, gamma=None, window_
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if params is not None:
-        warn("`params` and `options` parameters will be removed in a future version. Use `order`, "
-            "`gamma`, and `window_size` instead.", DeprecationWarning)
-        order, gamma = params[:2]
-        if len(params) > 2: window_size = params[2]
-        if options is not None:
-            if 'sliding' in options and not options['sliding']: window_size = None
-            if 'step_size' in options: step_size = options['step_size']
-            if 'kernel_name' in options: kernel = options['kernel_name']
-            if 'solver' in options: solver = options['solver']
-    elif order is None or gamma is None:
-        raise ValueError("`order` and `gamma` must be given.")
-
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
 

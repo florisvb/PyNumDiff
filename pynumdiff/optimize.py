@@ -8,12 +8,12 @@ import numpy as np
 from tqdm import tqdm
 
 from .utils import evaluate, utility
-from .finite_difference import finitediff, first_order, second_order, fourth_order
-from .smooth_finite_difference import kerneldiff, mediandiff, meandiff, gaussiandiff, friedrichsdiff, butterdiff
+from .finite_difference import finitediff
+from .smooth_finite_difference import kerneldiff, butterdiff
 from .polynomial_fit import polydiff, savgoldiff, splinediff
 from .basis_fit import spectraldiff, rbfdiff, waveletdiff
-from .total_variation_regularization import tvrdiff, velocity, acceleration, jerk, iterative_velocity, smooth_acceleration
-from .kalman_smooth import rtsdiff, constant_velocity, constant_acceleration, constant_jerk, robustdiff
+from .total_variation_regularization import tvrdiff, iterative_velocity, smooth_acceleration
+from .kalman_smooth import rtsdiff, robustdiff
 from .linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
@@ -23,10 +23,6 @@ method_params_and_bounds = {
           'num_iterations': [1, 5, 10]},
             {'window_size': (1, 1e6, 'odd'), # an even-width kernel has no center, so convolving with it
           'num_iterations': (1, 100)}),         # shifts the signal half a sample before differencing
-    meandiff: ({'window_size': [5, 15, 31, 51], # Deprecated method
-             'num_iterations': [1, 5, 10]},
-               {'window_size': (1, 1e6, 'odd'),
-             'num_iterations': (1, 100)}),
     butterdiff: ({'filter_order': set(i for i in range(1,11)), # categorical to save us from doing double work by guessing between orders
                    'high_freq_cutoff': [0.0001, 0.001, 0.005, 0.01, 0.1, 0.5],
                 'num_iterations': [1, 5, 10]},
@@ -35,8 +31,6 @@ method_params_and_bounds = {
     finitediff: ({'num_iterations': [5, 10, 30, 50],
                            'order': {2, 4}}, # order is categorical here, because it can't be 3
                  {'num_iterations': (1, 1000)}),
-    first_order: ({'num_iterations': [5, 10, 30, 50]}, # Separated because optimizing over this one is rare due to shifted answer
-                  {'num_iterations': (1, 1000)}),
     polydiff: ({'step_size': [1, 2, 5],
                    'kernel': {'friedrichs', 'gaussian'}, # categorical
                    'degree': [2, 3, 5, 7],
@@ -68,12 +62,10 @@ method_params_and_bounds = {
                  # `level` is left at its adaptive default, min(dwt_max_level(N, wavelet), 5), which tracks both the signal and filter lengths
                 {'threshold': (0.1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-               'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
+               'order': {1, 2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
               'huberM': [2., 6]}, # the scale of sigma is mad(x), which is bigger than mad(y-x) residuals, so outliers likely come at lower M values
               {'gamma': (1e-4, 1e7),
-              'huberM': (2, 6)}), # huberM too low seeks sparse solutions, which hack the tvgamma loss function
-    velocity: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]}, # Deprecated method
-               {'gamma': (1e-4, 1e7)}),
+              'huberM': (2, 6)}), # huberM too low seeks sparse solutions, which hack the ground-truth-less loss function
     iterative_velocity: ({'scale': 'small', # Rare to optimize this one, because it's longer-running than convex version
                  'num_iterations': [1, 5, 10],
                           'gamma': [1e-2, 1e-1, 1, 10, 100, 1000]},
@@ -87,12 +79,7 @@ method_params_and_bounds = {
                          'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                   'log_qr_ratio': [float(k) for k in range(-9, 10, 2)] + [12, 16]},
                  {'log_qr_ratio': (-10, 20)}), # qr_ratio is usually >>1
-    constant_velocity: ({'q': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8], # Deprecated method
-                         'r': [1e-8, 1e-4, 1e-1, 1e1, 1e4, 1e8],
-           'forwardbackward': {True, False}},
-                        {'q': (1e-10, 1e10),
-                         'r': (1e-10, 1e10)}),
-    robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the loss function when tvgamma is used, tends to win but is usually suboptimal choice in terms of true RMSE
+    robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
                   'log_q': [1., 4, 7, 10, 13], # decimal after first entry ensure this is treated as float type
                   'log_r': [0.], # one seed, but allowed to drift. Holding both Huber Ms fixed, the objective is flat along characteristic curves in the
                                  # (log_q, log_r) plane, but these are sloped such that varying log_q cuts across more of them than varying log_r; extra log_r
@@ -109,15 +96,7 @@ method_params_and_bounds = {
              'window_size': [41, 81, 161]},
                   {'gamma': (1e-4, 1e1),
              'window_size': (11, 1000, 'odd')})
-} # Methods with nonunique parameter sets are aliased in the dictionary below
-for method in [second_order, fourth_order]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[first_order]
-for method in [mediandiff, gaussiandiff, friedrichsdiff]: # Deprecated methods
-    method_params_and_bounds[method] = method_params_and_bounds[meandiff]
-for method in [acceleration, jerk]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[velocity]
-for method in [constant_acceleration, constant_jerk]: # Deprecated, redundant methods
-    method_params_and_bounds[method] = method_params_and_bounds[constant_velocity]
+}
 
 
 # How to round float coordinates from the minimizer into possibly-discrete values
@@ -174,7 +153,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
 
 def optimize(func, x, dt, dxdt_truth=None, cutoff_freq=None, search_space_updates={}, metric='rmse',
-    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6, tvgamma=None):
+    padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6):
     """Find the optimal hyperparameters for a given differentiation method.
 
     :param function func: differentiation method to optimize parameters for, e.g. kalman_smooth.rtsdiff
@@ -183,8 +162,6 @@ def optimize(func, x, dt, dxdt_truth=None, cutoff_freq=None, search_space_update
     :param np.array[float] dxdt_truth: actual time series of the derivative of x, if known
     :param float cutoff_freq: Only used if :code:`dxdt_truth` is *not* given. The bandlimit of underlying signal, in Hz.
                     Estimate by counting peaks per second, or by reading where the power spectrum falls off. Lower -> smoother
-    :param float tvgamma: (**deprecated**, prefer :code:`cutoff_freq`) the smoothness weight itself, which is harder to
-                    interpret because its meaning depends on the sampling rate as well as the signal
     :param dict search_space_updates: Each method has a default search space of parameter settings, encoded as
                     :code:`{param1:[numerical, values], param2:{categorical, values}, param3:value, ...}` (defined at the top of
                     :code:`pynumdiff/optimize.py`). The Cartesian product of dictionary values serves as initialization points,
@@ -207,11 +184,7 @@ def optimize(func, x, dt, dxdt_truth=None, cutoff_freq=None, search_space_update
     :return: - **opt_params** (dict) -- best parameter settings for the differentation method
              - **opt_value** (float) -- lowest value found for objective function
     """
-    if tvgamma is not None:
-        warn("`tvgamma` will be removed in a future version. Use `cutoff_freq` instead, from which it is calculated.", DeprecationWarning)
-    elif cutoff_freq is not None: # See https://ieeexplore.ieee.org/document/9241009
-        tvgamma = np.exp(-1.6*np.log(cutoff_freq) - 0.71*np.log(dt) - 5.1)
-    elif dxdt_truth is None: raise ValueError("Either `dxdt_truth` or `cutoff_freq` must be given.")
+    if dxdt_truth is None and cutoff_freq is None: raise ValueError("Either `dxdt_truth` or `cutoff_freq` must be given.")
     if metric not in ['rmse','error_correlation']: raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
 
     default_search_space, bounds = method_params_and_bounds[func]
@@ -238,6 +211,7 @@ def optimize(func, x, dt, dxdt_truth=None, cutoff_freq=None, search_space_update
 
     # Bind everything that stays the same across jobs, leaving `minimize`'s `fun` and `x0` args positional so one `partial` can serve them all.
     _minimize = partial(scipy.optimize.minimize, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
+    tvgamma = None if cutoff_freq is None else np.exp(-1.6*np.log(cutoff_freq) - 0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
     obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
         'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 
@@ -271,7 +245,7 @@ def suggest_method(x, dt, dxdt_truth=None, cutoff_freq=None):
     using default search spaces defined in :code:`method_params_and_bounds` at the top of :code:`pynumdiff/optimize.py`.
     This routine will take a few minutes to run.
     
-    Excluded, besides everything deprecated:
+    Excluded:
         - ``iterative_velocity``, because it's mostly academic
         - all ``cvxpy``-based methods if it is not installed
         - first-order ``tvrdiff`` and ``robustdiff`` because they hack the optimization function by directly

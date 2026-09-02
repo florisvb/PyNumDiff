@@ -70,7 +70,7 @@ where `x` is data, `dt` is a step size, and various keyword arguments control th
 | `robustdiff` | ✓ | ✓ | ✓ | ✓ | | ✓ |
 | `lineardiff` | ✓ | | | | | ✓ |
 
-There is also presently a swathe of deprecated methods. Don't use them, but if you do you'll just get warnings telling you how to use whichever new-and-improved version. There are also a few minor methods kept for general interest (`iterative_velocity` and `smooth_acceleration`) but in practice dominated by or redundant with others from the table.
+There are also a couple minor methods kept for general interest (`iterative_velocity` and `smooth_acceleration`) but in practice dominated by or redundant with others from the table.
 
 You can set the hyperparameters manually with a construction like:
 ```python

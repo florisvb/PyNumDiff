@@ -27,7 +27,7 @@ def test_parallel_same_as_serial():
     assert np.allclose([params_serial[k] for k in params_serial], [params_parallel[k] for k in params_serial])
 
 
-def test_targeting_rmse_vs_tvgamma_loss():
+def test_targeting_rmse_vs_bandlimit_loss():
     """Ensure optimization properly targets different metrics"""
     params_rmse, val_rmse = optimize(splinediff, x, dt, dxdt_truth=dxdt_truth, parallel=False) # so coverage picks it up, because multiprocessing coverage is broken
     params_loss, val_loss = optimize(splinediff, x, dt, bandlimit=bandlimit)
@@ -57,7 +57,7 @@ def test_warning_filters_restored():
 
 
 def test_search_space_with_no_dimensions():
-    """Ensure pinning every parameter scores that lone point instead of handing scipy an empty one"""
+    """Ensure pinning every parameter scores that lone point"""
     pinned = {'filter_order':2, 'cutoff_freq':0.1, 'num_iterations':1}
     with warns(UserWarning, match="Nothing to optimize"):
         opt_params, val = optimize(butterdiff, x, dt, dxdt_truth=dxdt_truth, parallel=False, search_space_updates=pinned)

@@ -47,11 +47,9 @@ The code is compatible with >=Python 3.11. Install from PyPI with `pip install p
 ## Usage
 
 For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.io/master/). The basic pattern of all differentiation methods is:
-
 ```python
-somethingdiff(x, dt, **kwargs)
+x_hat, dxdt_hat = somethingdiff(x, dt, **kwargs)
 ```
-
 where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Handing a method data it doesn't support raises a `ValueError` explaining why.
 
 | Method | Multidim | Variable step | Missing data | Outliers | Circular domain | Needs CVXPY |
@@ -72,28 +70,19 @@ where `x` is data, `dt` is a step size, and various keyword arguments control th
 
 There are also a couple minor methods kept for general interest (`iterative_velocity` and `smooth_acceleration`) but in practice dominated by or redundant with others from the table.
 
-You can set the hyperparameters manually with a construction like:
-```python
-from pynumdiff.submodule import method
-
-x_hat, dxdt_hat = method(x, dt, param1=val1, param2=val2, ...)     
-```
-
-Or you can find hyperparameter settings by calling the multi-objective optimization algorithm from the `optimize` module:
+You can set the hyperparameters manually, or you can find hyperparameter settings by calling the multi-objective optimization algorithm from the `optimize` module:
 ```python
 from pynumdiff.optimize import optimize
 
-# estimate cutoff_frequency by (a) counting the number of true peaks per second in the data or (b) look at power spectra and choose cutoff
-tvgamma = np.exp(-1.6*np.log(cutoff_frequency) -0.71*np.log(dt) - 5.1) # see https://ieeexplore.ieee.org/abstract/document/9241009
-
-params, val = optimize(somethingdiff, x, dt, tvgamma=tvgamma, # smoothness hyperparameter which defaults to None if dxdt_truth given
-            dxdt_truth=None, # give ground truth data if available, in which case tvgamma goes unused
+# estimate bandlimit by (a) counting the number of true peaks per second in the data or (b) look at the power spectrum
+params, val = optimize(somethingdiff, x, dt, bandlimit=bandlimit, # smoothness hyper-parameter which defaults to None if dxdt_truth given
+            dxdt_truth=None, # give ground truth data if available, in which case bandlimit goes unused
             search_space_updates={'param1':[vals], 'param2':[vals], ...})
 
 print('Optimal parameters: ', params)
 x_hat, dxdt_hat = somethingdiff(x, dt, **params)
 ```
-`tvgamma` governs the smoothness targeted by the optimization procedure, with larger values yielding smoother derivatives. Its value is dependent upon sampling rate and frequency content of the underlying signal, and it is universal across methods, making it possible to compare results post optimization. A default search space is used to initialize and perform optimiation, defined at the top of `optimize.py`, with overwrites from `search_space_updates`. Be aware the optimization is a fairly heavy process.
+`bandlimit` governs the smoothness targeted by the optimization procedure, with smaller values yielding smoother derivatives. Its value is dependent upon frequency content of the underlying signal, and it is universal across methods, making it possible to compare results post optimization. A default search space is used to initialize and perform optimization, defined at the top of `optimize.py`, with overwrites from `search_space_updates`. Be aware the optimization is a fairly heavy process.
 
 ### Notebook examples
 
@@ -153,7 +142,6 @@ See CITATION.cff file, but here are some possible BibTeX entries for convenience
       url={https://arxiv.org/abs/2512.09090}
     }
 
-
 ### Optimization algorithm:
 
     @article{ParamOptimizationDerivatives2020, 
@@ -172,7 +160,6 @@ Run tests locally by navigating to the repo in a terminal and calling
 ```bash
 > pytest -s
 ```
-
 Add the flag `--plot` to see plots of the methods against test functions. Add the flag `--bounds` to print $\log$ error bounds (useful when changing method behavior).
 
 ## License

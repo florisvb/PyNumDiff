@@ -78,10 +78,10 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
         # Tighter than CLARABEL's defaults, because an l1 penalty's kinks make the argmin jump when a coordinate crosses
         # zero, and a loosely converged iterate turns a last-bit input difference into a visible one. Costs nothing
         # measurable on problems this small, and is what lets rescaled input reproduce rescaled output. See #222
-        prob.solve(solver=cvxpy.CLARABEL, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
-        if A_v.value is None: # solver failure
-            raise np.linalg.LinAlgError(f"CVXPY returned {prob.status} fitting the linear model on a window of {N} "
-                f"samples at order {order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.")
+        try: prob.solve(solver=cvxpy.CLARABEL, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
+        except cvxpy.error.SolverError as e: # Convert so `optimize` scores the point badly and moves on
+            raise np.linalg.LinAlgError(f"CVXPY failed to fit the linear model on a window of {N} samples at order "
+                f"{order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.") from e
 
         # Differentiating the fit gives Xdot = A*X + C*dB, whose bottom row is the derivative of the data itself
         Xdot = A_v.value @ X + (C_v.value[:, :order-1] @ B[1:] if order > 1 else 0)

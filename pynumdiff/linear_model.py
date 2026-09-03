@@ -41,17 +41,18 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
-        x = x - mean # not `-=`; slide_function hands us a view, and in-place would corrupt later windows
+        xc = x - mean # a new name, not an in-place `-=`: slide_function hands us a view into the caller's
+            # array, so centering in place would corrupt the data every later overlapping window still has to fit
 
         # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
         # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the
         # window duration T. Integrating in tau instead holds cond number reasonable. A is fit in units of 1/tau, so the
         # derivative it reconstructs is d/dtau and gets divided by T at the end to return to d/dt.
-        T = len(x)*dt
+        T = len(xc)*dt
         dtau = dt/T
 
         # Generate the matrix of integrals of x, then integrate it once more for the right hand side
-        X = [x]
+        X = [xc]
         for n in range(1, order):
             X.append(utility.integrate_dxdt_hat(X[-1], dtau))
         X = np.vstack(X[::-1])
@@ -94,7 +95,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         dxdt_hat = (a_v.value @ X + (c_v.value[:order-1] @ B[1:] if order > 1 else 0))/T # undo the time scaling
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-        x_hat += utility.estimate_integration_constant(x, x_hat) + mean
+        x_hat += utility.estimate_integration_constant(xc, x_hat) + mean
 
         return x_hat, dxdt_hat
 

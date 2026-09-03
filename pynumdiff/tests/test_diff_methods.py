@@ -334,7 +334,7 @@ multidim_methods_and_params = [ # single parameterizations, chosen to do well on
     (splinediff, {'degree': 9, 's': 0}), # s is now relative to estimated noise, so 0 is how you ask to interpolate
     (robustdiff, {'order':2, 'log_q':9, 'log_r':0}),
     (tvrdiff, {'order': 3, 'gamma': 1e-4}),
-    (lineardiff, {'order': 3, 'gamma': 1e-6, 'window_size': 41, 'step_size': 41})
+    (lineardiff, {'order': 3, 'gamma': 1e-6, 'window_size': 41, 'stride': 41})
 ]
 
 # Similar to the error_bounds table, index by method first. But then we test against only one 2D function, and only

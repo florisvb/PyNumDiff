@@ -31,11 +31,11 @@ method_params_and_bounds = {
     finitediff: ({'num_iterations': [5, 10, 30, 50],
                            'order': {2, 4}}, # order is categorical here, because it can't be 3
                  {'num_iterations': (1, 1000)}),
-    polydiff: ({'step_size': [1, 2, 5],
+    polydiff: ({'stride': [1, 2, 5],
                    'kernel': {'friedrichs', 'gaussian'}, # categorical
                    'degree': [2, 3, 5, 7],
               'window_size': [11, 31, 51, 91, 131]},
-               {'step_size': (1, 100),
+               {'stride': (1, 100),
                    'degree': (1, 8),
               'window_size': (10, 1000, 'odd')}),
     savgoldiff: ({'degree': [2, 3, 5, 7, 10],
@@ -90,7 +90,7 @@ method_params_and_bounds = {
                   'log_r': (-4, 10), # ignore the measurements and trust the model, and give identical answers
             'proc_huberM': (0, 6),
             'meas_huberM': (0, 6)}),
-    lineardiff: ({'kernel': {'gaussian', 'friedrichs'}, # `step_size` barely moves accuracy so now defaults to window_size//5
+    lineardiff: ({'kernel': {'gaussian', 'friedrichs'}, # `stride` barely moves accuracy so now defaults to window_size//5
                    'order': {2, 3}, # order 1 never won across 12 sim/seed sweeps
                    'gamma': [1e-2, 1e-1, 1], # in units of the data's own scale since #222
              'window_size': [41, 81, 161]}, # 2*order unknowns fit per row of X, so windows too small tend to be poorly determined

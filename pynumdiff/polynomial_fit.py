@@ -56,7 +56,7 @@ def splinediff(x, dt_or_t, degree=3, s=1, num_iterations=1, axis=0):
     return x_hat, dxdt_hat
 
 
-def polydiff(x, dt_or_t, degree, window_size=None, step_size=1, kernel='friedrichs', axis=0):
+def polydiff(x, dt_or_t, degree, window_size=None, stride=1, kernel='friedrichs', axis=0):
     """Fit polynomials to the data, and differentiate the polynomials.
 
     :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded from
@@ -65,7 +65,7 @@ def polydiff(x, dt_or_t, degree, window_size=None, step_size=1, kernel='friedric
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int degree: degree of the polynomial
     :param int window_size: size of the sliding window, if not given no sliding
-    :param int step_size: step size for sliding
+    :param int stride: step size for sliding
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
     :param int axis: data dimension along which differentiation is performed
 
@@ -83,9 +83,9 @@ def polydiff(x, dt_or_t, degree, window_size=None, step_size=1, kernel='friedric
         if window_size % 2 == 0:
             window_size += 1
             warn("Kernel window size should be odd. Added 1 to length.")
-        if step_size > window_size:
-            step_size = window_size
-            warn("`step_size` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
+        if stride > window_size:
+            stride = window_size
+            warn("`stride` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
         kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
     def _polydiff(x, dt_or_t, degree, weights=None):
@@ -108,7 +108,7 @@ def polydiff(x, dt_or_t, degree, window_size=None, step_size=1, kernel='friedric
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
         x_hat[s], dxdt_hat[s] = _polydiff(x[s], dt_or_t, degree) if not window_size else \
-            utility.slide_function(_polydiff, x[s], dt_or_t, kernel, degree, stride=step_size, pass_weights=True)
+            utility.slide_function(_polydiff, x[s], dt_or_t, kernel, degree, stride=stride, pass_weights=True)
     
     return x_hat, dxdt_hat
 

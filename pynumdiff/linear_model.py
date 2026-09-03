@@ -12,7 +12,7 @@ except ImportError: pass
 
 _PROBLEM_CACHE = {} # (order, window length) -> a parametrized CVXPY problem, so identically shaped windows reuse it
 
-def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='friedrichs', axis=0):
+def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='friedrichs', axis=0):
     """Fit a linear dynamical system to windows of the data, then differentiate that model.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
@@ -21,7 +21,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units. See #222
     :param int window_size: size of the sliding window, if not given no sliding
-    :param int step_size: step size for sliding. Defaults to :code:`window_size/5`, because what matters is overlap
+    :param int stride: step size for sliding. Defaults to :code:`window_size/5`, because what matters is overlap
             ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer stride while
             running several times faster, and strides past about half the window degrade badly
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
@@ -32,6 +32,11 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
     """
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
+    if window_size:
+        if window_size % 2 == 0: window_size += 1; warn("Kernel window size should be odd. Added 1 to length.")
+        if stride is None: stride = max(1, window_size//5) # Keeps stride out of the optimizer's search space.
+        if stride > window_size: stride = window_size; warn("`stride` wider than `window_size`, reduced to match")
+        kern = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
 
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
@@ -88,24 +93,12 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
         dxdt_hat = np.ravel(Xdot[-1, :])/T # undo the time scaling
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-        x_hat = x_hat + utility.estimate_integration_constant(x+mean, x_hat)
+        x_hat += utility.estimate_integration_constant(x+mean, x_hat)
 
         return x_hat, dxdt_hat
 
-    if window_size:
-        if window_size % 2 == 0:
-            window_size += 1
-            warn("Kernel window size should be odd. Added 1 to length.")
-        if step_size is None: step_size = max(1, window_size//5) # a ratio, so cost tracks window width instead of
-            # ballooning when the search picks a wide window. Keeps step_size out of the optimizer's search space.
-        if step_size > window_size:
-            step_size = window_size
-            warn("`step_size` wider than `window_size` would skip samples between windows, reduced to match `window_size`")
-        kern = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
-
-    x_work = np.moveaxis(x, axis, 0) # differentiation axis to front
-    shape = x_work.shape             # remember it to restore the input's dimensionality
-    x_flat = x_work.reshape(shape[0], -1) # rest of the dims flattened into columns
+    x_work = np.moveaxis(x, axis, 0); s = x_work.shape
+    x_flat = x_work.reshape(s[0], -1) # big 2D matrix of all vecs we need to differentiate
     x_hat = np.empty(x_flat.shape, dtype=float); dxdt_hat = np.empty(x_flat.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for i in range(x_flat.shape[1]):
@@ -119,8 +112,8 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
         if not window_size:
             xh, dh = _lineardiff(v, dt, order, gamma)
         else: # Slide over overlapping windows in each direction, then crossfade the two passes to avoid bias
-            forward, _ = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=step_size)
-            backward, _ = utility.slide_function(_lineardiff, v[::-1], dt, kern, order, gamma, stride=step_size)
+            forward, _ = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
+            backward, _ = utility.slide_function(_lineardiff, v[::-1], dt, kern, order, gamma, stride=stride)
 
             w = np.arange(1, len(forward)+1)[::-1]
             w = np.pad(w, [0, len(v)-len(w)], mode='constant')
@@ -132,4 +125,4 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
 
         x_hat[:, i] = xh*scale; dxdt_hat[:, i] = dh*scale
 
-    return np.moveaxis(x_hat.reshape(shape), 0, axis), np.moveaxis(dxdt_hat.reshape(shape), 0, axis)
+    return np.moveaxis(x_hat.reshape(s), 0, axis), np.moveaxis(dxdt_hat.reshape(s), 0, axis)

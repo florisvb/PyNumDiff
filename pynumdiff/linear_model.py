@@ -112,15 +112,13 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
 
         if not window_size:
             xh, dh = _lineardiff(v, dt, order, gamma)
-        else: # Average the per-window derivatives, which is the quantity the fit actually produces, then integrate
-            # once. The old path averaged per-window x_hat from a second pass over reversed data, crossfaded the two on
-            # a linear ramp, and recovered the derivative with finitediff. The two passes measured indistinguishable
-            # (RMSE 0.2038 vs 0.2038 over 24 signals) because slide_function's centered windows average away the
-            # left-anchoring that made a window directional, and finitediff of a cumulative_trapezoid is exactly a
-            # [1,2,1]/4 binomial smoother, so that round trip was an untunable low-pass wearing a derivative's clothes.
-            _, dh = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
-            xh = utility.integrate_dxdt_hat(dh, dt)
-            xh += utility.estimate_integration_constant(v, xh)
+        else: # Take both estimates the fit produces, kernel-averaged over windows, the way `polydiff` does. The old path
+            # instead ran a second pass over reversed data, crossfaded the two x_hats on a linear ramp, and recovered the
+            # derivative with finitediff. The two passes measured indistinguishable (RMSE 0.2038 vs 0.2038 over 24 signals)
+            # because slide_function's centered windows average away the left-anchoring that makes a window directional.
+            # Worse, finitediff of a cumulative_trapezoid is exactly a [1,2,1]/4 binomial smoother, whose gain cos^2(pi f dt)
+            # is ~1 at dt=0.005 but 0.65 at dt=0.04, so the derivative was silently attenuated by a dt-dependent amount. See #223
+            xh, dh = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
 
         x_hat[:, i] = xh*scale; dxdt_hat[:, i] = dh*scale
 

@@ -80,10 +80,9 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         prob, A_v, C_v, X_p, Xdot_p, g_p = _PROBLEM_CACHE[(order, N)]
         X_p.value = integral_X; Xdot_p.value = X; g_p.value = gamma
 
-        # Tighter than CLARABEL's defaults, because an l1 penalty's kinks make the argmin jump when a coordinate crosses
-        # zero, and a loosely converged iterate turns a last-bit input difference into a visible one. Costs nothing
-        # measurable on problems this small, and is what lets rescaled input reproduce rescaled output. See #222
-        try: prob.solve(solver=cvxpy.CLARABEL, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
+        # Tighten CLARABEL's stop conditions, because its defaults of 1e-8 can cause failures against the equivariance
+        # test (#222). Also no warm start, for reproducibility.
+        try: prob.solve(solver=cvxpy.CLARABEL, warm_start=False, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
         except cvxpy.error.SolverError as e: # Convert so `optimize` scores the point badly and moves on
             raise np.linalg.LinAlgError(f"CVXPY failed to fit the linear model on a window of {N} samples at order "
                 f"{order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.") from e

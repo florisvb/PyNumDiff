@@ -19,7 +19,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     :param float dt: step size
     :param int>0 order: number of states in the linear system, equivalently how many times :code:`x` is integrated
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
-            thing whatever the units. See #222
+            thing whatever the units.
     :param int window_size: size of the sliding window, if not given no sliding
     :param int stride: step size for sliding. Defaults to :code:`window_size/5`, because what matters is overlap
             ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer stride while
@@ -42,7 +42,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
-        x = x - mean
+        x -= mean
 
         # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
         # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the

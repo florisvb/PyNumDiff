@@ -62,7 +62,7 @@ method_params_and_bounds = {
                  # `level` is left at its adaptive default, min(dwt_max_level(N, wavelet), 5), which tracks both the signal and filter lengths
                 {'threshold': (0.1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
-               'order': {1, 2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
+               'order': {2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
               'huberM': [2., 6]}, # the scale of sigma is mad(x), which is bigger than mad(y-x) residuals, so outliers likely come at lower M values
               {'gamma': (1e-4, 1e7),
               'huberM': (2, 6)}), # huberM too low seeks sparse solutions, which hack the ground-truth-less loss function
@@ -79,7 +79,7 @@ method_params_and_bounds = {
                          'order': {1, 2, 3}, # for this few options, the optimization works better if this is categorical
                   'log_qr_ratio': [float(k) for k in range(-9, 10, 2)] + [12, 16]},
                  {'log_qr_ratio': (-10, 20)}), # qr_ratio is usually >>1
-    robustdiff: ({'order': {1, 2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
+    robustdiff: ({'order': {2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
                   'log_q': [1., 4, 7, 10, 13], # decimal after first entry ensure this is treated as float type
                   'log_r': [0.], # one seed, but allowed to drift. Holding both Huber Ms fixed, the objective is flat along characteristic curves in the
                                  # (log_q, log_r) plane, but these are sloped such that varying log_q cuts across more of them than varying log_r; extra log_r
@@ -211,7 +211,7 @@ def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates=
 
     # Bind everything that stays the same across jobs, leaving `minimize`'s `fun` and `x0` args positional so one `partial` can serve them all.
     _minimize = partial(scipy.optimize.minimize, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
-    tvgamma = None if bandlimit is None else np.exp(-1.6*np.log(bandlimit) - 0.71*np.log(dt) - 5.1) # See https://ieeexplore.ieee.org/document/9241009
+    tvgamma = None if bandlimit is None else bandlimit**-1.6 * dt**-0.71 * np.exp(-5.1) # See https://ieeexplore.ieee.org/document/9241009
     obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
         'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 

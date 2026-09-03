@@ -92,9 +92,9 @@ method_params_and_bounds = {
             'meas_huberM': (0, 6)}),
     lineardiff: ({'kernel': {'gaussian', 'friedrichs'}, # `stride` barely moves accuracy so now defaults to window_size//5
                    'order': {2, 3}, # order 1 never won across 12 sim/seed sweeps, and 4 tends to overfit the proxy cost
-                   'gamma': [1e-2, 1e-1, 1], # in units of the data's own scale since #222
+                   'gamma': [1e-4, 1e-2, 1e-1], # in units of the data's own scale since #222
              'window_size': [41, 81, 161]}, # 2*order unknowns fit per row of X, so windows too small tend to be poorly determined
-                  {'gamma': (1e-4, 1e1),
+                  {'gamma': (1e-6, 1e1),
              'window_size': (11, 1000, 'odd')})
 }
 

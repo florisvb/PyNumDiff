@@ -3,7 +3,6 @@ from warnings import warn
 import math, scipy
 import numpy as np
 
-from pynumdiff.finite_difference import finitediff
 from pynumdiff.utils import utility
 
 try: import cvxpy
@@ -42,17 +41,17 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
-        x = x - mean
+        xc = x - mean # not in-place `-=`: slide_function operates on views, so don't modify underlying array
 
         # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
         # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the
         # window duration T. Integrating in tau instead holds cond number reasonable. A is fit in units of 1/tau, so the
         # derivative it reconstructs is d/dtau and gets divided by T at the end to return to d/dt.
-        T = len(x)*dt
+        T = len(xc)*dt
         dtau = dt/T
 
         # Generate the matrix of integrals of x, then integrate it once more for the right hand side
-        X = [x]
+        X = [xc]
         for n in range(1, order):
             X.append(utility.integrate_dxdt_hat(X[-1], dtau))
         X = np.vstack(X[::-1])
@@ -64,21 +63,25 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         tau = np.arange(N)/N # dtau is 1/N, so tau spans [0, 1) whatever the window's width in real time
         B = np.vstack([tau**(order-n-1)/math.factorial(order-n-1) for n in range(order)])
 
-        # Solve X = A*integral_X + C*B for A and C. Canonicalizing costs ~85% of a solve here and depends only on the
-        # shapes, so the problem is built once per (order, window length) and re-solved with new data, worth about 7x.
-        # gamma is a Parameter too, which keeps a cached problem valid across a whole `optimize` sweep rather than only
-        # within one call. All of which requires the problem to be DPP.
+        # Only the bottom row of X = A*integral_X + C*B carries dynamics. integral_X[i] is bitwise identical to X[i-1],
+        # both being a cumulative_trapezoid of the row beneath, so the upper rows are tautologies that a shift matrix
+        # solves at exactly zero residual with zero constants. The objective is separable by row and the derivative
+        # below reads only the bottom row, so fitting the full A and C solves for 2*order^2 unknowns to use 2*order of
+        # them. Fit that one row directly instead: x = a*integral_X + c*B. See #223
+        # Canonicalizing costs ~85% of a solve here and depends only on the shapes, so the problem is built once per
+        # (order, window length) and re-solved with new data. gamma is a Parameter too, which keeps a cached problem
+        # valid across a whole `optimize` sweep rather than only within one call. All of which requires DPP.
         if (order, N) not in _PROBLEM_CACHE:
             if len(_PROBLEM_CACHE) >= 64: _PROBLEM_CACHE.clear() # bound what an optimizer's window sweep accumulates
-            A_v = cvxpy.Variable((order, order)); C_v = cvxpy.Variable((order, order))
-            X_p = cvxpy.Parameter((order, N)); Xdot_p = cvxpy.Parameter((order, N)); g_p = cvxpy.Parameter(nonneg=True)
+            a_v = cvxpy.Variable(order); c_v = cvxpy.Variable(order)
+            iX_p = cvxpy.Parameter((order, N)); x_p = cvxpy.Parameter(N); g_p = cvxpy.Parameter(nonneg=True)
             _PROBLEM_CACHE[(order, N)] = (cvxpy.Problem(cvxpy.Minimize(
-                cvxpy.sum_squares(Xdot_p - (A_v @ X_p + cvxpy.vstack([C_v[i, :] @ B for i in range(order)]))) +
-                g_p*cvxpy.sum(cvxpy.abs(C_v)) + 1e-6*cvxpy.sum(cvxpy.abs(A_v)))), A_v, C_v, X_p, Xdot_p, g_p)
-                # Smooth x has near-polynomial integrals, and B is polynomials, so A and C become interchangeable. 1e-6 on A's
+                cvxpy.sum_squares(x_p - (a_v @ iX_p + c_v @ B)) +
+                g_p*cvxpy.sum(cvxpy.abs(c_v)) + 1e-6*cvxpy.sum(cvxpy.abs(a_v)))), a_v, c_v, iX_p, x_p, g_p)
+                # Smooth x has near-polynomial integrals, and B is polynomials, so a and c become interchangeable. 1e-6 on a's
                 # norm enforces uniqueness while not significantly shrinking, which costs accuracy. See #223
-        prob, A_v, C_v, X_p, Xdot_p, g_p = _PROBLEM_CACHE[(order, N)]
-        X_p.value = integral_X; Xdot_p.value = X; g_p.value = gamma
+        prob, a_v, c_v, iX_p, x_p, g_p = _PROBLEM_CACHE[(order, N)]
+        iX_p.value = integral_X; x_p.value = X[-1]; g_p.value = gamma
 
         # Tighten CLARABEL's stop conditions, because its defaults of 1e-8 can cause failures against the equivariance
         # test (#222). Also no warm start, for reproducibility.
@@ -87,12 +90,11 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
             raise np.linalg.LinAlgError(f"CVXPY failed to fit the linear model on a window of {N} samples at order "
                 f"{order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.") from e
 
-        # Differentiating the fit gives Xdot = A*X + C*dB, whose bottom row is the derivative of the data itself
-        Xdot = A_v.value @ X + (C_v.value[:, :order-1] @ B[1:] if order > 1 else 0)
-        dxdt_hat = np.ravel(Xdot[-1, :])/T # undo the time scaling
+        # Differentiating the fit gives the derivative of the data itself, xdot = a*X + c*dB
+        dxdt_hat = (a_v.value @ X + (c_v.value[:order-1] @ B[1:] if order > 1 else 0))/T # undo the time scaling
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-        x_hat += utility.estimate_integration_constant(x+mean, x_hat)
+        x_hat += utility.estimate_integration_constant(xc, x_hat) + mean
 
         return x_hat, dxdt_hat
 
@@ -110,17 +112,13 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
 
         if not window_size:
             xh, dh = _lineardiff(v, dt, order, gamma)
-        else: # Slide over overlapping windows in each direction, then crossfade the two passes to avoid bias
-            forward, _ = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
-            backward, _ = utility.slide_function(_lineardiff, v[::-1], dt, kern, order, gamma, stride=stride)
-
-            w = np.arange(1, len(forward)+1)[::-1]
-            w = np.pad(w, [0, len(v)-len(w)], mode='constant')
-            norm = np.sum(np.vstack((w, w[::-1])), axis=0)
-
-            forward = np.pad(forward, [0, len(v)-len(forward)], mode='constant')
-            backward = np.pad(backward[::-1], [len(v)-len(backward), 0], mode='constant')
-            xh, dh = finitediff(forward*w/norm + backward*w[::-1]/norm, dt) # defaults to second order
+        else: # Take both estimates the fit produces, kernel-averaged over windows, the way `polydiff` does. The old path
+            # instead ran a second pass over reversed data, crossfaded the two x_hats on a linear ramp, and recovered the
+            # derivative with finitediff. The two passes measured indistinguishable (RMSE 0.2038 vs 0.2038 over 24 signals)
+            # because slide_function's centered windows average away the left-anchoring that makes a window directional.
+            # Worse, finitediff of a cumulative_trapezoid is exactly a [1,2,1]/4 binomial smoother, whose gain cos^2(pi f dt)
+            # is ~1 at dt=0.005 but 0.65 at dt=0.04, so the derivative was silently attenuated by a dt-dependent amount. See #223
+            xh, dh = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
 
         x_hat[:, i] = xh*scale; dxdt_hat[:, i] = dh*scale
 

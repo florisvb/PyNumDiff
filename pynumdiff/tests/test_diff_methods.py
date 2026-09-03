@@ -68,7 +68,7 @@ diff_methods_and_params = [
     (tvrdiff_3, {'order':3, 'gamma':10}),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}),
     (smooth_acceleration, {'gamma':2, 'window_size':5}),
-    (lineardiff, {'order':3, 'gamma':0.01, 'window_size':11})
+    (lineardiff, {'order':3, 'gamma':0.003, 'window_size':11})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the closeness to the
@@ -241,11 +241,11 @@ error_bounds = {
                         [(-11, -11), (1, 1), (0, 0), (1, 1)],
                         [(1, 1), (3, 2), (0, 0), (2, 2)]],
     lineardiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                 [(-1, -2), (0, -1), (0, -1), (1, 0)],
-                 [(-1, -1), (0, 0), (0, -1), (1, 1)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 0)],
+                 [(-1, -1), (1, 1), (0, -1), (1, 1)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
-                 [(0, -1), (3, 3), (0, 0), (3, 3)]]
+                 [(0, -1), (2, 2), (0, -1), (2, 2)]]
 }
 
 

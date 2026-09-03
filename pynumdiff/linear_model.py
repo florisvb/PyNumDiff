@@ -41,8 +41,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
-        xc = x - mean # a new name, not an in-place `-=`: slide_function hands us a view into the caller's
-            # array, so centering in place would corrupt the data every later overlapping window still has to fit
+        xc = x - mean # not in-place `-=`: slide_function operates on views, so don't modify underlying array
 
         # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
         # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the

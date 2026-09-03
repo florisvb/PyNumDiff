@@ -12,7 +12,7 @@ except ImportError: pass
 
 _PROBLEM_CACHE = {} # (order, window length) -> a parametrized CVXPY problem, so identically shaped windows reuse it
 
-def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='friedrichs', solver='CLARABEL', axis=0):
+def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='friedrichs', axis=0):
     """Fit a linear dynamical system to windows of the data, then differentiate that model.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
@@ -25,8 +25,6 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
             ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer stride while
             running several times faster, and strides past about half the window degrade badly
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :param str solver: CVXPY solver to use, one of :code:`cvxpy.installed_solvers()`. CLARABEL converges reliably,
-            but OSQP stalls on the badly-scaled subproblems short windows produce, returning half-converged iterates
     :param int axis: axis along which to differentiate (default 0)
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
@@ -36,16 +34,14 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The integrals of x are accumulated at a constant step.")
 
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
-    def _lineardiff(x, dt, order, gamma, solver=None): # just to read a shape, so it warns when that memory holds garbage
+    def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         mean = np.mean(x)
         x = x - mean
 
-        # Work in nondimensional time tau = t/T, so the window spans [0, 1] no matter how wide it is. Each row of the
+        # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
         # matrix below is one more integration than the row beneath it, so in raw time the rows differ by powers of the
-        # window duration T: at dt=0.01 and window_size=11 that leaves cond(integral_X) above 1e3 and entries around
-        # 1e-5, small enough that a solver's absolute tolerances stop meaning anything. Integrating in tau instead
-        # holds every row at O(1) and cond near 30 regardless of window_size. A comes back in units of 1/tau, so the
+        # window duration T. Integrating in tau instead holds cond number reasonable. A is fit in units of 1/tau, so the
         # derivative it reconstructs is d/dtau and gets divided by T at the end to return to d/dt.
         T = len(x)*dt
         dtau = dt/T
@@ -73,28 +69,22 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
             X_p = cvxpy.Parameter((order, N)); Xdot_p = cvxpy.Parameter((order, N)); g_p = cvxpy.Parameter(nonneg=True)
             _PROBLEM_CACHE[(order, N)] = (cvxpy.Problem(cvxpy.Minimize(
                 cvxpy.sum_squares(Xdot_p - (A_v @ X_p + cvxpy.vstack([C_v[i, :] @ B for i in range(order)]))) +
-                g_p*cvxpy.sum(cvxpy.abs(C_v)) + 1e-6*cvxpy.sum(cvxpy.abs(A_v)))), # gammaA is small and fixed
-                A_v, C_v, X_p, Xdot_p, g_p)                                       # gammaC is the knob
+                g_p*cvxpy.sum(cvxpy.abs(C_v)) + 1e-6*cvxpy.sum(cvxpy.abs(A_v)))), A_v, C_v, X_p, Xdot_p, g_p)
+                # Smooth x has near-polynomial integrals, and B is polynomials, so A and C become interchangeable. 1e-6 on A's
+                # norm enforces uniqueness while not significantly shrinking, which costs accuracy. See #223
         prob, A_v, C_v, X_p, Xdot_p, g_p = _PROBLEM_CACHE[(order, N)]
         X_p.value = integral_X; Xdot_p.value = X; g_p.value = gamma
 
         # Tighter than CLARABEL's defaults, because an l1 penalty's kinks make the argmin jump when a coordinate crosses
         # zero, and a loosely converged iterate turns a last-bit input difference into a visible one. Costs nothing
         # measurable on problems this small, and is what lets rescaled input reproduce rescaled output. See #222
-        A = C = None
-        try:
-            prob.solve(solver=solver, **({'tol_gap_abs':1e-12, 'tol_gap_rel':1e-12, 'tol_feas':1e-12}
-                                          if solver == 'CLARABEL' else {}))
-            A, C = A_v.value, C_v.value
-        except cvxpy.error.SolverError: pass
-        if A is None or C is None: # The solve failed, which happens on a few percent of parameter combinations and would
-            # otherwise abort a whole optimize() sweep. Fall back to the unregularized fit, the gamma -> 0 limit of the
-            # same model: every row of X is separately linear in that row of A and C, so one lstsq recovers both.
-            coeffs = np.linalg.lstsq(np.vstack((integral_X, B)).T, X.T, rcond=None)[0]
-            A, C = coeffs[:order].T, coeffs[order:].T
+        prob.solve(solver=cvxpy.CLARABEL, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
+        if A_v.value is None: # solver failure
+            raise np.linalg.LinAlgError(f"CVXPY returned {prob.status} fitting the linear model on a window of {N} "
+                f"samples at order {order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.")
 
         # Differentiating the fit gives Xdot = A*X + C*dB, whose bottom row is the derivative of the data itself
-        Xdot = A@X + (C[:, :order-1] @ B[1:] if order > 1 else 0)
+        Xdot = A_v.value @ X + (C_v.value[:, :order-1] @ B[1:] if order > 1 else 0)
         dxdt_hat = np.ravel(Xdot[-1, :])/T # undo the time scaling
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
@@ -127,11 +117,10 @@ def lineardiff(x, dt, order, gamma, window_size=None, step_size=None, kernel='fr
         v = x_flat[:, i]/scale
 
         if not window_size:
-            xh, dh = _lineardiff(v, dt, order, gamma, solver)
-        else: # Slide over overlapping windows in each direction, then crossfade the two passes, weighting each by how
-            # far into its own pass a sample sits, so neither dominates near an edge.
-            forward, _ = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=step_size, solver=solver)
-            backward, _ = utility.slide_function(_lineardiff, v[::-1], dt, kern, order, gamma, stride=step_size, solver=solver)
+            xh, dh = _lineardiff(v, dt, order, gamma)
+        else: # Slide over overlapping windows in each direction, then crossfade the two passes to avoid bias
+            forward, _ = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=step_size)
+            backward, _ = utility.slide_function(_lineardiff, v[::-1], dt, kern, order, gamma, stride=step_size)
 
             w = np.arange(1, len(forward)+1)[::-1]
             w = np.pad(w, [0, len(v)-len(w)], mode='constant')

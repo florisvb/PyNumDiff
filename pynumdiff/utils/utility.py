@@ -4,7 +4,7 @@ import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
 from scipy.special import huber
-from scipy.stats import median_abs_deviation, norm
+from scipy.stats import norm
 from scipy.ndimage import convolve1d
 
 
@@ -34,8 +34,10 @@ def robust_data_scale(x, axis=0, center=True, keepdims=False):
 
     :return: **scale** (float or np.array[float]) -- robust scatter, in the units of :code:`x`
     """
-    return median_abs_deviation(x, axis=axis, scale='normal', nan_policy='omit', keepdims=keepdims,
-        center=np.median if center else lambda a, axis: 0) # scale='normal' divides by Phi^-1(3/4) = 0.6745
+    # These 3 lines are `scipy.stats.median_abs_deviation(x, scale='normal', nan_policy='omit')`, but faster on inputs < ~10^5 long
+    med = np.median if not np.any(np.isnan(x)) else np.nanmedian # pay for skipping NaNs only when there are any to skip
+    c = med(x, axis=axis, keepdims=True) if center else 0 # center=False is the uncentered form waveletdiff wants
+    return med(np.abs(x - c), axis=axis, keepdims=keepdims)/0.6744897501960817 # divide by Phi^-1(3/4), i.e. scale='normal'
 
 def robust_noise_scale(x, axis=0):
     """Estimate the standard deviation of the *noise* in :code:`x`, as opposed to the scale of :code:`x` itself.
@@ -81,23 +83,24 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
     :return: **integration constant** (float or np.array[float]) -- initial condition(s) to best align
              :math:`\\mathbf{\\hat{x}}` with :math:`\\mathbf{x}`
     """
-    s = list(x_hat.shape); s[axis] = 1; s = tuple(s) # proper shape for multidimensional integration constants
     if M == float('inf'): # large M looks like l2 loss
-        return np.mean(x - x_hat, axis=axis).reshape(s) # Solves the l2 distance minimization, argmin_c ||x_hat + c - x||_2^2
+        return np.mean(x - x_hat, axis=axis, keepdims=True) # Solves the l2 minimization, argmin_c ||x_hat + c - x||_2^2
     elif M < 1e-3: # small M looks like l1 loss, and Huber gets too flat to work well
-        return np.median(x - x_hat, axis=axis).reshape(s) # Solves the l1 distance minimization, argmin_c ||x_hat + c - x||_1
-    else:
-        sigma = robust_data_scale(x - x_hat, axis=axis, keepdims=True) # keep the axis so it broadcasts against the data
+        return np.median(x - x_hat, axis=axis, keepdims=True) # Solves the l1 minimization, argmin_c ||x_hat + c - x||_1
+    else: # Huber case, no closed form, so use optimizer
+        r = np.moveaxis(x - x_hat, axis, 0); s = r.shape; r = r.reshape(s[0], -1) # residual vectors, unrolled into a flat matrix
+        sigma = robust_data_scale(r, axis=0, keepdims=True) # keep the axis so it broadcasts against the residuals
         sigma[sigma == 0] = 1 # avert divide-by-zero below; a σ == 0 entry means the corresponding vector in x - x_hat == some C everywhere
             # -> cost fn has argmin of exactly C in the corresponding entry of the c vector, regardless of scale -> choose scale 1 so
             # initial guess using median residuals captures these exactly, because optimization might otherwise ignore small offsets
-        z = (x_hat - x)/sigma # compute once to avoid rework during optimization. The residual is normalized rather than scaling M so the cumulative
+        z = r/sigma # compute once to avoid rework during optimization. The residual is normalized rather than scaling M so the cumulative
             # (sum below) square (from inside huber) doesn't overflow. huber(M*σ, r) \propto huber(M, r/σ), so the argmin is unchanged. See #217
-        # Solve for the constant w = c/σ in units of σ rather than data units to counteract normalization, which makes cost 1/σ times as
-        # sensitive to c, since SLSQP's fixed step and tolerance don't natively adapt to data scale. See #220
-        return sigma*minimize(lambda w: np.sum(huber(M, z + w.reshape(s))), # fn to minimize in 1st argument.
-            np.ravel(np.median(x - x_hat, axis=axis, keepdims=True)/sigma), # seed with robust l1 solution, exactly the Cs when residuals are constant
-            method='SLSQP').x.reshape(s) # vector result must be reshaped
+        # Solve for the constant w = c/σ in units of σ rather than data units to counteract normalization, which has made cost only 1/σ times
+        # as sensitive to c. (SLSQP's fixed step and tolerance don't natively adapt to data scale.)
+        c = sigma*minimize(lambda w: np.sum(huber(M, w - z)), # (x_hat + c - x)/σ = w - z
+            np.median(z, axis=0), # seed with the l1 solution, exactly the Cs when residuals are constant
+            method='SLSQP', jac=lambda w: np.sum(np.clip(w - z, -M, M), axis=0)).x # d/dw sum(huber) is sum(clip(., -M, M)) per index; provide for speed
+        return np.moveaxis(c.reshape((1,) + s[1:]), 0, axis) # re-reorder axes, length 1 along the integration axis
 
 
 def mean_kernel(window_size):
@@ -242,5 +245,3 @@ def peakdet(x, delta, t=None):
                 lookformax = True # now searching for a max
 
     return np.array(maxtab), np.array(mintab)
-
-

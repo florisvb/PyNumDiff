@@ -311,11 +311,9 @@ def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
                 else huber_const(meas_huberM)*cvxpy.sum(0.5*cvxpy.huber(meas_resids, meas_huberM))
     # CVXPY quirks: norm(, 1) != sum(abs()) for matrices. And huber() is defined as twice the magnitude of the canonical
     # function https://www.cvxpy.org/api_reference/cvxpy.atoms.elementwise.html#huber, so correct with a factor of 0.5.
-
     problem = cvxpy.Problem(cvxpy.Minimize(objective))
-    try: problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND) # huber isn't in the C++ canonicalization backend, so fell back to SCIPY with a warning
-    except cvxpy.error.SolverError: pass # Could try another solver here, like SCS, but slows things down
+    problem.solve(solver=cvxpy.CLARABEL, canon_backend=cvxpy.SCIPY_CANON_BACKEND) # huber isn't in the C++ canonicalization backend, so fell back to SCIPY with a warning
 
-    if x_states.value is None: raise np.linalg.LinAlgError("Convex smoothing failed to solve because process covariance "
-            "too ill-conditioned. Try larger `proc_huberM` or lower `order`.")
+    if x_states.value is None: raise np.linalg.LinAlgError(f"Convex smoothing returned {problem.status}, most likely "
+            "because the process covariance is too ill-conditioned. Try larger `proc_huberM` or lower `order`.")
     return x_states.value.T

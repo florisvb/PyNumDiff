@@ -40,7 +40,7 @@ def iterative_velocity(x, dt, num_iterations, gamma, cg_maxiter=1000, scale='sma
 
 @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
 #  memory just to read off a shape, so they warn when it holds garbage. This wall can come down if they ever fix it upstream.
-def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
+def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
     """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
     total variation regularized derivative. Other convex-solver-based methods in this module call this function.
 
@@ -51,8 +51,6 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     :param float huberM: Huber loss parameter, in units of scaled median absolute deviation of input data.
                     :math:`M = \\infty` reduces to :math:`\\ell_2` loss squared on first, fidelity cost term, and
                     :math:`M = 0` reduces to :math:`\\ell_1` loss, which seeks sparse residuals.
-    :param str solver: Solver to use. Solver options include: 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS'.
-                    If not given, fall back to CVXPY's default.
     :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
@@ -92,7 +90,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
                 else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - hx, huberM)) # data is already scaled, so M rather than M*sigma
         # Set up and solve the optimization problem
         prob = cvxpy.Problem(cvxpy.Minimize(fidelity_cost + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
-        prob.solve(solver=solver)
+        prob.solve() # let CVXPY choose the solver: it picks OSQP for the QP forms (l2 and huber) and CLARABEL for the l1 one
 
         # Recursively integrate the final derivative values to get back to the function and derivative values
         v = deriv_values.value
@@ -112,7 +110,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), solver=None, axis=0):
     return x_hat, dxdt_hat
 
 
-def smooth_acceleration(x, dt, gamma, window_size, solver=None):
+def smooth_acceleration(x, dt, gamma, window_size):
     """Use convex optimization (cvxpy) to solve for the acceleration total variation regularized derivative,
     and then apply a convolutional gaussian smoother to the resulting derivative to smooth out the peaks.
     The end result is similar to the jerk method, but can be more time-efficient.
@@ -121,13 +119,11 @@ def smooth_acceleration(x, dt, gamma, window_size, solver=None):
     :param float dt: step size
     :param float gamma: the regularization parameter
     :param int window_size: window size for gaussian kernel
-    :param str solver: the solver CVXPY should use, 'MOSEK', 'CVXOPT', 'CLARABEL', 'ECOS', etc.
-                In testing, 'MOSEK' was the most robust. If not given, fall back to CVXPY's default.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    _, dxdt_hat = tvrdiff(x, dt, 2, gamma, solver=solver)
+    _, dxdt_hat = tvrdiff(x, dt, 2, gamma)
 
     kernel = utility.gaussian_kernel(window_size)
     dxdt_hat = utility.convolutional_smoother(dxdt_hat, kernel, 1)

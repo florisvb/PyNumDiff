@@ -23,7 +23,8 @@ def spline_irreg_step(*args, **kwargs): return splinediff(*args, **kwargs)
 def robust_irreg_step(*args, **kwargs): return robustdiff(*args, **kwargs)
 def polydiff_irreg_step(*args, **kwargs): return polydiff(*args, **kwargs)
 def rtsdiff_irreg_step(*args, **kwargs): return rtsdiff(*args, **kwargs)
-irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff_irreg_step, robust_irreg_step] # methods to test with irregular time steps
+def lineardiff_irreg_step(*args, **kwargs): return lineardiff(*args, **kwargs)
+irreg_list = [spline_irreg_step, polydiff_irreg_step, rbfdiff, rtsdiff_irreg_step, robust_irreg_step, lineardiff_irreg_step] # methods to test with irregular time steps
 
 dt = 0.1
 t = np.linspace(0, 3, 31) # sample locations, including the endpoint
@@ -68,7 +69,8 @@ diff_methods_and_params = [
     (tvrdiff_3, {'order':3, 'gamma':10}),
     (iterative_velocity, {'num_iterations':5, 'gamma':0.05}),
     (smooth_acceleration, {'gamma':2, 'window_size':5}),
-    (lineardiff, {'order':3, 'gamma':0.003, 'window_size':11})
+    (lineardiff, {'order':3, 'gamma':0.003, 'window_size':11}),
+    (lineardiff_irreg_step, {'order':3, 'gamma':0.003, 'window_size':11})
     ]
 
 # All the testing methodology follows the exact same pattern; the only thing that changes is the closeness to the
@@ -245,7 +247,13 @@ error_bounds = {
                  [(-1, -1), (1, 1), (0, -1), (1, 1)],
                  [(-1, -1), (0, 0), (0, -1), (1, 1)],
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
-                 [(0, -1), (2, 2), (0, -1), (2, 2)]]
+                 [(0, -1), (2, 2), (0, -1), (2, 2)]],
+    lineardiff_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
+                 [(-1, -1), (0, 0), (0, -1), (1, 0)],
+                 [(-1, -1), (1, 0), (0, -1), (1, 1)],
+                 [(-1, -2), (0, 0), (0, -1), (1, 1)],
+                 [(0, 0), (2, 2), (0, 0), (2, 2)],
+                 [(0, -1), (2, 2), (0, 0), (2, 2)]]
 }
 
 

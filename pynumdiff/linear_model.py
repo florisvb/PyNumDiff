@@ -16,7 +16,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param int>0 order: number of states in the linear system, equivalently how many times :code:`x` is integrated
+    :param int>1 order: order of the ODE fit, the number of states in the linear system, how many times :code:`x` is integrated.
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units.
     :param int window_size: number of samples in the sliding window, or number of average step sizes to use as window
@@ -31,6 +31,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
+    if order < 2: raise ValueError("`order` must be at least 2. Order 1 is just xdot = a*x, solved by scalar exponential.")
     if not np.isscalar(dt):
         if len(dt) != x.shape[axis]: raise ValueError("If `dt` is given as sample locations, it must be as long as `x` along `axis`.")
         if np.any(np.diff(dt) <= 0): raise ValueError("`dt` must be strictly increasing when given as sample locations.")

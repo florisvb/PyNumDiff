@@ -83,18 +83,27 @@ def test_peakdet(request):
                                 [8.608, -1.71228973]])
 
 def test_slide_function():
-    """Verify the slide function's weighting scheme calculates as expected"""
+    """Verify the function that slides another and combines results is weighting and windowing as expected"""
     def identity(x, dt_or_t): return x, 0 # should come back the same
 
     x = np.arange(100, dtype=float)
-    kernel = utility.gaussian_kernel(9)
+    t_vary = 10*np.linspace(0, 1, 100)**2 # same span and count as an even grid, but ~50x denser at the start
 
-    x_hat_dt, _ = utility.slide_function(identity, x, 0.1, kernel, stride=2)
-    assert np.allclose(x, x_hat_dt)
+    for dt_or_t in (0.1, np.linspace(0, 10, 100, endpoint=False), t_vary): # a step, even times, uneven times
+        x_hat, _ = utility.slide_function(identity, x, dt_or_t, utility.gaussian_kernel, 9, 2)
+        assert np.allclose(x, x_hat) # weights partition unity however many samples a window ends up holding
 
-    # time array: func receives a kernel-length slice of times instead of scalar dt; identity still returns x unchanged
-    x_hat_t, _ = utility.slide_function(identity, x, np.linspace(0, 10, 100, endpoint=False), kernel, stride=2)
-    assert np.allclose(x, x_hat_t)
+    windows = []
+    def record(x, dt_or_t): windows.append(dt_or_t); return 0, 0 # record the windows of samples fed to subcalls
+
+    utility.slide_function(record, x, t_vary, utility.gaussian_kernel, 9, 2)
+    t_spans = [w[-1] - w[0] for w in windows]
+    assert max(t_spans)/min(t_spans) < 2.5 # windowing over samples alone would swing this ~50x, with the density
+    assert min(len(w) for w in windows) < 7 # number of samples is all small in this case, sets up the next:
+
+    windows.clear() # check min_samples widens windows
+    utility.slide_function(record, x, t_vary, utility.gaussian_kernel, 9, 2, min_samples=7)
+    assert min(len(w) for w in windows) >= 7
 
 
 def test_simulations(request):

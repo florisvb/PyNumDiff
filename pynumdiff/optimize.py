@@ -18,7 +18,7 @@ from .linear_model import lineardiff
 
 # Map from method -> (search_space, bounds_low_hi)
 method_params_and_bounds = {
-    kerneldiff: ({'kernel': {'mean', 'median', 'gaussian', 'friedrichs'},
+    kerneldiff: ({'kernel': {'uniform', 'median', 'gaussian', 'friedrichs'},
              'window_size': [5, 15, 31, 51],
           'num_iterations': [1, 5, 10]},
             {'window_size': (1, 1e6, 'odd'), # an even-width kernel has no center, so convolving with it

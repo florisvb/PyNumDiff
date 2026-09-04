@@ -19,7 +19,8 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     :param int>0 order: number of states in the linear system, equivalently how many times :code:`x` is integrated
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
             thing whatever the units.
-    :param int window_size: size of the sliding window, if not given no sliding
+    :param int window_size: number of samples in the sliding window, or number of average step sizes to use as window
+            width if irregular sampling; if not given, no sliding
     :param int stride: step size for sliding. Defaults to :code:`window_size/5`, because what matters is overlap
             ratio, not an absolute stride: a fifth costs a few percent of accuracy against a much finer stride while
             running several times faster, and strides past about half the window degrade badly
@@ -34,10 +35,13 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         if len(dt) != x.shape[axis]: raise ValueError("If `dt` is given as sample locations, it must be as long as `x` along `axis`.")
         if np.any(np.diff(dt) <= 0): raise ValueError("`dt` must be strictly increasing when given as sample locations.")
     if window_size:
+        if window_size < 2*order: # a and c hold `order` unknowns each, so need at least as many pieces of info to set up well-posed cost
+            window_size = 2*order + 1 - (2*order)%2
+            warn(f"`window_size` must be at least 2*order={2*order} to determine the fit. Widened to {window_size}.")
         if window_size % 2 == 0: window_size += 1; warn("Kernel window size should be odd. Added 1 to length.")
         if stride is None: stride = max(1, window_size//5) # Keeps stride out of the optimizer's search space.
         if stride > window_size: stride = window_size; warn("`stride` wider than `window_size`, reduced to match")
-        kern = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel](window_size)
+        kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel]
 
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
@@ -92,7 +96,7 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         iX_p.value = integral_X; x_p.value = X[-1]; g_p.value = gamma; B_p.value = B
 
         # Tighten CLARABEL's stop conditions, because its defaults of 1e-8 can cause failures against the equivariance
-        # test (#222). Also no warm start, for reproducibility.
+        # test, see #222. Also no warm start, for reproducibility.
         try: prob.solve(solver=cvxpy.CLARABEL, warm_start=False, tol_gap_abs=1e-12, tol_gap_rel=1e-12, tol_feas=1e-12)
         except cvxpy.error.SolverError as e: # Convert so `optimize` scores the point badly and moves on
             raise np.linalg.LinAlgError(f"CVXPY failed to fit the linear model on a window of {N} samples at order "
@@ -106,8 +110,8 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
 
         return x_hat, dxdt_hat
 
-    x_work = np.moveaxis(x, axis, 0); s = x_work.shape
-    x_flat = x_work.reshape(s[0], -1) # big 2D matrix of all vecs we need to differentiate
+    x_move = np.moveaxis(x, axis, 0); s = x_move.shape
+    x_flat = x_move.reshape(s[0], -1) # big 2D matrix of all vecs we need to differentiate
     x_hat = np.empty(x_flat.shape, dtype=float); dxdt_hat = np.empty(x_flat.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
 
     for i in range(x_flat.shape[1]):
@@ -118,16 +122,8 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         if scale == 0: x_hat[:, i] = x_flat[:, i]; dxdt_hat[:, i] = 0.; continue # constant vector -> known 0 deriv
         v = x_flat[:, i]/scale
 
-        if not window_size:
-            xh, dh = _lineardiff(v, dt, order, gamma)
-        else: # Take both estimates the fit produces, kernel-averaged over windows, the way `polydiff` does. The old path
-            # instead ran a second pass over reversed data, crossfaded the two x_hats on a linear ramp, and recovered the
-            # derivative with finitediff. The two passes measured indistinguishable (RMSE 0.2038 vs 0.2038 over 24 signals)
-            # because slide_function's centered windows average away the left-anchoring that makes a window directional.
-            # Worse, finitediff of a cumulative_trapezoid is exactly a [1,2,1]/4 binomial smoother, whose gain cos^2(pi f dt)
-            # is ~1 at dt=0.005 but 0.65 at dt=0.04, so the derivative was silently attenuated by a dt-dependent amount. See #223
-            xh, dh = utility.slide_function(_lineardiff, v, dt, kern, order, gamma, stride=stride)
-
+        xh, dh = _lineardiff(v, dt, order, gamma) if not window_size else \
+            utility.slide_function(_lineardiff, v, dt, kernel, window_size, stride, min_samples=2*order, order=order, gamma=gamma)
         x_hat[:, i] = xh*scale; dxdt_hat[:, i] = dh*scale
 
     return np.moveaxis(x_hat.reshape(s), 0, axis), np.moveaxis(dxdt_hat.reshape(s), 0, axis)

@@ -12,7 +12,7 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param str kernel: prefilter data, {:code:`'mean'`, :code:`'median'`, :code:`'gaussian'`,
+    :param str kernel: prefilter data, {:code:`'uniform'`, :code:`'median'`, :code:`'gaussian'`,
         :code:`'friedrichs'`}
     :param int window_size: filtering kernel size
     :param int num_iterations: how many times to apply mean smoothing
@@ -26,7 +26,7 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
 
     if window_size % 2 == 0: window_size += 1; warn("Even-width kernels shift answers by half-samples. Added 1 to length.")
 
-    if kernel in ['mean', 'gaussian', 'friedrichs']:
+    if kernel in ['uniform', 'gaussian', 'friedrichs']:
         kernel = getattr(utility, f"{kernel}_kernel")(window_size)
         x_hat = utility.convolutional_smoother(x, kernel, num_iterations, axis=axis)
     elif kernel == 'median':
@@ -35,7 +35,7 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
         for _ in range(num_iterations):
             x_hat = scipy.signal.medfilt(x_hat, s)
     else:
-        raise ValueError("filter_type must be mean, median, gaussian, or friedrichs")
+        raise ValueError("`kernel` must be uniform, median, gaussian, or friedrichs")
 
     return finitediff(x_hat, dt, order=2, axis=axis)
 

@@ -10,7 +10,7 @@ from ..total_variation_regularization import iterative_velocity, smooth_accelera
 from ..kalman_smooth import rtsdiff, robustdiff
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
-def kerneldiff_mean(*args, **kwargs): return kerneldiff(*args, **kwargs)
+def kerneldiff_uniform(*args, **kwargs): return kerneldiff(*args, **kwargs)
 def kerneldiff_median(*args, **kwargs): return kerneldiff(*args, **kwargs)
 def kerneldiff_gaussian(*args, **kwargs): return kerneldiff(*args, **kwargs)
 def finitediff_1(*args, **kwargs): return finitediff(*args, **kwargs)
@@ -31,7 +31,7 @@ t = np.linspace(0, 3, 31) # sample locations, including the endpoint
 tt = np.linspace(0, 3) # full domain, for visualizing denser plots
 np.random.seed(7) # for repeatability of the test, so we don't get random failures
 noise = 0.05*np.random.randn(*t.shape)
-t_irreg = t + np.random.uniform(-dt/3, dt/3, *t.shape) # add jostle
+t_irreg = t[-1]*np.linspace(0, 1, len(t))**1.5 # ~8x denser at the start than the end. See #228
 
 # Analytic (function, derivative) pairs on which to test differentiation methods.
 test_funcs_and_derivs = [
@@ -45,7 +45,7 @@ test_funcs_and_derivs = [
                                 lambda t: ((0.8 + 8*t)*np.cos(8*t) - 1.5*np.sin(8*t))/(0.1 + t)**(5/2))]
 
 diff_methods_and_params = [
-    (kerneldiff_mean, {'kernel':'mean', 'window_size':3, 'num_iterations':2}),
+    (kerneldiff_uniform, {'kernel':'uniform', 'window_size':3, 'num_iterations':2}),
     (kerneldiff_median, {'kernel':'median', 'window_size':3, 'num_iterations':2}),
     (kerneldiff_gaussian, {'kernel':'gaussian', 'window_size':5}),
     (kerneldiff, {'window_size':5}), # 'friedrichs' is the default kernel
@@ -80,12 +80,12 @@ diff_methods_and_params = [
 flr = -12 # machine-precision floor: methods this accurate are exact up to round-off, with least-significant bits
           # drifting across BLAS/numpy/Python builds, so we don't assert tighter error.
 error_bounds = {
-    kerneldiff_mean: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
-                      [(0, 0), (1, 1), (0, 0), (1, 1)],
-                      [(0, 0), (1, 1), (0, 0), (1, 1)],
-                      [(0, 0), (1, 1), (0, 0), (1, 1)],
-                      [(1, 1), (2, 2), (1, 1), (2, 2)],
-                      [(1, 1), (3, 3), (1, 1), (3, 3)]],
+    kerneldiff_uniform: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
+                         [(0, 0), (1, 1), (0, 0), (1, 1)],
+                         [(0, 0), (1, 1), (0, 0), (1, 1)],
+                         [(0, 0), (1, 1), (0, 0), (1, 1)],
+                         [(1, 1), (2, 2), (1, 1), (2, 2)],
+                         [(1, 1), (3, 3), (1, 1), (3, 3)]],
     kerneldiff_median: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(0, 0), (1, 1), (0, 0), (1, 1)],
                         [(0, 0), (1, 1), (0, 0), (1, 1)],
@@ -144,16 +144,16 @@ error_bounds = {
                [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                [(-3, -3), (-1, -1), (0, -1), (1, 1)],
-               [(-1, -1), (1, 1), (0, -1), (1, 1)],
-               [(0, 0), (2, 2), (0, 0), (2, 2)]],
+               [(0, -1), (1, 1), (0, 0), (1, 1)],
+               [(0, 0), (2, 2), (0, 0), (3, 3)]],
     polydiff_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                           [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                           [(flr, flr), (flr, flr), (0, -1), (1, 1)],
                           [(-3, -3), (-1, -1), (0, -1), (1, 1)],
                           [(-1, -1), (1, 1), (0, -1), (1, 1)],
                           [(0, 0), (2, 2), (0, 0), (2, 2)]],
-    savgoldiff: [[(-11, flr), (flr, flr), (0, -1), (0, 0)],
-                 [(-11, flr), (flr, flr), (0, -1), (0, 0)],
+    savgoldiff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
+                 [(flr, flr), (flr, flr), (0, -1), (0, 0)],
                  [(-2, -2), (-1, -1), (0, -1), (0, 0)],
                  [(0, -1), (0, 0), (0, 0), (1, 0)],
                  [(1, 1), (2, 2), (1, 1), (2, 2)],
@@ -167,19 +167,19 @@ error_bounds = {
     spline_irreg_step: [[(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
                         [(flr, flr), (flr, flr), (-1, -1), (0, 0)],
-                        [(0, 0), (1, 1), (0, 0), (1, 1)],
-                        [(1, 1), (2, 2), (1, 1), (2, 2)],
-                        [(0, 0), (2, 2), (1, 0), (2, 2)]],
+                        [(0, -1), (1, 1), (0, 0), (1, 1)],
+                        [(1, 0), (2, 2), (1, 0), (2, 1)],
+                        [(1, 0), (2, 2), (1, 0), (3, 2)]],
     spectraldiff: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 0), (1, 1), (1, 1), (1, 1)],
                    [(0, 0), (1, 1), (0, 0), (1, 1)],
                    [(1, 1), (2, 2), (1, 1), (2, 2)],
                    [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    rbfdiff: [[(-2, -2), (0, 0), (0, -1), (0, 0)],
+    rbfdiff: [[(-2, -2), (0, 0), (0, -1), (1, 0)],
               [(-1, -1), (1, 0), (0, -1), (1, 1)],
               [(-1, -1), (1, 1), (0, -1), (1, 1)],
-              [(-2, -2), (0, 0), (0, -1), (0, 0)],
+              [(-2, -2), (0, 0), (0, -1), (1, 0)],
               [(0, 0), (2, 2), (0, 0), (2, 2)],
               [(1, 1), (3, 3), (1, 1), (3, 3)]],
     waveletdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 0)],
@@ -206,7 +206,7 @@ error_bounds = {
                 [(0, 0), (1, 1), (0, 0), (1, 1)],
                 [(1, 1), (2, 2), (1, 1), (2, 2)],
                 [(1, 1), (3, 3), (1, 1), (3, 3)]],
-    iterative_velocity: [[(-7, -8), (flr, flr), (0, -1), (0, 0)],
+    iterative_velocity: [[(flr, flr), (flr, flr), (0, -1), (0, 0)],
                          [(0, 0), (0, 0), (0, 0), (1, 0)],
                          [(0, 0), (1, 0), (1, 0), (1, 0)],
                          [(1, 0), (1, 1), (1, 0), (1, 1)],
@@ -227,8 +227,8 @@ error_bounds = {
     rtsdiff_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                          [(-5, -5), (-4, -4), (0, -1), (1, 1)],
                          [(-4, -4), (-3, -3), (0, -1), (1, 1)],
-                         [(-2, -3), (0, 0), (0, -1), (1, 1)],
-                         [(-1, -2), (1, 1), (0, -1), (1, 1)],
+                         [(-3, -3), (0, -1), (0, -1), (1, 1)],
+                         [(-1, -1), (1, 1), (0, -1), (1, 1)],
                          [(0, 0), (3, 3), (0, 0), (3, 3)]],
     robustdiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(flr, flr), (flr, flr), (0, -1), (1, 1)],
@@ -236,12 +236,12 @@ error_bounds = {
                  [(flr, flr), (-2, -2), (0, -1), (1, 1)],
                  [(-11, -11), (1, 1), (0, 0), (1, 1)],
                  [(0, 0), (3, 3), (0, 0), (3, 2)]],
-    robust_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                        [(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                        [(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                        [(flr, flr), (-2, -2), (0, -1), (1, 1)],
-                        [(-11, -11), (1, 1), (0, 0), (1, 1)],
-                        [(1, 1), (3, 2), (0, 0), (2, 2)]],
+    robust_irreg_step: [[(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                        [(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                        [(flr, flr), (flr, flr), (0, 0), (1, 1)],
+                        [(flr, flr), (-1, -1), (0, 0), (1, 1)],
+                        [(-10, -10), (1, 1), (0, 0), (1, 1)],
+                        [(1, 1), (3, 3), (1, 1), (3, 3)]],
     lineardiff: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
                  [(-1, -1), (0, 0), (0, -1), (1, 0)],
                  [(-1, -1), (1, 1), (0, -1), (1, 1)],
@@ -249,11 +249,11 @@ error_bounds = {
                  [(0, 0), (2, 2), (0, 0), (2, 2)],
                  [(0, -1), (2, 2), (0, -1), (2, 2)]],
     lineardiff_irreg_step: [[(flr, flr), (flr, flr), (0, -1), (1, 1)],
-                 [(-1, -1), (0, 0), (0, -1), (1, 0)],
-                 [(-1, -1), (1, 0), (0, -1), (1, 1)],
-                 [(-1, -2), (0, 0), (0, -1), (1, 1)],
-                 [(0, 0), (2, 2), (0, 0), (2, 2)],
-                 [(0, -1), (2, 2), (0, 0), (2, 2)]]
+                            [(-1, -1), (1, 0), (0, -1), (1, 0)],
+                            [(-1, -1), (0, 0), (0, -1), (1, 1)],
+                            [(-1, -2), (0, 0), (0, -1), (1, 0)],
+                            [(0, 0), (2, 1), (0, 0), (2, 1)],
+                            [(0, -1), (2, 2), (0, 0), (2, 2)]]
 }
 
 

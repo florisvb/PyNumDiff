@@ -103,32 +103,34 @@ def estimate_integration_constant(x, x_hat, M=6, axis=0):
         return np.moveaxis(c.reshape((1,) + s[1:]), 0, axis) # re-reorder axes, length 1 along the integration axis
 
 
-def mean_kernel(window_size):
+def uniform_kernel(u):
     """A uniform boxcar of total integral 1
-    :param int window_size: the width of the return value
-    :return: **kernel** (np.array[float]) -- samples of the kernel function
-    """
-    return np.ones(window_size)/window_size
 
-def gaussian_kernel(window_size):
-    """A truncated gaussian
-    :param int window_size: the width of the return value
-    :return: **kernel** (np.array[float]) -- samples of the kernel function
+    :param int or np.array[float] u: a window size, or positions
+    :return: **kernel** (np.array[float]) -- weights summing to 1
     """
-    sigma = window_size / 6.
-    t = np.linspace(-2.7*sigma, 2.7*sigma, window_size)
-    ker = 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-(t**2)/(2*sigma**2)) # gaussian function itself
-    return ker / np.sum(ker)
+    return np.ones(u)/u if np.isscalar(u) else np.ones_like(u, dtype=float)/len(u)
 
-def friedrichs_kernel(window_size):
-    """A bump function
-    :param int window_size: the width of the return value
-    :return: **kernel** (np.array[float]) -- samples of the kernel function
+def gaussian_kernel(u):
+    """A gaussian truncated at 2.7 sigma, leaving edges 2.6e-2 times smaller than the peak.
+
+    :param int or np.array[float] u: a window size, or positions scaled to [-1, 1]
+    :return: **kernel** (np.array[float]) -- weights summing to 1
     """
-    x = np.linspace(-0.999, 0.999, window_size)
-    ker = np.exp(-1/(1-x**2))
-    return ker / np.sum(ker)
+    if np.isscalar(u): u = np.linspace(-1, 1, u)
+    ker = np.exp(-(2.7*np.asarray(u, dtype=float))**2/2)
+    return ker/np.sum(ker) # always normalized
 
+def friedrichs_kernel(u):
+    """A bump function, natural support (-1, 1), going flat against zero at the edges. Inputs squeezed by 0.9 to
+    make edges 1.4e-2 smaller than the peak, so window width is comparable with `gaussian_kernel`.
+
+    :param int or np.array[float] u: a window size, or positions scaled to [-1, 1]
+    :return: **kernel** (np.array[float]) -- weights summing to 1
+    """
+    if np.isscalar(u): u = np.linspace(-1, 1, u)
+    ker = np.exp(-1/(1 - (0.9*u)**2))
+    return ker/np.sum(ker) # always normalized
 
 def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     """Perform smoothing by convolving x with a kernel.
@@ -148,48 +150,55 @@ def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     return x_hat
 
 
-def slide_function(func, x, dt_or_t, kernel, *args, stride=1, pass_weights=False, **kwargs):
+def slide_function(func, x, dt_or_t, kernel, window_size, stride, min_samples=1, pass_weights=False, **kwargs):
     """Slide a smoothing derivative function across a timeseries with specified window size, and
     combine the results according to kernel weights.
 
     :param callable func: name of the function to slide
     :param np.array[float] x: data to differentiate
-    :param float or np.array[float] dt_or_t: constant step size (scalar) or array of sample locations (same length as x).
-        When given as an array, the actual time values for each window are passed to :code:`func`, enabling nonuniform spacing.
-    :param np.array[float] kernel: values to weight the sliding window
-    :param list args: passed to :code:`func`
+    :param float or np.array[float] dt_or_t: constant step size (scalar) or array of sample locations (same length as x)
+    :param callable kernel: kernel function on [-1, 1], internally stretech to window widths to weight samples
+    :param int window_size: window width in units of the (average) spacing between samples, i.e. the (intended) number of
+        samples in a window
     :param int stride: step size for slide (e.g. 1 means slide by 1 index location)
+    :param int min_samples: fewest samples a window may hold before it is widened, only used with sparse sections of
+        irregularly-spaced data, to ensure enough samples to fit
     :param bool pass_weights: whether weights should be passed to func via update to kwargs
     :param dict kwargs: passed to :code:`func`
 
     :return: - **x_hat** -- estimated (smoothed) x
              - **dxdt_hat** -- estimated derivative of x
     """
-    if len(kernel) % 2 == 0: raise ValueError("Kernel window size should be odd.")
-    if stride > len(kernel): raise ValueError("`stride` must be <= `len(kernel)` so consecutive windows touch or overlap.")
-    half_window_size = (len(kernel) - 1)//2 # int because len(kernel) is always odd
+    half_size = (window_size - 1)//2
     equispaced = np.isscalar(dt_or_t)
+    if equispaced: kernel = kernel(window_size) # kernel is now a vector of samples rather than a function
+    else: half_size *= (dt_or_t[-1] - dt_or_t[0])/(len(x) - 1) # multiply in the average gap
 
-    x_hat = np.zeros(x.shape)
+    x_hat = np.zeros(x.shape) # zeros rather than empty, because we'll add solutions as we go
     dxdt_hat = np.zeros(x.shape)
     weight_sum = np.zeros(x.shape)
 
-    # iterate window midpoints, plus the last index when the final window otherwise doesn't reach the tail of the array.
-    for midpoint in chain(range(0, len(x), stride), () if (len(x)-1) % stride <= half_window_size else (len(x)-1,)):
-        # find where to index data and kernel, taking care at edges
-        start = max(0, midpoint - half_window_size)
-        end = min(len(x), midpoint + half_window_size + 1) # +1 because slicing is exclusive of end
-        window = slice(start, end) # This is in terms of indices, not true time in the event of nonuniform spacing
+    # iterate strided-out window midpoints, plus the last index when the final window doesn't reach the tail of the array.
+    for midpoint in chain(range(0, len(x), stride), () if (len(x)-1) % stride <= (window_size - 1)//2 else (len(x)-1,)):
+        # find which samples the window holds, taking care at the array's ends
+        if equispaced: # half_size is in units of samples
+            start = max(0, midpoint - half_size)
+            end = min(len(x), midpoint + half_size + 1) # +1 because slicing is exclusive of end
+            w = kernel[start - midpoint + half_size:end - midpoint + half_size]
+            if end - start < window_size: w = w/np.sum(w) # renormalize the kernel slice if necessary
+        else: # half_size is in units of average dt
+            start = np.searchsorted(dt_or_t, dt_or_t[midpoint] - half_size, 'left')
+            end = np.searchsorted(dt_or_t, dt_or_t[midpoint] + half_size, 'right')
+            while end - start < min_samples and (start > 0 or end < len(x)): # not enough samples, so widen
+                start = max(0, start - 1); end = min(len(x), end + 1)
+            stretch = max(half_size, dt_or_t[midpoint] - dt_or_t[start], dt_or_t[end-1] - dt_or_t[midpoint]) # in case the while widened
+            w = kernel((dt_or_t[start:end] - dt_or_t[midpoint])/stretch) # weights for irregularly-spaced samples
 
-        kstart = max(0, half_window_size - midpoint)
-        kend = kstart + (end - start)
-        kslice = slice(kstart, kend)
-
-        w = kernel if (end-start) == len(kernel) else kernel[kslice]/np.sum(kernel[kslice])
+        window = slice(start, end)
         if pass_weights: kwargs['weights'] = w
 
         # Run the function on the window and add weighted results to cumulative answers. If not equispaced, pass times for window.
-        x_window_hat, dxdt_window_hat = func(x[window], dt_or_t if equispaced else dt_or_t[window], *args, **kwargs)
+        x_window_hat, dxdt_window_hat = func(x[window], dt_or_t if equispaced else dt_or_t[window], **kwargs)
         x_hat[window] += w * x_window_hat
         dxdt_hat[window] += w * dxdt_window_hat
         weight_sum[window] += w # save sum of weights for normalization at the end

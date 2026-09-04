@@ -30,7 +30,7 @@ def spectraldiff(x, dt, cutoff_freq, even_extension=True, pad_to_zero_dxdt=True,
         pre = np.repeat(np.take(x, [0], axis=axis), padding, axis=axis) # take keeps dimensions, unlike x[0]
         post = np.repeat(np.take(x, [-1], axis=axis), padding, axis=axis)
         x = np.concatenate((pre, x, post), axis=axis) # extend the edges
-        kernel = utility.mean_kernel(padding//2)
+        kernel = utility.uniform_kernel(padding//2)
         x_smoothed = utility.convolutional_smoother(x, kernel, axis=axis) # smooth the padded edges in
         m = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1) # middle
         x_smoothed[m] = x[m] # restore original signal in the middle

@@ -40,8 +40,6 @@ All methods have hyperparameters, described in the [Sphinx documentation](https:
 
 ![Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by `pynumdiff.optimize`.](paper/methods_comparison.png)
 
-Above, three simulated signals are differentiated by two methods each, drawn from six of the seven families, with hyperparameters chosen automatically by `pynumdiff.optimize`. Reproduce with `python paper/make_figure.py`.
-
 ## Installing
 
 Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, plus `pywavelets` for `waveletdiff`, `tqdm` for the optimizer, and `cvxpy` for `robustdiff` and `tvrdiff`.

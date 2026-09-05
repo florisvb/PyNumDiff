@@ -50,9 +50,9 @@ For more details, read our [Sphinx documentation](https://pynumdiff.readthedocs.
 ```python
 x_hat, dxdt_hat = somethingdiff(x, dt, **kwargs)
 ```
-where `x` is data, `dt` is a step size, and various keyword arguments control the behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Handing a method data it doesn't support raises a `ValueError` explaining why.
+where `x` is data, `dt` is a step size, and keyword arguments are "hyperparameters" which control behavior. Methods marked multidimensional take an `axis` argument selecting which dimension of a block to differentiate along, and those supporting variable step size rename the second parameter `dt_or_t`, which accepts either a constant step size or an array of sample locations. Here is a summary of all major methods, indicating which situations they support:
 
-| Method | Multidim | Variable step | Missing data | Outliers | Circular domain | Needs CVXPY |
+| Method | Multidim data | Variable step | Missing data | Outliers | Circular domain | Needs CVXPY |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: |
 | `kerneldiff` | ✓ | | | | | |
 | `butterdiff` | ✓ | | | | | |

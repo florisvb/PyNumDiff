@@ -423,6 +423,7 @@ nan_methods_and_params = [ # List of methods that can handle missing values
     (polydiff, {'degree': 2, 'window_size': 9}),
     (rtsdiff, {'order': 2, 'log_qr_ratio': 7, 'forwardbackward': True}),
     (robustdiff, {'order': 3, 'log_q': 7, 'log_r': 2}),
+    (lineardiff, {'order': 3, 'gamma': 0.003, 'window_size': 21}), # wider window to straddle the NaN run and still have 2*order observations
 ]
 
 @mark.parametrize("diff_method_and_params", nan_methods_and_params)

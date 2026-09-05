@@ -30,7 +30,6 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if order < 2: raise ValueError("`order` must be at least 2. Order 1 is just xdot = a*x, solved by scalar exponential.")
     if not np.isscalar(dt):
         if len(dt) != x.shape[axis]: raise ValueError("If `dt` is given as sample locations, it must be as long as `x` along `axis`.")
@@ -47,7 +46,10 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
-        mean = np.mean(x)
+        obs = ~np.isnan(x) # Missing values drop out of the fit, and the fitted model imputes them back
+        if obs.sum() < 2*order: raise ValueError(f"Window encountered with only {obs.sum()} non-NaN samples < {2*order} "
+                f"needed to determine an order {order} fit. Widen `window_size` or lower `order`.")
+        mean = np.nanmean(x)
         xc = x - mean # not in-place `-=`: slide_function operates on views, so don't modify underlying array
 
         # Work in nondimensional time tau = t/T, so the normalized window spans tau \in [0, 1]. Each row of the
@@ -59,42 +61,42 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         equispaced = np.isscalar(dt)
         T = len(xc)*dt if equispaced else dt[-1] - dt[0]
         tau = np.arange(len(xc))/len(xc) if equispaced else (dt - dt[0])/T # dtau is 1/N when uniform, so tau spans [0, 1)
-        step = dt/T if equispaced else tau # what the integrals below accumulate against
-
-        # Generate the matrix of integrals of x, then integrate it once more for the right hand side
-        X = [xc]
-        for n in range(1, order):
-            X.append(utility.integrate_dxdt_hat(X[-1], step))
+        # Generate the matrix of integrals of x, then integrate it once more for the right hand side. Holes are
+        # bridged linearly first, which is what the trapezoid rule already assumes between neighbors, so the
+        # quadrature runs over the full grid and every row stays defined where samples are missing. Only the
+        # stack is bridged; `xc` keeps its holes, and the fit below reads observed columns alone.
+        X = [xc if obs.all() else np.interp(tau, tau[obs], xc[obs])]
+        for n in range(1, order): X.append(utility.integrate_dxdt_hat(X[-1], tau))
         X = np.vstack(X[::-1])
-        integral_X = np.hstack((np.zeros((X.shape[0], 1)), scipy.integrate.cumulative_trapezoid(X, axis=1)))*step \
-            if equispaced else np.hstack((np.zeros((X.shape[0], 1)), scipy.integrate.cumulative_trapezoid(X, x=tau, axis=1)))
+        integral_X = np.hstack((np.zeros((X.shape[0], 1)), scipy.integrate.cumulative_trapezoid(X, x=tau, axis=1)))
 
         # Powers of nondimensional time, the shape the integration constants take after `order` integrations. B[1:] is
         # its own derivative, since differentiating tau^k/k! gives tau^(k-1)/(k-1)!, which is the next row down.
         N = X.shape[1]
         B = np.vstack([tau**(order-n-1)/math.factorial(order-n-1) for n in range(order)])
 
-        # Only the bottom row of X = A*integral_X + C*B carries dynamics. integral_X[i] is bitwise identical to X[i-1],
-        # both being a cumulative_trapezoid of the row beneath, so the upper rows are tautologies that a shift matrix
-        # solves at exactly zero residual with zero constants. The objective is separable by row and the derivative
-        # below reads only the bottom row, so fitting the full A and C solves for 2*order^2 unknowns to use 2*order of
-        # them. Fit that one row directly instead: x = a*integral_X + c*B. See #223
+        # Only the bottom row of X = A*integral_X + C*B carries dynamics. integral_X[i] is identical to X[i-1], so the
+        # upper rows are tautologies that a shift matrix solves at exactly zero residual with zero constants. The objective
+        # is separable by row and the derivative below reads only the bottom row, so fitting the full A and C solves for
+        # 2*order^2 unknowns to use only 2*order of them. Fit that one row directly instead: x = a*integral_X + c*B. See #223
         # Canonicalizing costs ~85% of a solve here and depends only on the shapes, so the problem is built once per
-        # (order, window length) and re-solved with new data. gamma is a Parameter too, which keeps a cached problem
-        # valid across a whole `optimize` sweep rather than only within one call. All of which requires DPP.
+        # (order, window length) with DPP and re-solved with new data. gamma is a Parameter too, which keeps a cached
+        # problem valid across a whole `optimize` sweep rather than only within one call.
         if (order, N) not in _PROBLEM_CACHE:
             if len(_PROBLEM_CACHE) >= 64: _PROBLEM_CACHE.clear() # bound what an optimizer's window sweep accumulates
             a_v = cvxpy.Variable(order); c_v = cvxpy.Variable(order)
             iX_p = cvxpy.Parameter((order, N)); x_p = cvxpy.Parameter(N); g_p = cvxpy.Parameter(nonneg=True)
-            B_p = cvxpy.Parameter((order, N)) # a Parameter, not the array itself: with sample locations B depends on
-                # where the samples fall, so baking it in would let a cached (order, N) problem carry the wrong basis
+            B_p = cvxpy.Parameter((order, N)) # parameterized because variable sample locations or missing values
+                # make the problem's sampling of B vary, so baking in would let cached (order, N) carry the wrong thing.
             _PROBLEM_CACHE[(order, N)] = (cvxpy.Problem(cvxpy.Minimize(
                 cvxpy.sum_squares(x_p - (a_v @ iX_p + c_v @ B_p)) +
                 g_p*cvxpy.sum(cvxpy.abs(c_v)) + 1e-6*cvxpy.sum(cvxpy.abs(a_v)))), a_v, c_v, iX_p, x_p, g_p, B_p)
                 # Smooth x has near-polynomial integrals, and B is polynomials, so a and c become interchangeable. 1e-6 on a's
                 # norm enforces uniqueness while not significantly shrinking, which costs accuracy. See #223
         prob, a_v, c_v, iX_p, x_p, g_p, B_p = _PROBLEM_CACHE[(order, N)]
-        iX_p.value = integral_X; x_p.value = X[-1]; g_p.value = gamma; B_p.value = B
+        # Zero out missing data locations with *obs, rather than indexing, because resid becomes (0 - (a*0 + c*0))^2 = 0,
+        # influencing the solve for a and c not a whit, as desired. Clever. Also allows reuse of same-shape canonicalization.
+        iX_p.value = integral_X*obs; x_p.value = X[-1]*obs; g_p.value = gamma; B_p.value = B*obs
 
         # Tighten CLARABEL's stop conditions, because its defaults of 1e-8 can cause failures against the equivariance
         # test, see #222. Also no warm start, for reproducibility.
@@ -104,10 +106,10 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
                 f"{order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.") from e
 
         # Differentiating the fit gives the derivative of the data itself, xdot = a*X + c*dB
-        dxdt_hat = (a_v.value @ X + (c_v.value[:order-1] @ B[1:] if order > 1 else 0))/T # undo the time scaling
+        dxdt_hat = (a_v.value @ X + c_v.value[:order-1] @ B[1:])/T # undo the time scaling
 
         x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
-        x_hat += utility.estimate_integration_constant(xc, x_hat) + mean
+        x_hat += utility.estimate_integration_constant(xc[obs], x_hat[obs]) + mean
 
         return x_hat, dxdt_hat
 

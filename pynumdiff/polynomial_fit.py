@@ -86,9 +86,8 @@ def polydiff(x, dt_or_t, degree, window_size=None, stride=1, kernel='friedrichs'
     def _polydiff(x, dt_or_t, degree, weights=None):
         t = dt_or_t if not np.isscalar(dt_or_t) else np.arange(len(x)) * dt_or_t # sample locations
         obs = ~np.isnan(x) # Filter out any NaN values so polyfit doesn't lose its mind in the event of missing data
-        if obs.sum() <= degree: # too few points to pin down the coefficients, so polyfit will fail
-            raise ValueError(f"Window encountered with only {obs.sum()} non-NaN samples < {degree+1} samples needed for degree "
-                f"{degree} fit. Widen `window_size` or lower `degree`.")
+        if obs.sum() <= degree: raise ValueError(f"Window encountered with only {obs.sum()} non-NaN samples < {degree+1} "
+                f"samples needed for degree {degree} fit. Widen `window_size` or lower `degree`.")
 
         r = np.polyfit(t[obs], x[obs], degree, w=np.sqrt(weights[obs]) if weights is not None else None) # sqrt(weights), because (weights*residuals)^2 internally
         dr = np.polyder(r) # power rule already implemented for us

@@ -66,7 +66,7 @@ where `x` is data, `dt` is a step size, and various keyword arguments control th
 | `tvrdiff` | ✓ | | | ✓ | | ✓ |
 | `rtsdiff` | ✓ | ✓ | ✓ | | ✓ | |
 | `robustdiff` | ✓ | ✓ | ✓ | ✓ | | ✓ |
-| `lineardiff` | ✓ | ✓ | | | | ✓ |
+| `lineardiff` | ✓ | ✓ | ✓ | | | ✓ |
 
 There are also a couple minor methods kept for general interest (`iterative_velocity` and `smooth_acceleration`) but in practice dominated by or redundant with others from the table.
 

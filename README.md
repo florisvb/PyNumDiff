@@ -38,6 +38,10 @@ All are ultimately smoothing with similar runtime and accuracy, but some have fl
 
 All methods have hyperparameters, described in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/). We take a principled approach and propose a multi-objective optimization framework for choosing settings that minimize a loss function that balances faithfulness to data with smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077).
 
+![Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by `pynumdiff.optimize`.](paper/methods_comparison.png)
+
+Above, three simulated signals are differentiated by two methods each, drawn from six of the seven families, with hyperparameters chosen automatically by `pynumdiff.optimize`. Reproduce with `python paper/make_figure.py`.
+
 ## Installing
 
 Dependencies are listed in [pyproject.toml](https://github.com/florisvb/PyNumDiff/blob/master/pyproject.toml). They include the usual suspects like `numpy` and `scipy`, plus `pywavelets` for `waveletdiff`, `tqdm` for the optimizer, and `cvxpy` for `robustdiff` and `tvrdiff`.

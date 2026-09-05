@@ -1,4 +1,4 @@
-"""Simple, short, reusable helper functions"""
+"""Simple, short, sometimes sophisticated, reusable helper functions"""
 from itertools import chain
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
@@ -143,9 +143,8 @@ def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
     x_hat = x
-
     for i in range(num_iterations):
-        x_hat = convolve1d(x_hat, kernel, axis=axis, mode='reflect') # 'reflect' pads the signal with repeats
+        x_hat = convolve1d(x_hat, kernel, axis=axis, mode='reflect') # 'reflect' pads the signal with mirrored repeats
 
     return x_hat
 

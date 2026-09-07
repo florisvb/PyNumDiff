@@ -44,6 +44,8 @@ def lineardiff(x, dt, order, gamma, window_size=None, stride=None, kernel='fried
         kernel = {'gaussian':utility.gaussian_kernel, 'friedrichs':utility.friedrichs_kernel}[kernel]
 
     @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: building a sum atom reduces over uninitialized memory
+    # TODO fixed upstream by cvxpy#3512, merged to master 2026-09-06 but not in any release through v1.9.2;
+    # when it ships, drop the line above and floor cvxpy there.
     def _lineardiff(x, dt, order, gamma): # just to read a shape, so it warns when that memory holds garbage
         """Fit X = A*integral_X + C*B, then differentiate it to Xdot = A*X + C*dB to get the derivative"""
         obs = ~np.isnan(x) # Missing values drop out of the fit, and the fitted model imputes them back

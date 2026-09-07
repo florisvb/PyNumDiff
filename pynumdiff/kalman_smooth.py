@@ -268,7 +268,8 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
 
 
 @np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
-# memory just to read off a shape, so they warn when it holds garbage. This wall can come down if they ever fix it upstream.
+# memory just to read off a shape, so they warn when it holds garbage. TODO fixed upstream by cvxpy#3512, merged to master 2026-09-06 but not in
+# any release through v1.9.2; when it ships, drop this line and floor cvxpy there.
 def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
     """Solve the optimization problem for robust smoothing using CVXPY.
 

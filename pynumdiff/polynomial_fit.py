@@ -6,7 +6,7 @@ import scipy
 from pynumdiff.utils import utility
 
 
-def splinediff(x, dt_or_t, degree=3, s=1, num_iterations=1, axis=0):
+def splinediff(x, dt_or_t, degree=3, s=1, axis=0):
     """Find smoothed data and derivative estimates by fitting a smoothing spline to the data with
     scipy.interpolate.make_splrep. Variable step size is supported with equal ease as uniform step size.
 
@@ -19,13 +19,11 @@ def splinediff(x, dt_or_t, degree=3, s=1, num_iterations=1, axis=0):
         :math:`\\sum_t (x[t] - \\text{spline}[t])^2 \\leq s N \\hat\\sigma^2` is met, where :math:`N` is data length and
         :math:`\\hat\\sigma` is a robust estimate of noise stddev. :math:`s = 1` leaves exactly that much energy for
         residuals and is a good default; larger over-smooths, smaller under-smooths, and 0 yields an interpolating spline.
-    :param int num_iterations: how many times to apply smoothing
     :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
-    if num_iterations < 1: raise ValueError("`num_iterations` should be >=1")
     if np.isscalar(dt_or_t):
         t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
@@ -48,9 +46,6 @@ def splinediff(x, dt_or_t, degree=3, s=1, num_iterations=1, axis=0):
         with catch_warnings(action="ignore", category=RuntimeWarning): # FITPACK warns at knife-edge values of s, but still solves reliably
             spline = scipy.interpolate.make_splrep(t[obs], x[i][obs], k=degree, s=s_abs)
             x_hat[i] = spline(t) # interpolate at all t
-            for _ in range(num_iterations-1):
-                spline = scipy.interpolate.make_splrep(t, x_hat[i], k=degree, s=s_abs) # hold noise (drift) budget fixed across iterations
-                x_hat[i] = spline(t)
         dxdt_hat[i] = spline.derivative()(t) # evaluate derivative at sample points
 
     return x_hat, dxdt_hat

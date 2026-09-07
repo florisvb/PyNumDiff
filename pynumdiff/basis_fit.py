@@ -11,10 +11,10 @@ def spectraldiff(x, dt, cutoff_freq, even_extension=True, pad_to_zero_dxdt=True,
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param float cutoff_freq: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
-            and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
+        and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
     :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
     :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
-            zero before taking FFT.
+        zero before taking FFT.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -98,7 +98,6 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     # drbfdt = -(r / sigma**2) * rbf # derivative of kernel
     # rbf_regularized = rbf + lmbd*np.eye(len(t))
     # alpha = np.linalg.solve(rbf_regularized, x) # O(N^3)
-
     cutoff = np.sqrt(-2 * sigma**2 * np.log(1e-4))
     rows, cols, vals, dvals = [], [], [], []
     for n in range(len(t)): # pylint: disable=consider-using-enumerate

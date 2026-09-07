@@ -83,7 +83,7 @@ def test_cache_key_collides_across_processes():
     with Manager() as manager:
         cache = manager.dict()
         # a partial of a module-level function pickles fine, which is how optimize() ships jobs to its own workers
-        evaluate = partial(_objective_function, func=splinediff, x=x, dt=dt, singleton_params={'num_iterations':1},
+        evaluate = partial(_objective_function, func=splinediff, x=x, dt=dt, singleton_params={},
             categorical_params={'degree':3}, roundings={'s':float}, dxdt_truth=dxdt_truth, metric='rmse',
             tvgamma=None, padding=0, cache=cache, huberM=6)
         # each Pool is terminated before the next is built, so these two evaluations run in different processes

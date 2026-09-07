@@ -45,10 +45,8 @@ method_params_and_bounds = {
              'window_size': (3, 1000, 'odd'), # savgol_filter accepts even windows but silently returns a
            'smoothing_win': (3, 1000, 'odd')}), # derivative evaluated half a sample late
     splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
-                       's': [0.5, 1, 1.5], # multiples of the noise energy, so these hold at any N and noise level
-          'num_iterations': [1, 3]}, # 5 and 10 never won across 24 sim/step/noise combinations
-                      {'s': (1e-1, 1e1), # a relative floor keeps the search out of the near-interpolating regime,
-          'num_iterations': (1, 5)}), # where starving the budget while iterating made scipy's knot search fail
+                       's': [0.5, 1, 1.5]}, # multiples of the noise energy, so these hold at any N and noise level
+                      {'s': (1e-1, 1e1)}), # a relative floor keeps the search out of the near-interpolating regime
     spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
                   'pad_to_zero_dxdt': {True, False},
                   'cutoff_freq': [1e-2, 5e-2, 1e-1, 5e-1]}, # give numerical params in a list to scipy.optimize over them

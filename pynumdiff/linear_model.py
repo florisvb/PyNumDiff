@@ -19,11 +19,11 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int>0 order: order of the ODE fit, the number of states in the linear system, how many times :code:`x` is integrated.
     :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
-            thing whatever the units.
+        thing whatever the units.
     :param int window_size: number of samples in the sliding window, or number of average step sizes to use as window
-            width if irregular sampling; if not given, no sliding
+        width if irregular sampling; if not given, no sliding
     :param int stride: step size for sliding. Defaults to :code:`window_size//5`, which costs only a few percent of accuracy
-            against a much finer stride while running reasonably fast; strides > half the window degrade performance badly
+        against a much finer stride while running reasonably fast; strides > half the window degrade performance badly
     :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
     :param int axis: axis along which to differentiate (default 0)
 
@@ -32,7 +32,8 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
     """
     if not np.isscalar(dt_or_t):
         if len(dt_or_t) != x.shape[axis]: raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
-        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing, so integration has all positive widths.")
+        if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. The trapezoid rule weights "
+            "each interval by signed width, so a backward step subtracts where it should add.")
     if window_size:
         if window_size < 2*order: # a and c hold `order` unknowns each, so need at least as many pieces of info to set up well-posed cost
             window_size = 2*order + 1 - (2*order)%2

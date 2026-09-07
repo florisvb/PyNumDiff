@@ -1,4 +1,6 @@
-"""Simulation and Control of cruise control, in all its nonlinear glory"""
+"""Simulation and Control of cruise control, in all its nonlinear glory, from Astrom and Murray
+(2008, ch. 3). `simulate.pi_cruise_control` is a linearized version of this plus a noise model.
+"""
 import numpy as np
 from pynumdiff.utils import utility
 

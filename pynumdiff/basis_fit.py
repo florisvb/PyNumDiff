@@ -5,59 +5,64 @@ import pywt
 
 from pynumdiff.utils import utility
 
-def spectraldiff(x, dt, cutoff_freq, even_extension=True, pad_to_zero_dxdt=True, axis=0):
+def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0):
     """Take a derivative in the Fourier domain, with high frequency attentuation.
+
+    The FFT treats data as periodic, so a signal whose ends do not meet has a discontinuity across the wrap, and
+    Gibbs ringing contaminates the estimate. `extension` picks the remedy: 'detrend' subtracts the line through the
+    endpoints, 'even' mirrors the signal, and 'odd' detrends and then reflects through the last endpoint.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
     :param float cutoff_freq: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
         and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
-    :param bool even_extension: if True, extend the data with an even extension so signal starts and ends at the same value.
-    :param bool pad_to_zero_dxdt: if True, extend the data with extra regions that smoothly force the derivative to
-        zero before taking FFT.
+    :param str extension: how to make the data periodic: :code:`None`, :code:`'even'`, :code:`'detrend'`, or :code:`'odd'`.
+        None is right only for genuinely periodic signals.
+    :param bool pad_to_flat: if True, extend the edges with smoothed repeats of the end values, giving the Gibbs
+        ringing somewhere to go that gets discarded.
+    :param int axis: data dimension along which to differentiate
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the FFT to make the whole spectrum NaN.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The FFT assumes uniformly sampled data.")
+    if extension not in (None, 'even', 'detrend', 'odd'): raise ValueError("`extension` must be None, 'even', 'detrend', or 'odd'.")
 
-    L = x.shape[axis]
+    x = np.moveaxis(x, axis, 0)
+    N = len(x)
+    y = x.reshape(N, -1) # flat 2D of all the vectors to differentiate
 
-    # Make derivative go to zero at the ends (optional)
-    if pad_to_zero_dxdt:
-        padding = 100
-        pre = np.repeat(np.take(x, [0], axis=axis), padding, axis=axis) # take keeps dimensions, unlike x[0]
-        post = np.repeat(np.take(x, [-1], axis=axis), padding, axis=axis)
-        x = np.concatenate((pre, x, post), axis=axis) # extend the edges
-        kernel = utility.uniform_kernel(padding//2)
-        x_smoothed = utility.convolutional_smoother(x, kernel, axis=axis) # smooth the padded edges in
-        m = (slice(None),)*axis + (slice(padding, L+padding),) + (slice(None),)*(x.ndim-axis-1) # middle
-        x_smoothed[m] = x[m] # restore original signal in the middle
-        x = x_smoothed
-    else:
-        m = (slice(None),)*axis + (slice(0, L),) + (slice(None),)*(x.ndim-axis-1) # indices where signal lives
+    pad = 0
+    if pad_to_flat: # repeat the end values outward, smooth the joins, then restore the original in the middle
+        pad = 100
+        padded = np.concatenate((np.repeat(y[:1], pad, axis=0), y, np.repeat(y[-1:], pad, axis=0)))
+        smoothed = utility.convolutional_smoother(padded, utility.uniform_kernel(pad//2), axis=0)
+        smoothed[pad:pad+N] = y
+        y = smoothed
 
-    # Do even extension (optional)
-    if even_extension is True:
-        x = np.concatenate((x, np.flip(x, axis=axis)), axis=axis)
+    P = len(y); t = np.arange(P)[:, None]*dt # P for "potentially padded"
+    if extension in ('detrend', 'odd') and cutoff_freq > 0: # the line through the endpoints; its derivative is a constant added back below
+        slope = (y[-1] - y[0])/((P-1)*dt)
+        y = y - slope*t # reassign so not in place if y is still a view on x
+    else: slope = 0
 
-    s = [np.newaxis for dim in x.shape]; s[axis] = slice(None); s = tuple(s) # for elevating vectors to have same dimension as data
+    if extension == 'odd': y = np.concatenate((y, 2*y[-1] - y[-2:0:-1])) # reflect across endpoint
+    elif extension == 'even': y = np.concatenate((y, y[::-1])) # mirror 
 
-    # Form wavenumbers
-    N = x.shape[axis]
-    k = np.concatenate((np.arange(N//2 + 1), np.arange(-N//2 + 1, 0)))
+    M = len(y)
+    k = np.concatenate((np.arange(M//2 + 1), np.arange(-M//2 + 1, 0)))[:, None]
 
-    # Smoothed signal, with the high wavenumbers zeroed out. Nyquist is at wavenumber N/2, and we're cutting off as a fraction of that.
-    X = np.fft.fft(x, axis=axis) * (np.abs(k) < cutoff_freq * N/2)[s]
-    x_hat = np.real(np.fft.ifft(X, axis=axis))
+    # Smoothed signal, with the high wavenumbers zeroed out. Nyquist is at wavenumber M/2, and we're cutting off as a fraction of that.
+    X = np.fft.fft(y, axis=0) * (np.abs(k) < cutoff_freq * M/2)
+    x_hat = (np.real(np.fft.ifft(X, axis=0))[:P] + slope*t)[pad:pad+N] # de-extend, put the trend back, then crop the padding
 
     # Derivative = 90 deg phase shift
-    if N % 2 == 0: k[N//2] = 0 # odd derivatives get the Nyquist element zeroed out, see https://pavelkomarov.com/spectral-derivatives/math.pdf section 3.1
-    omega = 2*np.pi/(dt*N) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    dxdt_hat = np.real(np.fft.ifft(1j * k[s] * omega * X, axis=axis))
+    if M % 2 == 0: k[M//2] = 0 # odd derivatives get the Nyquist element zeroed out, see https://pavelkomarov.com/spectral-derivatives/math.pdf section 3.1
+    omega = 2*np.pi/(dt*M) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
+    dxdt_hat = (np.real(np.fft.ifft(1j * k * omega * X, axis=0))[:P] + slope)[pad:pad+N] # and the trend's constant slope
 
-    return x_hat[m], dxdt_hat[m]
+    return np.moveaxis(x_hat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat.reshape(x.shape), 0, axis)
 
 
 def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
@@ -136,17 +141,21 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=1.0, axis=0, mode='s
 
         x_hat = Phi @ a     and     x' = Phi_prime @ a,
 
-    so x' = Phi_prime @ Phi^-1 @ x_hat, exact for signals the basis can represent. The integer samples phi(p), phi'(p)
-    are the eigenvalue-1 and eigenvalue-1/2 eigenvectors of the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k)
-    (the "connection coefficients"), normalized to reproduce constants and ramps. This is the wavelet-basis representation
-    of the derivative operator from Beylkin (1992); the connection coefficients follow Latto, Resnikoff & Tenenbaum (1991),
-    for Daubechies' compactly supported wavelets (1988).
+    so x' = Phi_prime @ Phi^-1 @ x_hat, exact for signals the basis can represent. Both matrices need only the values of
+    phi and phi' at the integers, which evaluating the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at t = p
+    turns into a small eigenproblem: phi(p) is the eigenvalue-1 eigenvector of T[p,q] = sqrt2 h_{2p-q} and phi'(p) the
+    eigenvalue-1/2 one, each normalized to reproduce constants and ramps. These are point values, not the connection
+    coefficients int phi'(x) phi(x-l) dx that give the derivative's matrix elements in the basis. Representing d/dt
+    exactly in a compactly supported wavelet basis is due to Beylkin (1992), who does it via those integrals on V_0;
+    here the operator is instead assembled from point samples of phi and phi', which the circulant structure lets us
+    apply as a transfer function. The eigenvector route to lattice values is standard (Daubechies 1992, ch. 6), and
+    the wavelets themselves are Daubechies' (1988).
 
     References:
         G. Beylkin, "On the representation of operators in bases of compactly supported wavelets," SIAM J. Numer.
         Anal. 29(6):1716-1740, 1992.
-        A. Latto, H. L. Resnikoff & E. Tenenbaum, "The evaluation of connection coefficients of compactly supported
-        wavelets," Proc. French-USA Workshop on Wavelets and Turbulence, 1991.
+        I. Daubechies, "Ten Lectures on Wavelets," CBMS-NSF Regional Conference Series in Applied Mathematics 61,
+        SIAM, 1992.
 
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: uniform time step between samples.

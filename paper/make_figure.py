@@ -15,7 +15,7 @@ STYLE = {spectraldiff:("spectraldiff","#CC79A7"), polydiff:("polydiff","#0072B2"
 panels = [("Sum of sines", simulate.sine, [spectraldiff, polydiff], 1),
           ("Triangle wave", simulate.triangle, [tvrdiff, butterdiff], 1),
           ("Lorenz $x$", simulate.lorenz_x, [rtsdiff, lineardiff], 2)]
-FITTED = {"spectraldiff": dict(cutoff_freq=0.0625, even_extension=True, pad_to_zero_dxdt=True),
+FITTED = {"spectraldiff": dict(cutoff_freq=0.0625, extension='even', pad_to_flat=True),
           "polydiff": dict(stride=7, degree=2, window_size=41, kernel='gaussian'),
           "tvrdiff": dict(gamma=10.6015625, huberM=6.0, order=1),
           "butterdiff": dict(cutoff_freq=0.05, num_iterations=1, filter_order=2),

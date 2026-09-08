@@ -1,5 +1,9 @@
 # PyNumDiff
 
+[![Tests](https://github.com/florisvb/PyNumDiff/actions/workflows/test.yml/badge.svg)](https://github.com/florisvb/PyNumDiff/actions/workflows/test.yml)
+[![JOSS status](https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg)](https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt)
+
 Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">

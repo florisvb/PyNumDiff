@@ -13,30 +13,48 @@ authors:
   - family-names: Kutz
     given-names: J. Nathan
     orcid: "https://orcid.org/0000-0002-6004-2275"
-version: 0.2.3
-date-released: 2026-06-12
-doi: 10.5281/zenodo.6366704
+version: 0.2.4
+date-released: 2026-08-29
 preferred-citation:
   type: article
-  title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+  title: "PyNumDiff: Practical Numerical Differentiation for Noisy Data"
   authors:
+    - family-names: Komarov
+      given-names: Pavel
+      orcid: "https://orcid.org/0009-0007-7482-2807"
     - family-names: van Breugel
       given-names: Floris
-    - family-names: Liu
-      given-names: Yuying
-    - family-names: Brunton
-      given-names: Bingni W.
+      orcid: "https://orcid.org/0000-0001-6538-7179"
+    - family-names: Protogerou
+      given-names: Maria
     - family-names: Kutz
       given-names: J. Nathan
+      orcid: "https://orcid.org/0000-0002-6004-2275"
   journal: Journal of Open Source Software
-  year: 2022
-  volume: 7
-  number: 71
-  pages: 4078
-  doi: 10.21105/joss.04078
-  version: 0.1.2.4
-  notes: "Describes the package through version 0.1.x. A second article covering the 0.2.x generation is under review at the Journal of Open Source Software."
+  year: 2026
+  doi: 10.21105/joss.11172
+  status: submitted
+  notes: "Describes the package's second generation, through the v0.3 release series. Under review; the DOI is reserved and resolves on acceptance."
 references:
+  - type: article
+    title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
+    authors:
+      - family-names: van Breugel
+        given-names: Floris
+      - family-names: Liu
+        given-names: Yuying
+      - family-names: Brunton
+        given-names: Bingni W.
+      - family-names: Kutz
+        given-names: J. Nathan
+    journal: Journal of Open Source Software
+    year: 2022
+    volume: 7
+    number: 71
+    pages: 4078
+    doi: 10.21105/joss.04078
+    version: 0.1.2.4
+    notes: "The first-generation article, describing the package through version 0.1.x."
   - type: article
     title: A Taxonomy of Numerical Differentiation Methods
     authors:

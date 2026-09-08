@@ -1,9 +1,5 @@
 # PyNumDiff
 
-[![Tests](https://github.com/florisvb/PyNumDiff/actions/workflows/test.yml/badge.svg)](https://github.com/florisvb/PyNumDiff/actions/workflows/test.yml)
-[![JOSS status](https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg)](https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt)
-
 Python methods for numerical differentiation of noisy data, including multi-objective optimization routines for automated parameter selection.
 
 <p align="center">
@@ -13,17 +9,18 @@ Python methods for numerical differentiation of noisy data, including multi-obje
 </p>
 
 <p align="center">
-    <img src='https://github.com/florisvb/pynumdiff/actions/workflows/test.yml/badge.svg'/>
+    <a href="https://github.com/florisvb/PyNumDiff/actions">
+        <img src='https://github.com/florisvb/pynumdiff/actions/workflows/test.yml/badge.svg'/></a>
     <a href='https://pynumdiff.readthedocs.io/master/'>
         <img src='https://app.readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
     <a href='https://coveralls.io/github/florisvb/PyNumDiff?branch=master'>
         <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
-    <!--a href="https://doi.org/10.5281/zenodo.6374098">
-        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6374098.svg" alt="DOI"></a-->
-    <a href="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5">
-        <img src="https://joss.theoj.org/papers/102257ee4b0142bf49bc18d7c810e9d5/status.svg"></a>
+    <a href="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b">
+        <img src="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg"></a>
+    <a href="https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt">
+        <img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
 ## Introduction
@@ -123,6 +120,21 @@ See CITATION.cff file, but here are some possible BibTeX entries for convenience
 
 ### PyNumDiff python package:
 
+The second-generation article, describing the package through the v0.3 release series. Currently in review; the DOI is reserved and resolves on acceptance.
+
+    @article{PyNumDiff2026,
+      doi = {10.21105/joss.11172},
+      url = {https://doi.org/10.21105/joss.11172},
+      year = {2026},
+      publisher = {The Open Journal},
+      author = {Pavel Komarov and Floris van Breugel and Maria Protogerou and J. Nathan Kutz},
+      title = {PyNumDiff: Practical Numerical Differentiation for Noisy Data},
+      journal = {Journal of Open Source Software},
+      note = {In review}
+    }
+
+The first-generation article, describing the package through v0.1.x:
+
     @article{PyNumDiff2022,
       doi = {10.21105/joss.04078},
       url = {https://doi.org/10.21105/joss.04078},
@@ -151,11 +163,11 @@ See CITATION.cff file, but here are some possible BibTeX entries for convenience
 ### Optimization algorithm:
 
     @article{ParamOptimizationDerivatives2020, 
-    doi={10.1109/ACCESS.2020.3034077}
-    author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}}, 
-    journal={IEEE Access}, 
-    title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework}, 
-    year={2020}
+      doi={10.1109/ACCESS.2020.3034077}
+      author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}},
+      journal={IEEE Access},
+      title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework},
+      year={2020}
     }
 
 ## Running the tests

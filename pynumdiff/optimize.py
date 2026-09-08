@@ -47,10 +47,10 @@ method_params_and_bounds = {
     splinediff: ({'degree': {3, 4, 5}, # categorical, because degree is whole number, and there aren't many choices
                        's': [0.5, 1, 1.5]}, # multiples of the noise energy, so these hold at any N and noise level
                       {'s': (1e-1, 1e1)}), # a relative floor keeps the search out of the near-interpolating regime
-    spectraldiff: ({'even_extension': {True, False}, # give categorical params in a set
-                  'pad_to_zero_dxdt': {True, False},
+    spectraldiff: ({'extension': {None, 'even', 'detrend', 'odd'}, # how to make the data periodic; none dominates,
+                  'pad_to_flat': {True, False}, # and padding helps on about half of signals, so search both, see #231
                   'cutoff_freq': [1e-2, 5e-2, 1e-1, 5e-1]}, # give numerical params in a list to scipy.optimize over them
-                 {'cutoff_freq': (1e-3, 1-1e-5)}), # every cutoff below ~2/N keeps only the DC term, see #209
+                 {'cutoff_freq': (1e-3, 1-1e-5)}), # tiny cutoffs keep only DC and possibly trend, see #209
     rbfdiff: ({'sigma': [1e-2, 1e-1, 1],
                 'lmbd': [1e-3, 1e-2, 1e-1]},
               {'sigma': (1e-2, 1e3),
@@ -171,7 +171,8 @@ def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates=
     :param int padding: number of steps to ignore at the beginning and end of the data series, or :code:`'auto'` to ignore
                     2.5% at each end. Larger value causes the optimization to emphasize the accuracy in the series middle.
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
-    :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations
+    :param int maxiter: passed down to :code:`scipy.minimize`, maximum iterations. Because search starts from several points,
+                    local descents can be short, and 10 is enough to saturate performance or get within only a couple %.
     :param bool parallel: whether to use multiple processes to optimize, typically faster for single optimizations.
                     For experiments, it is often a better use of resources to parallelize at that level, meaning
                     each must run in its own process, since spawned processes are not allowed to further spawn.

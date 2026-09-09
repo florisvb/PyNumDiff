@@ -56,6 +56,9 @@ method_params_and_bounds = {
               {'sigma': (1e-2, 1e3),
                 'lmbd': (1e-3, 0.5)}),
     waveletdiff: ({'wavelet': {'db8', 'db12', 'sym8', 'coif1'}, # different data can favor different mother wavelets
+                 'mode': {'symmetric', 'reflect', 'antireflect', 'constant'}, # no boundary rule wins outright, and
+                 # symmetric can cost 2x on the wrong signal, so search them. pywt's other modes are excluded: zero
+                 # and the periodic pair invent a value jump, and smooth extrapolates the edge slope through noise.
                  'threshold': [0.5, 1, 2]}, # multiplies the Donoho-Johnstone universal threshold, 0 meaning no denoising.
                  # `level` is left at its adaptive default, min(dwt_max_level(N, wavelet), 5), which tracks both the signal and filter lengths
                 {'threshold': (0.1, 10)}),

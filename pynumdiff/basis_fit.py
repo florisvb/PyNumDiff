@@ -97,7 +97,8 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
         t = dt_or_t
 
     # For each vector along the axis of differentiation, the below does the approximate equivalent of this code,
-    # but sparsely in O(N sigma^2), since the rbf falls off rapidly
+    # but sparsely in O(N sigma^2), since the rbf falls off rapidly. Since A is Toeplitz for uniform spacing, it
+    # could also be done via convolution in O(N sigma), but that would give up irregular grid support.
     # t_i, t_j = np.meshgrid(t,t)
     # r = t_j - t_i # radius
     # rbf = np.exp(-(r**2) / (2 * sigma**2)) # radial basis function kernel, O(N^2) entries
@@ -188,10 +189,16 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
     # impossible or spreads the operator over hundreds of taps and it stops being the local filter this method is
     # built around. The named seven are the orthogonal wavelets whose min|fft(phi)| falls under 0.3, found by
     # sweeping all 67 pywt offers; below that cut the operator runs 469 to 3113 taps against 35 to 199 above it.
-    if (W.name in ('db5', 'db14', 'db18', 'db27', 'db36', 'sym11', 'sym13') or not W.orthogonal
-            or W.dec_len == 2): # a 2-tap filter is Haar under any of its names: haar, db1, bior1.1, rbio1.1
-        raise ValueError(f"'{wavelet}' can't differentiate here: it needs an orthogonal wavelet whose scaling "
-            "function is differentiable and well conditioned to invert. Try 'db8', 'sym8', or 'coif2'.")
+    # Four biorthogonal wavelets also qualify. The rest of their families fail one of two ways: bior3.x and
+    # rbio3.x put a zero in fft(phi), and the 2.x families spread white noise across bands by 1.6-1.8x where
+    # every orthogonal wavelet holds 1.13-1.27. Both uses of the equal-scale assumption break: one sigma stops
+    # describing every band, and the level probe's 2x trip point is left ~1.1x of margin instead of ~1.6x, so
+    # depth gets picked by noise. `threshold` is searched and absorbs some of the first; `level` is not.
+    if (W.name in ('db5', 'db14', 'db18', 'db27', 'db36', 'sym11', 'sym13') or W.dec_len == 2
+            or not (W.orthogonal or W.name in ('bior4.4', 'bior6.8', 'rbio4.4', 'rbio6.8'))):
+        # a 2-tap filter is Haar under any of its names: haar, db1, bior1.1, rbio1.1
+        raise ValueError(f"'{wavelet}' can't differentiate here: it needs a wavelet whose scaling function is "
+            "differentiable and well conditioned to invert. Try 'db8', 'sym8', 'coif2', or 'bior4.4'.")
 
     N = x.shape[axis]
     x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0)) # differentiation axis to front
@@ -205,6 +212,16 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
         # band is noise and hurts if it is signal; white noise carries the same scale in every band, so keep
         # going while a band's robust scale stays near the finest band's and stop at the first one above it.
         # Within 6% of the depth chosen knowing the truth, where a fixed cap of 5 is 23% off. Flat over 1.5-3.
+        # "Same scale in every band" holds because an orthogonal transform is an isometry, which is why the
+        # guard above demands one. It can be bought rather than assumed: run a vector of white noise through
+        # the same transform, record each band's robust scale as that band's gain, and divide it out here. That
+        # removes the assumption entirely -- measured across five levels it flattens bior2.2 from a spread of
+        # 1.74 to 1.14 and bior3.3 from 2.92 to 1.05 -- and bior2.2 then scores 0.077 against bior4.4's 0.076.
+        # Not worth it: the gains must be measured per (wavelet, mode, N), every wavelet we admit already sits
+        # at ~1.0 so the measurement only injects noise into the comparison, and it cost 6% on db8 across the
+        # benchmark while unlocking nothing that beats what we have. Revisit if an exotic family ever earns a
+        # place here. With only 4 noise draws the cost was 13%; 16 draws halved that, which is the tell that it
+        # is estimator variance in a threshold-crossing decision rather than anything wrong with the idea.
         bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode)
         scales = [utility.robust_data_scale(c, center=False) for c in bands[:0:-1]] # finest band first
         level = max(1, next((j for j, sc in enumerate(scales, 1) if sc > 2.0*max(scales[0], 1e-10)), max_level+1) - 1)
@@ -216,28 +233,40 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
     # Sampling phi(t) = sqrt2 sum_k h_k phi(2t-k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
     # eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
     if wavelet not in _OPERATORS:
-        h = np.array(W.rec_lo); h = h / h.sum() * np.sqrt(2)    # refinement filter, integral of phi = 1
-        L = len(h); p = np.arange(L)                            # phi is supported on the integers [0, L-1]
-        shift = 2 * p[:, None] - p[None, :]
-        T = np.where((shift >= 0) & (shift < L), np.sqrt(2) * h[np.clip(shift, 0, L - 1)], 0.0)
+        h = np.array(W.rec_lo)          # pywt zero-pads biorthogonal filters out to a common length, and those
+        nz = np.nonzero(np.abs(h) > 1e-12)[0]  # pad zeros would put null rows in T and wreck its eigenvectors
+        h = h[nz[0]:nz[-1]+1]
+        h = h/h.sum()*np.sqrt(2)        # pins sum(h) = sqrt2, which the eigenvalue ladder rests on
+        L = len(h); p = np.arange(L)    # phi is supported on the integers [0, L-1]
+        # T[n,k] = sqrt2 h_{2n-k}, with h zero outside [0, L-1]. Giving h zero margins wide enough for the whole
+        # index range, -(L-1) to 2(L-1), lets the out-of-range entries land in them and needs no masking.
+        hp = np.zeros(3*L); hp[L:2*L] = h
+        T = np.sqrt(2) * hp[2*p[:, None] - p[None, :] + L]
         evals, evecs = np.linalg.eig(T)
-        phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))]); phi /= phi.sum()            # sum_p phi(p) = 1
-        dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))]); dphi /= np.dot(p, dphi)*-1 # sum_p p*phi'(p) = -1
-        # M must exceed twice the impulse response's reach so the inverse transform cannot wrap onto itself; 512
-        # is clean for every wavelet the guard admits and dwarfs the longest of them (coif17, 102 taps).
-        M = 512; c_phi = np.zeros(M); c_phi[:L] = phi; c_dphi = np.zeros(M); c_dphi[:L] = dphi
-        def _taps(spectrum, derivative):
-            k = np.fft.fftshift(np.real(np.fft.ifft(spectrum))); c = M//2 # lag 0 now in the middle
-            # Trim at 1e-9: db8's A^-1 goes 57 taps to 43 at no measurable cost on noisy data. Looser still would
-            # halve it again, but only by giving up exactness -- the moments restored just below pin constants and
-            # ramps whatever the trim, while t^2 degrades from 1e-12 to 1e-7 between 1e-9 and 1e-6, and this
-            # method's claim is that it differentiates the fitted curve exactly rather than differencing it.
-            reach = max(1, int(np.max(np.nonzero(np.abs(k) > 1e-9*np.abs(k).max())[0]) - c))
-            k = k[c-reach:c+reach+1]; m = np.arange(-reach, reach+1)
-            if derivative: k = k - k.mean(); return k/-np.dot(m, k)
-            return k/k.sum()
-        _OPERATORS[wavelet] = (_taps(1/np.fft.fft(c_phi), False), _taps(np.fft.fft(c_dphi), True),
-                               _taps(np.fft.fft(c_phi), False))
+        # The sum rules put 1 and 1/2 in the spectrum exactly, but not as the two largest: db2, sym2, coif1 and
+        # dmey each carry a stray eigenvalue between them. So match on value rather than on rank.
+        phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))]); phi /= phi.sum()          # sum_p phi(p) = 1
+        dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))]); dphi /= -np.dot(p, dphi) # sum_p p*phi'(p) = -1
+        # phi and phi' are already finite tap sequences; only A^-1 needs a transform, because inverting the
+        # Toeplitz A means inverting its symbol and coming back, and those taps have no closed form. M must
+        # exceed twice their reach so the inverse transform cannot wrap onto itself; 512 is clean for every
+        # wavelet the guard admits and dwarfs the longest of them (coif17, 102 taps).
+        # Trim at 1e-12. A looser 1e-9 saves a dozen taps but costs real accuracy wherever fft(phi) is nearly
+        # flat and so A^-1 is nearly a delta: it cuts sym8's A^-1 to 7 taps and doubles its error on noisy
+        # data, and holds sym6, coif2 and the biorthogonals short of the degree p-1 exactness the sum rules
+        # buy them. The moments restored in _norm pin constants and ramps at any trim; this buys the rest.
+        M = 512; c = M//2
+        k = np.fft.fftshift(np.real(np.fft.ifft(1/np.fft.fft(phi, M)))) # lag 0 now in the middle
+        r_inv = max(1, int(np.max(np.nonzero(np.abs(k) > 1e-12*np.abs(k).max())[0]) - c))
+        def _center(v): # a causal sequence becomes a kernel centred on lag 0, cut at its last live tap
+            r = max(1, int(np.max(np.nonzero(np.abs(v) > 1e-12*np.abs(v).max())[0])))
+            return np.concatenate([np.zeros(r), v[:r+1]]), r
+        def _norm(k, r, derivative):
+            if not derivative: return k/k.sum()         # reproduces constants
+            k = k - k.mean()                            # kills constants,
+            return k/-np.dot(np.arange(-r, r+1), k)     # returns 1 on a ramp
+        _OPERATORS[wavelet] = (_norm(k[c-r_inv:c+r_inv+1], r_inv, False),
+                               _norm(*_center(dphi), True), _norm(*_center(phi), False))
 
     inv_taps, dphi_taps, phi_taps = _OPERATORS[wavelet]
     reach = (len(inv_taps) - 1)//2

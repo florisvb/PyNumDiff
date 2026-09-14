@@ -55,14 +55,18 @@ method_params_and_bounds = {
                 'lmbd': [1e-3, 1e-2, 1e-1]},
               {'sigma': (1e-2, 1e3),
                 'lmbd': (1e-3, 0.5)}),
-    waveletdiff: ({'wavelet': {'db4', 'db8', 'db12', 'sym8', 'coif1', 'coif2'}, # different data can favor different mother wavelets;
-                 # db4 earns its place on short records, where a long filter's margin is a large fraction of the data
+    waveletdiff: ({'wavelet': {'db4', 'db8', 'db12', 'sym8', 'coif1', 'coif2', 'bior4.4'}, # different data can favor
+                 # different mother wavelets; db4 earns its place on short records, where a long filter's margin is a
+                 # large fraction of the data, and bior4.4 is the one biorthogonal that matches the orthogonal ones
                  'mode': {'symmetric', 'reflect', 'antireflect', 'constant'}, # no boundary rule wins outright, and
                  # symmetric can cost 2x on the wrong signal, so search them. pywt's other modes are excluded: zero
                  # and the periodic pair invent a value jump, and smooth extrapolates the edge slope through noise.
-                 'threshold': [1, 2, 4]}, # multiplies the Donoho-Johnstone universal threshold, 0 meaning no denoising.
-                 # Centered higher than a soft-thresholding grid would be, because hard shrinkage keeps its survivors
-                 # whole and so smooths less at equal multiplier; the median best here is 2, against 1.5 for soft.
+                 'threshold': [1.0, 2, 4]}, # multiplies the Donoho-Johnstone universal threshold, 0 meaning no denoising.
+                 # Leading 1.0 keeps this continuous: `roundings` types a parameter from its first seed, and an all-int
+                 # list would quantize the refinement to a standstill. Seeded higher than a soft grid would be, since
+                 # hard shrinkage keeps survivors whole and so smooths less at equal multiplier; refinement covers the
+                 # rest, which matters for outliers, where a spike's coefficients survive by definition and the useful
+                 # multiplier is nearer 6 than the 2 the median signal wants.
                  # `level` is left to its adaptive default, which reads the depth off the noise floor band by band
                 {'threshold': (0.1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],

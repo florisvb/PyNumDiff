@@ -15,7 +15,7 @@ def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0)
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param float cutoff_freq: The high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
+    :param float cutoff_freq: high frequency cutoff as a multiple of the Nyquist frequency: Should be between 0
         and 1. Frequencies below this threshold will be kept, and at and above will be zeroed.
     :param str extension: how to make the data periodic: :code:`None`, :code:`'even'`, :code:`'detrend'`, or :code:`'odd'`,
         where the latter also detrends before extension to avoid discontinuity. None is for genuinely periodic signals.
@@ -30,38 +30,39 @@ def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0)
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The FFT assumes uniformly sampled data.")
     if extension not in (None, 'even', 'detrend', 'odd'): raise ValueError("`extension` must be None, 'even', 'detrend', or 'odd'.")
 
+    N = x.shape[axis]
     x = np.moveaxis(x, axis, 0)
-    N = len(x)
-    y = x.reshape(N, -1) # flat 2D of all the vectors to differentiate
+    x_flat = x.reshape(N, -1) # flat 2D of all the vectors to differentiate
 
     pad = 0
     if pad_to_flat: # repeat the end values outward, smooth the joins, then restore the original in the middle
         pad = 100
-        padded = np.concatenate((np.repeat(y[:1], pad, axis=0), y, np.repeat(y[-1:], pad, axis=0))) # y[:1] rather than y[0] so 2D shape
+        padded = np.concatenate((np.repeat(x_flat[:1], pad, axis=0), x_flat, np.repeat(x_flat[-1:], pad, axis=0))) # [:1] rather than [0] so 2D shape
         smoothed = utility.convolutional_smoother(padded, utility.uniform_kernel(pad//2), axis=0)
-        smoothed[pad:pad+N] = y
-        y = smoothed
+        smoothed[pad:pad+N] = x_flat
+        x_flat = smoothed
 
-    P = len(y); t = np.arange(P)[:, None]*dt # P for "potentially padded"
-    if extension in ('detrend', 'odd') and cutoff_freq > 0: # the line through the endpoints; its derivative is a constant added back below
-        slope = (y[-1] - y[0])/((P-1)*dt)
-        y = y - slope*t # reassign so not in place if y is still a view on x
-    else: slope = 0
+    P = len(x_flat) # P for "potentially padded"
+    if extension in ('detrend', 'odd') and cutoff_freq > 0: # frequency guard so at 0 return 0, not the trend
+        slope = (x_flat[-1] - x_flat[0])/((P-1)*dt) 
+        trend = slope * np.arange(P)[:, np.newaxis]*dt # the line through the endpoints
+        x_flat = x_flat - trend # reassign so not in place if x_flat is still a view on x
+    else: slope = 0; trend = 0
 
-    if extension == 'odd': y = np.concatenate((y, 2*y[-1] - y[-2:0:-1])) # reflect across endpoint
-    elif extension == 'even': y = np.concatenate((y, y[::-1])) # mirror 
+    if extension == 'odd': x_flat = np.concatenate((x_flat, 2*x_flat[-1] - x_flat[-2:0:-1])) # reflect across endpoint
+    elif extension == 'even': x_flat = np.concatenate((x_flat, x_flat[::-1])) # mirror
 
-    M = len(y)
-    k = np.concatenate((np.arange(M//2 + 1), np.arange(-M//2 + 1, 0)))[:, None]
+    M = len(x_flat) # could be N, or P, or 2N - 2, or 2P - 2
+    k = np.concatenate((np.arange(M//2 + 1), np.arange(-M//2 + 1, 0)))[:, np.newaxis]
 
     # Smoothed signal, with the high wavenumbers zeroed out. Nyquist is at wavenumber M/2, and we're cutting off as a fraction of that.
-    X = np.fft.fft(y, axis=0) * (np.abs(k) < cutoff_freq * M/2)
-    x_hat = (np.real(np.fft.ifft(X, axis=0))[:P] + slope*t)[pad:pad+N] # de-extend, put the trend back, then crop the padding
+    X = np.fft.fft(x_flat, axis=0) * (np.abs(k) < cutoff_freq * M/2)
+    x_hat = (np.real(np.fft.ifft(X, axis=0))[:P] + trend)[pad:pad+N] # de-extend, put the trend back, then crop the padding
 
     # Derivative = 90 deg phase shift
     if M % 2 == 0: k[M//2] = 0 # odd derivatives get the Nyquist element zeroed out, see https://pavelkomarov.com/spectral-derivatives/math.pdf section 3.1
     omega = 2*np.pi/(dt*M) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    dxdt_hat = (np.real(np.fft.ifft(1j * k * omega * X, axis=0))[:P] + slope)[pad:pad+N] # and the trend's constant slope
+    dxdt_hat = (np.real(np.fft.ifft(1j * k * omega * X, axis=0))[:P] + slope)[pad:pad+N] # add the trend's constant slope
 
     return np.moveaxis(x_hat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat.reshape(x.shape), 0, axis)
 
@@ -70,7 +71,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     """Find smoothed function and derivative estimates by fitting noisy data with radial-basis-functions. Naively,
     fill a matrix with basis function samples and solve a linear inverse problem against the data, but truncate tiny
     values to make columns sparse. Each basis function "hill" is topped with a "tower" of height :code:`lmbd` to reach
-    noisy data samples, and the final smoothed reconstruction is found by razing these and only keeping the hills.
+    toward noisy data samples, and the final smoothed reconstruction is found by razing these and only keeping the hills.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
@@ -86,8 +87,7 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
 
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0) # bring axis of differentiation to front so each N repeats comprise vector
-    plump = x.shape
-    x_flattened = x.reshape(N, -1) # (N, M) matrix where each column is a vector along the original axis
+    x_flat = x.reshape(N, -1) # (N, M) matrix where each column is a vector along the original axis
 
     if np.isscalar(dt_or_t):
         t = np.arange(N)*dt_or_t
@@ -120,127 +120,71 @@ def rbfdiff(x, dt_or_t, sigma=1, lmbd=0.01, axis=0):
     rbf = sparse.csr_matrix((vals, (rows, cols)), shape=(N, N)) # Build sparse kernels, O(N sigma) entries
     drbfdt = sparse.csr_matrix((dvals, (rows, cols)), shape=(N, N))
     rbf_regularized = rbf + lmbd*sparse.eye(N, format="csr") # identity matrix gives a little extra height at the centers
-    alpha = sparse.linalg.spsolve(rbf_regularized, x_flattened) # solve sparse system targeting the noisy data,
-                                                                # can take matrix target, O(N sigma^2) for each vector
-    x_hat_flattened = rbf @ alpha # find samples of reconstructions using the smooth bases
-    dxdt_hat_flattened = drbfdt @ alpha
+    alpha = sparse.linalg.spsolve(rbf_regularized, x_flat) # solve sparse system targeting the noisy data,
+                                                           # can take matrix target, O(N sigma^2) for each vector
+    x_hat_flat = rbf @ alpha # find samples of reconstructions using the smooth bases
+    dxdt_hat_flat = drbfdt @ alpha
 
-    return np.moveaxis(x_hat_flattened.reshape(plump), 0, axis), np.moveaxis(dxdt_hat_flattened.reshape(plump), 0, axis)
+    return np.moveaxis(x_hat_flat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat_flat.reshape(x.shape), 0, axis)
 
 
-_OPERATORS = {} # (A^-1, phi', phi) taps per wavelet; independent of the data, dt, and N
+FIR = {} # wavelet -> (φ⁻¹, φ, φ') operators as FIR filters
 
-def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='symmetric', num_shifts=None):
-    """Smooth and differentiate noisy data in a wavelet basis.
-
-    Three steps: (1) pre-filter the samples into finest-scale scaling coefficients, which is what the cascade is
-    defined on; (2) decompose with the DWT and hard-threshold the detail coefficients to denoise (Donoho-Johnstone
-    universal threshold), averaged over every alignment of the transform grid; (3) apply the analytic derivative of
-    the basis to the denoised coefficients.
-
-    The derivative differentiates the basis functions themselves rather than finite-differencing the signal. PyWavelets
-    treats the samples as finest-level scaling coefficients, so x_hat is the interpolant x(t) = sum_n a_n phi(t/dt - n)
-    for the scaling function phi. Sampling x and its analytic derivative on the grid gives two convolutions against phi
-    and phi' evaluated at *integers*,
-
-        x_hat = A @ a     and     x' = A_prime @ a,
-
-    so x' = A_prime @ A^-1 @ x_hat, exact for signals the basis can represent. Both matrices need only the values of
-    phi and phi' at the integers, which evaluating the refinement relation phi(t) = sqrt2 sum_k h_k phi(2t - k) at t = p
-    turns into a small eigenproblem: phi(p) is the eigenvalue-1 eigenvector of T[p,q] = sqrt2 h_{2p-q} and phi'(p) the
-    eigenvalue-1/2 one, each normalized to reproduce constants and ramps. These are point values, not the connection
-    coefficients int phi'(x) phi(x-l) dx that give the derivative's matrix elements in the basis. Representing d/dt
-    exactly in a compactly supported wavelet basis is due to Beylkin (1992), who does it via those integrals on V_0;
-    here the operator is instead assembled from point samples of phi and phi', which the circulant structure lets us
-    apply as a transfer function. The eigenvector route to lattice values is standard (Daubechies 1992, ch. 6), and
-    the wavelets themselves are Daubechies' (1988).
-
-    References:
-        G. Beylkin, "On the representation of operators in bases of compactly supported wavelets," SIAM J. Numer.
-        Anal. 29(6):1716-1740, 1992.
-        I. Daubechies, "Ten Lectures on Wavelets," CBMS-NSF Regional Conference Series in Applied Mathematics 61,
-        SIAM, 1992.
+def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=None, num_shifts=None, axis=0):
+    """Put data in a scaling function basis, wavelet transform to separate noise into a wavelet basis, threshold,
+    and differentiate in the reassembled scaling fuction basis.
 
     :param np.array x: data to differentiate. May be multidimensional; see :code:`axis`.
-    :param float dt: uniform time step between samples.
-    :param str wavelet: PyWavelets wavelet name. Must have a differentiable scaling function, so smoother wavelets give
-        better derivatives: 'db8' (default) and 'sym8' are best for noisy data; 'db4', 'sym4', and 'coif2' also work well.
-    :param int level: decomposition depth. None (default) picks it from the data, descending while each new detail
-        band still looks like noise and stopping at the first that stands above the noise floor.
-    :param float threshold: hard-thresholding scale factor in [0, inf), multiplying the Donoho-Johnstone universal
-        threshold. Hard and soft shrinkage do not share a scale: both zero the same coefficients, but hard keeps
-        the survivors whole where soft shrinks them by lambda, so hard smooths less at equal multiplier and wants
-        about twice the value. 2 is the median best across the benchmark signals, against 1.5 for soft.
-    :param int axis: axis along which to differentiate (default 0).
-    :param int num_shifts: how many starting offsets of the transform grid to average the denoised estimate over.
-        None (default) resolves to :code:`2**level`, one full period of the cascade's alignment ambiguity, which
-        scales down on its own for short signals. 1 recovers a single transform. Cost is proportional.
-    :param str mode: PyWavelets signal extension mode, governing the denoising transform only; the derivative's
-        own edges are handled by reflection regardless. 'symmetric' mirrors the signal, which
-        performs better on aperiodic data than the wrapping modes ('periodization', 'periodic'), which cause discontinuity
-        at beginning and end.
+    :param float dt: uniform step between samples
+    :param str wavelet: type name from PyWavelets. Must have a differentiable scaling function.
+    :param str mode: signal extension mode for the Discrete Wavelet Transform decomposition, :code:`pywt.wavedec`
+    :param float threshold: scale factor in [0, inf) multiplying the Donoho-Johnstone universal hard threshold.
+    :param int level: decomposition depth. None detects level automatically from the data, descending until a
+        detail band's energy is quadruple that of the finest-resolution details, per coefficient.
+    :param int num_shifts: how many starting offsets to average for cycle-spinning. None uses :code:`2**level`,
+        one full period of the cascade's alignment.
+    :param int axis: data dimension along which to differentiate
+
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. Missing values spread through the DWT to make every coefficient NaN.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The DWT requires uniformly sampled data.")
-    W = pywt.Wavelet(wavelet) # itself rejects continuous wavelets, which have no filter bank to build phi from
-    # Refused families, all for the same reason: fft(phi) dips to or through zero, so inverting it is either
-    # impossible or spreads the operator over hundreds of taps and it stops being the local filter this method is
-    # built around. The named seven are the orthogonal wavelets whose min|fft(phi)| falls under 0.3, found by
-    # sweeping all 67 pywt offers; below that cut the operator runs 469 to 3113 taps against 35 to 199 above it.
-    # Four biorthogonal wavelets also qualify. The rest of their families fail one of two ways: bior3.x and
-    # rbio3.x put a zero in fft(phi), and the 2.x families spread white noise across bands by 1.6-1.8x where
-    # every orthogonal wavelet holds 1.13-1.27. Both uses of the equal-scale assumption break: one sigma stops
-    # describing every band, and the level probe's 2x trip point is left ~1.1x of margin instead of ~1.6x, so
-    # depth gets picked by noise. `threshold` is searched and absorbs some of the first; `level` is not.
-    if (W.name in ('db5', 'db14', 'db18', 'db27', 'db36', 'sym11', 'sym13') or W.dec_len == 2
-            or not (W.orthogonal or W.name in ('bior4.4', 'bior6.8', 'rbio4.4', 'rbio6.8'))):
-        # a 2-tap filter is Haar under any of its names: haar, db1, bior1.1, rbio1.1
-        raise ValueError(f"'{wavelet}' can't differentiate here: it needs a wavelet whose scaling function is "
-            "differentiable and well conditioned to invert. Try 'db8', 'sym8', 'coif2', or 'bior4.4'.")
-
-    N = x.shape[axis]
-    x_work = np.ascontiguousarray(np.moveaxis(x, axis, 0)) # differentiation axis to front
-    shape = x_work.shape                                   # remember it to restore the input's dimensionality
-    x_flat = x_work.reshape(N, -1)                         # rest of the dims flattened into columns
-    if N < 2: raise ValueError(f"`x` is only {N} long along axis {axis}; nothing to differentiate.")
+    # Reject wavelet types where fft(phi) has entries at or near zero, where inverting becomes impossible or turns
+    # into an obscenely long FIR filter. Also reject biorthogonal wavelets that don't preserve noise scale well, because
+    # we need isometry-ish for automatic level selection and the equal-scale assumption behind universal Donoho-Johnstone.
+    W = pywt.Wavelet(wavelet) # rejects continuous wavelets, which have no filter bank to build phi from
+    if (W.name in ('db5', 'db14', 'db18', 'db27', 'db36', 'sym11', 'sym13') or W.dec_len == 2 # a 2-tap filter is Haar under one of several names
+        or (not W.orthogonal and W.name not in ('bior4.4', 'bior6.8', 'rbio4.4', 'rbio6.8'))):
+        raise ValueError(f"'{wavelet}' can't be used to differentiate. The scaling function must be continuous, have "
+            "a spectrum that stays away from zero, and be orthonormal or nearly so to its own integer shifts.")
     max_level = pywt.dwt_max_level(N, wavelet) # structural ceiling: how many halvings the filter still fits in
     if max_level < 1: raise ValueError(f"`x` is only {N} long along axis {axis}, too short for '{wavelet}'.")
-    if level is None:
-        # Let the data pick the depth. Descending one level thresholds one more detail band, which helps if that
-        # band is noise and hurts if it is signal; white noise carries the same scale in every band, so keep
-        # going while a band's robust scale stays near the finest band's and stop at the first one above it.
-        # Within 6% of the depth chosen knowing the truth, where a fixed cap of 5 is 23% off. Flat over 1.5-3.
-        # "Same scale in every band" holds because an orthogonal transform is an isometry, which is why the
-        # guard above demands one. It can be bought rather than assumed: run a vector of white noise through
-        # the same transform, record each band's robust scale as that band's gain, and divide it out here. That
-        # removes the assumption entirely -- measured across five levels it flattens bior2.2 from a spread of
-        # 1.74 to 1.14 and bior3.3 from 2.92 to 1.05 -- and bior2.2 then scores 0.077 against bior4.4's 0.076.
-        # Not worth it: the gains must be measured per (wavelet, mode, N), every wavelet we admit already sits
-        # at ~1.0 so the measurement only injects noise into the comparison, and it cost 6% on db8 across the
-        # benchmark while unlocking nothing that beats what we have. Revisit if an exotic family ever earns a
-        # place here. With only 4 noise draws the cost was 13%; 16 draws halved that, which is the tell that it
-        # is estimator variance in a threshold-crossing decision rather than anything wrong with the idea.
-        bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode)
-        scales = [utility.robust_data_scale(c, center=False) for c in bands[:0:-1]] # finest band first
-        level = max(1, next((j for j, sc in enumerate(scales, 1) if sc > 2.0*max(scales[0], 1e-10)), max_level+1) - 1)
-    if num_shifts is None: num_shifts = 2**level # the cascade decimates by 2 per level, so alignments repeat here
 
-    # Three operators, built once per wavelet on one grid so their delays compose. A and A_prime hold phi and
-    # phi' on the integer grid, so A^-1 turns samples into the coefficients of the interpolant they define and
-    # A_prime differentiates it; all are circulant, so each is a short filter and the data is never transformed.
-    # Sampling phi(t) = sqrt2 sum_k h_k phi(2t-k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
-    # eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
-    if wavelet not in _OPERATORS:
-        h = np.array(W.rec_lo)          # pywt zero-pads biorthogonal filters out to a common length, and those
-        nz = np.nonzero(np.abs(h) > 1e-12)[0]  # pad zeros would put null rows in T and wreck its eigenvectors
+    N = x.shape[axis]
+    x = np.moveaxis(x, axis, 0)
+    x_flat = x.reshape(N, -1)
+
+    if level is None: # Descending and thresholding an additional (lower frequency) detail band helps if that band
+        # is noise and hurts if it is signal. White noise should have the same scale in every band due to isometry
+        # of orthonormal transform, so find where a robust scale starts to run into signal (grow).
+        bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode) # all of them
+        # finest scale I ever met in my whole life ♪ ♫ ♬ Details are spiritually centered, like a guru, so feel their raw energy, also like a guru
+        finest_scale = max(utility.robust_data_scale(bands[-1], center=False), 1e-10) # guard with a tiny value in case of super smooth data
+        level = 1; while level < max_level and utility.robust_data_scale(bands[-(1+level)], center=False) <= 2*finest_scale: level += 1
+    if num_shifts is None: num_shifts = 2**level # the deepest level's functions span 2^level samples, so alignments repeat here
+
+    if wavelet not in FIR: # then build the three operators for this wavelet
+        h = np.array(W.rec_lo) # pywt zero-pads biorthogonal filters out to a common length, so trim
+        nz = np.nonzero(np.abs(h) > 1e-12)[0]
         h = h[nz[0]:nz[-1]+1]
         h = h/h.sum()*np.sqrt(2)        # pins sum(h) = sqrt2, which the eigenvalue ladder rests on
         L = len(h); p = np.arange(L)    # phi is supported on the integers [0, L-1]
         # T[n,k] = sqrt2 h_{2n-k}, with h zero outside [0, L-1]. Giving h zero margins wide enough for the whole
         # index range, -(L-1) to 2(L-1), lets the out-of-range entries land in them and needs no masking.
         hp = np.zeros(3*L); hp[L:2*L] = h
+        # Sampling phi(t) = sqrt2 sum_k h_k phi(2t-k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
+        # eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
         T = np.sqrt(2) * hp[2*p[:, None] - p[None, :] + L]
         evals, evecs = np.linalg.eig(T)
         # The sum rules put 1 and 1/2 in the spectrum exactly, but not as the two largest: db2, sym2, coif1 and
@@ -265,11 +209,11 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
             if not derivative: return k/k.sum()         # reproduces constants
             k = k - k.mean()                            # kills constants,
             return k/-np.dot(np.arange(-r, r+1), k)     # returns 1 on a ramp
-        _OPERATORS[wavelet] = (_norm(k[c-r_inv:c+r_inv+1], r_inv, False),
+        FIR[wavelet] = (_norm(k[c-r_inv:c+r_inv+1], r_inv, False),
                                _norm(*_center(dphi), True), _norm(*_center(phi), False))
 
-    inv_taps, dphi_taps, phi_taps = _OPERATORS[wavelet]
-    reach = (len(inv_taps) - 1)//2
+    phi_inv, dphi, phi = FIR[wavelet]
+    reach = (len(phi_inv) - 1)//2
     if reach + num_shifts - 1 > N - 1: num_shifts = max(1, N - reach) # short signal, so spin fewer alignments
     margin = reach + num_shifts - 1
     if margin > N - 1: raise ValueError(f"'{wavelet}' needs a {len(inv_taps)}-tap pre-filter, too wide to fit "
@@ -302,12 +246,8 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
     a_hat = 0
     for shift in range(num_shifts):
         coeffs = pywt.wavedec(a[shift:shift+window], wavelet, level=level, mode=mode, axis=0)
-        sigma = np.maximum(utility.robust_data_scale(coeffs[-1], center=False, keepdims=True), 1e-10) # uncentered, as in Donoho-Johnstone, max to guard https://github.com/PyWavelets/pywt/issues/866, TODO remove later
-        # coeffs[0] is the coarse approximation and isn't thresholded. At threshold 0 this is the identity, but
-        # pywt hands back NaN for coefficients that are exactly 0 (PyWavelets/pywt#866), so skip the no-op call.
-        if threshold > 0:
-            thresh = threshold * sigma * np.sqrt(2 * np.log(N))
-            coeffs = [coeffs[0]] + [pywt.threshold(c, thresh, mode='hard') for c in coeffs[1:]]
+        sigma = utility.robust_data_scale(coeffs[-1], center=False, keepdims=True) # uncentered, as in Donoho-Johnstone
+        coeffs = [coeffs[0]] + [pywt.threshold(c, threshold * sigma * np.sqrt(2 * np.log(N)), mode='hard') for c in coeffs[1:]]
         rec = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:window]
         a_hat = a_hat + rec[(num_shifts-1)-shift : window-shift]
     a_hat = a_hat/num_shifts # denoised coefficients, back to length N
@@ -325,6 +265,4 @@ def waveletdiff(x, dt, wavelet='db8', level=None, threshold=2.0, axis=0, mode='s
         half = len(taps)//2
         wide = np.concatenate([2*seq[0] - seq[half:0:-1], seq, 2*seq[-1] - seq[-2:-half-2:-1]], axis=0)
         return np.stack([np.convolve(col, taps, mode='valid') for col in wide.T], axis=1)
-    dxdt_hat = np.moveaxis(_apply(a_hat, dphi_taps/dt).reshape(shape), 0, axis)
-    x_hat = np.moveaxis(_apply(a_hat, phi_taps).reshape(shape), 0, axis)
-    return x_hat, dxdt_hat
+    return np.moveaxis(_apply(a_hat, phi).reshape(shape), 0, axis), np.moveaxis(_apply(a_hat, dphi/dt).reshape(shape), 0, axis)

@@ -27,8 +27,8 @@ def robust_data_scale(x, axis=0, center=True, keepdims=False):
 
     :param np.array[float] x: data whose scale to measure. NaNs are ignored rather than propagated.
     :param int axis: data dimension along which to measure
-    :param bool center: whether to subtract the median first. :code:`False` gives the uncentered Donoho-Johnstone
-        form, which is correct when the input is already known to be zero-mean, as for wavelet coefficients
+    :param bool center: whether to subtract the median first. :code:`False` is for when :code:`x` is known to come from
+        a zero-mean population, as for wavelet detail coefficients
     :param bool keepdims: whether to leave the reduced axis in place with length 1, so the result broadcasts
         back against the data it came from
 
@@ -36,8 +36,8 @@ def robust_data_scale(x, axis=0, center=True, keepdims=False):
     """
     # These 3 lines are `scipy.stats.median_abs_deviation(x, scale='normal', nan_policy='omit')`, but faster on inputs < ~10^5 long
     med = np.median if not np.any(np.isnan(x)) else np.nanmedian # pay for skipping NaNs only when there are any to skip
-    c = med(x, axis=axis, keepdims=True) if center else 0 # center=False is the uncentered form waveletdiff wants
-    return med(np.abs(x - c), axis=axis, keepdims=keepdims)/0.6744897501960817 # divide by Phi^-1(3/4), i.e. scale='normal'
+    c = med(x, axis=axis, keepdims=True) if center else 0
+    return med(np.abs(x - c), axis=axis, keepdims=keepdims)/0.6744897501960817 # divide by Φ⁻¹(3/4), i.e. scale='normal'
 
 def robust_noise_scale(x, axis=0):
     """Estimate the standard deviation of the *noise* in :code:`x`, as opposed to the scale of :code:`x` itself.

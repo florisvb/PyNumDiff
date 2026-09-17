@@ -14,18 +14,19 @@ _PROBLEM_CACHE = {} # (order, window length) -> a parametrized CVXPY problem, so
 def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='friedrichs', axis=0):
     """Fit a linear dynamical system to windows of the data, then differentiate that model.
 
-    :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
+    :param np.array[float] x: data to differentiate. May contain NaN values (missing data); NaNs are excluded
+        from fits and imputed by the model. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int>0 order: order of the ODE fit, the number of states in the linear system, how many times :code:`x` is integrated.
-    :param float gamma: regularization term, in multiples of the data's own scale, so a given value means the same
-        thing whatever the units.
+    :param float gamma: regularization strength on constants of integration; higher forces more to be explained by linear
+        dynamical fit, and lower allows more to be explained by the smooth polynomial basis.
     :param int window_size: number of samples in the sliding window, or number of average step sizes to use as window
         width if irregular sampling; if not given, no sliding
     :param int stride: step size for sliding. Defaults to :code:`window_size//5`, which costs only a few percent of accuracy
         against a much finer stride while running reasonably fast; strides > half the window degrade performance badly
-    :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
-    :param int axis: axis along which to differentiate (default 0)
+    :param str kernel: name of kernel to use for weighting and smoothing windows (:code:`'gaussian'` or :code:`'friedrichs'`)
+    :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
@@ -79,7 +80,7 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
             B_p = cvxpy.Parameter((order, N)) # parameterized because variable sample locations or missing values
                 # make the problem's sampling of B vary, so baking in could make cached (order, N) carry the wrong thing.
             _PROBLEM_CACHE[(order, N)] = (cvxpy.Problem(cvxpy.Minimize(
-                cvxpy.sum_squares(y_p - (a_v @ iY_p + c_v @ B_p)) +
+                cvxpy.sum_squares(y_p - (a_v @ iY_p + c_v @ B_p)) + # Outliers effect iY, not just y, so Huberizing wouldn't fix
                 g_p*cvxpy.sum(cvxpy.abs(c_v)) + 1e-6*cvxpy.sum(cvxpy.abs(a_v)))), a_v, c_v, iY_p, y_p, g_p, B_p)
                 # Smooth x has near-polynomial integrals, and B is polynomials, so a and c become interchangeable. 1e-6 on
                 # a's norm enforces uniqueness while not significantly biasing. See #223

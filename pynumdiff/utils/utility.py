@@ -3,7 +3,7 @@ from itertools import chain
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import minimize
-from scipy.special import huber
+from scipy.special import huber # scipy's huber takes args in opposite order as cvxpy's
 from scipy.stats import norm
 from scipy.ndimage import convolve1d
 
@@ -42,15 +42,14 @@ def robust_data_scale(x, axis=0, center=True, keepdims=False):
 def robust_noise_scale(x, axis=0):
     """Estimate the standard deviation of the *noise* in :code:`x`, as opposed to the scale of :code:`x` itself.
     Second differencing annihilates constants and linear trends outright, and turns a quadratic into a constant that
-    the centering inside :code:`robust_data_scale` then removes, so what survives is essentially noise. Its
-    :math:`(1, -2, 1)` stencil inflates variance by :math:`(1^2 + (-2)^2 + 1^2)\\hat\\sigma^2 = 6\\hat\\sigma^2`,
-    hence the :math:`\\sqrt{6}`.
+    centering inside :code:`robust_data_scale` then removes, so what survives is third-degree and higher.
 
     :param np.array[float] x: noisy data. NaNs are ignored rather than propagated.
     :param int axis: data dimension along which to measure
 
     :return: **sigma_hat** (float or np.array[float]) -- robust estimate of the noise standard deviation
     """
+    # Differencing's [1, -2, 1] stencil inflates variance by (1^2 + (-2)^2 + 1^2)σ̂² = 6σ̂², so scale stddev by √6
     return robust_data_scale(np.diff(x, 2, axis=axis), axis=axis)/np.sqrt(6)
 
 
@@ -109,7 +108,7 @@ def uniform_kernel(u):
     :param int or np.array[float] u: a window size, or positions
     :return: **kernel** (np.array[float]) -- weights summing to 1
     """
-    return np.ones(u)/u if np.isscalar(u) else np.ones_like(u, dtype=float)/len(u)
+    return np.ones(u)/u if np.isscalar(u) else np.ones(u.shape)/len(u)
 
 def gaussian_kernel(u):
     """A gaussian truncated at 2.7 sigma, leaving edges 2.6e-2 times smaller than the peak.
@@ -118,7 +117,7 @@ def gaussian_kernel(u):
     :return: **kernel** (np.array[float]) -- weights summing to 1
     """
     if np.isscalar(u): u = np.linspace(-1, 1, u)
-    ker = np.exp(-(2.7*np.asarray(u, dtype=float))**2/2)
+    ker = np.exp(-(2.7*u)**2 / 2)
     return ker/np.sum(ker) # always normalized
 
 def friedrichs_kernel(u):

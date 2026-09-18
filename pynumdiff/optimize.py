@@ -131,15 +131,11 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
     try: x_hat, dxdt_hat = func(x, dt, **point_params, **singleton_params, **categorical_params) # take deriv, add back singletons and categorical choices
     except np.linalg.LinAlgError: cache[key] = 1e10; return 1e10 # some methods can fail numerically
 
-    # Evaluate estimate according to a loss function: against the truth if we have it, else the proxy below.
-    # Only RMSE is offered for the known-truth case. Minimizing `evaluate.error_correlation` instead is degenerate:
-    # it measures how much of the error tracks the signal, which is what smoothing produces, so its minimum is at
-    # no smoothing at all. Measured across five methods it drove the correlation to exactly zero every time while
-    # RMSE rose by 1.1x (savgoldiff) to 12x (waveletdiff). It stays in `utils.evaluate` as a diagnostic to report.
+    # Evaluate estimate according to a loss function
     if dxdt_truth is not None:
         rmse_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
         cache[key] = rmse_dxdt; return rmse_dxdt
-    else: # then minimize L(Phi) = (RMSE(trapz(dxdt_hat) + c - x) || sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
+    else: # then minimize L(Phi) = RMSE(trapz(dxdt_hat) + c - x OR sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
         # It seems like we should be able to use x_hat rather than the trapz integral of dxdt_hat + constant, but the latter is more reliable,
         # because it accounts for the accuracy of the derivative directly, not through the generating algorithm's smooth signal estimate.
         rec_x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)

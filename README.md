@@ -2,34 +2,26 @@
 
 Python methods for numerical differentiation and smoothing of noisy data, including automated hyperparameter selection.
 
-<table>
-<tr>
-<td width="230" align="center">
+<p align="center">
   <a href="https://pynumdiff.readthedocs.io/master/">
-    <img alt="PyNumDiff" src="https://raw.githubusercontent.com/florisvb/PyNumDiff/master/logo.png" width="200"/></a>
-</td>
-<td valign="middle">
-  <a href="https://github.com/florisvb/PyNumDiff/actions">
-    <img src='https://github.com/florisvb/pynumdiff/actions/workflows/test.yml/badge.svg'/></a>
-  <a href='https://pynumdiff.readthedocs.io/master/'>
-    <img src='https://app.readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
-  <a href='https://coveralls.io/github/florisvb/PyNumDiff?branch=master'>
-    <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
-  <a href="https://badge.fury.io/py/pynumdiff">
-    <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
-  <a href="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b">
-    <img src="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg"></a>
-  <a href="https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt">
-    <img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
-</td>
-</tr>
-<tr>
-  <td colspan="2" align="center">
-    <img alt="Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by optimize()" 
-      src="https://raw.githubusercontent.com/florisvb/PyNumDiff/master/paper/methods_comparison.png"/>
-  </td>
-</tr>
-</table>
+    <img alt="Python for Numerical Differentiation of noisy time series data" src="https://raw.githubusercontent.com/florisvb/PyNumDiff/master/logo.png" width="300" />
+  </a>
+</p>
+
+<p align="center">
+    <a href="https://github.com/florisvb/PyNumDiff/actions">
+        <img src='https://github.com/florisvb/pynumdiff/actions/workflows/test.yml/badge.svg'/></a>
+    <a href='https://pynumdiff.readthedocs.io/master/'>
+        <img src='https://app.readthedocs.org/projects/pynumdiff/badge/?version=master' alt='Documentation Status' /></a>
+    <a href='https://coveralls.io/github/florisvb/PyNumDiff?branch=master'>
+        <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
+    <a href="https://badge.fury.io/py/pynumdiff">
+        <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
+    <a href="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b">
+        <img src="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg"></a>
+    <a href="https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt">
+        <img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
+</p>
 
 ## Introduction
 
@@ -46,6 +38,8 @@ PyNumDiff is a Python package that implements many methods for computing numeric
 All ultimately regularize based on a smoothness prior, but the underlying models vary to suit particular assumptions: linear dynamics, frequency dependence, multiscale structure, piecewise polynomials, outliers, wrapping domain, etc. Runtimes scale linearly with data length, except for one which uses the FFT (but is still much faster than approaches using a convex solver). Accuracies tend to be broadly similar on generic data, although matching assumptions to the data generator can occasionally edge out competitors (e.g. linear dynamics for oscillators). Some models have flexibility advantages over others, like the ability to handle irregular data spacing, collated in the table under [Usage](#usage) below. For further details and comparison, see section 7 of our [Taxonomy Paper](https://arxiv.org/abs/2512.09090).
 
 All methods have hyperparameters, described in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/). We use a principled multi-objective optimization framework for choosing settings that minimize a loss function that balances faithfulness to data with smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077). Hyperparameter optimization runtime is primarily governed by search space dimension, which varies between 2 and 5 across methods.
+
+![Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by `pynumdiff.optimize`.](paper/methods_comparison.png)
 
 ## Installing
 

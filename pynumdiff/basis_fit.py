@@ -160,26 +160,27 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
         or (not W.orthogonal and W.name not in ('bior4.4', 'bior6.8', 'rbio4.4', 'rbio6.8'))):
         raise ValueError(f"'{wavelet}' can't be used to differentiate. The scaling function must be continuous, have "
             "a spectrum that stays away from zero, and be orthonormal or nearly so to its own integer shifts.")
+
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0)
     x_flat = x.reshape(N, -1)
 
+    # Step 0: Lock down adaptive parameters
     max_level = pywt.dwt_max_level(N, wavelet) # structural ceiling: how many halvings the filter still fits in
     if max_level < 1: raise ValueError(f"`x` is only {N} long along axis {axis}, too short for '{wavelet}'.")
-
     if level is None: # Descending and thresholding an additional (lower frequency) detail band helps if that band
         # is noise and hurts if it is signal. White noise should have the same scale in every band due to isometry
         # of orthonormal transform, so find where a robust scale starts to run into signal (grow).
         bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode) # fully decompose a single vector to probe
-        finest_scale = max(utility.robust_data_scale(bands[-1], center=False), 1e-10) # guard with a tiny value in case of super smooth data
+        finest_scale = max(utility.robust_data_scale(bands[-1], center=False), 1e-12) # guard with a tiny value in case of super smooth data
         level = 1 # finest scale I ever met in my whole life ♪ ♫ ♬ Details are spiritually centered, like a guru, so feel their raw energy, their aura
         while level < max_level and utility.robust_data_scale(bands[-(1+level)], center=False) <= 2*finest_scale: level += 1
     if num_shifts is None: num_shifts = 2**level # the deepest level's functions span 2^level samples, so alignments repeat here
 
     # Step 1: Build the three operators for this wavelet
     if wavelet not in FIR:
-        # Step i: Form T. Use reconstruction filter, because correlation (+k indexer) disassembles and convolution
-        # (-k indexer) reassembles. pywt stores filters as possibly 0-padded lists, so trim. Renormalize so 1 in eig (T).
+        # Step i: Form T. pywt stores filters as possibly 0-padded lists, so trim. Use the *reconstruction* filter, because
+        # correlation (+k indexer) disassembles and convolution (-k indexer) reassembles. Renormalize so 1 in eig (T).
         h = np.array(W.rec_lo); h = np.trim_zeros(h * (np.abs(h) > 1e-12)); h = h/h.sum()*np.sqrt(2)
         T = np.sqrt(2) * convolution_matrix(h, len(h))[::2] # T[n,k] = √2 h_{2n-k}
         l, V = np.linalg.eig(T) # φ is eigenvector corresponding to eigenvalue 1, and φ' is vec with val 1/2

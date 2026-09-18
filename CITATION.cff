@@ -8,13 +8,20 @@ authors:
   - family-names: van Breugel
     given-names: Floris
     orcid: "https://orcid.org/0000-0001-6538-7179"
+  - family-names: Liu
+    given-names: Yuying
   - family-names: Protogerou
     given-names: Maria
   - family-names: Kutz
     given-names: J. Nathan
     orcid: "https://orcid.org/0000-0002-6004-2275"
-version: 0.2.4
-date-released: 2026-08-29
+version: 0.3
+date-released: 2026-09-18
+license: MIT
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.6366704
+    description: "Concept DOI for the software archive; always resolves to the latest release."
 preferred-citation:
   type: article
   title: "PyNumDiff: Practical Numerical Differentiation for Noisy Data"
@@ -68,3 +75,16 @@ references:
     status: submitted
     url: "https://arxiv.org/abs/2512.09090"
     notes: "Companion paper. Benchmarks the methods implemented here and provides their theoretical grounding."
+  - type: article
+    title: "Numerical differentiation of noisy data: A unifying multi-objective optimization framework"
+    authors:
+      - family-names: van Breugel
+        given-names: Floris
+      - family-names: Kutz
+        given-names: J. Nathan
+      - family-names: Brunton
+        given-names: Bingni W.
+    journal: IEEE Access
+    year: 2020
+    doi: 10.1109/ACCESS.2020.3034077
+    notes: "The multi-objective hyperparameter optimization framework behind `optimize`."

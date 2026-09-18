@@ -165,7 +165,7 @@ The first-generation article, describing the package through v0.1.x:
 ### Optimization algorithm:
 
     @article{ParamOptimizationDerivatives2020, 
-      doi={10.1109/ACCESS.2020.3034077}
+      doi={10.1109/ACCESS.2020.3034077},
       author={F. {van Breugel} and J. {Nathan Kutz} and B. W. {Brunton}},
       journal={IEEE Access},
       title={Numerical differentiation of noisy data: A unifying multi-objective optimization framework},
@@ -178,7 +178,7 @@ We are using GitHub Actions for continuous integration testing.
 
 Run tests locally by navigating to the repo in a terminal and calling
 ```bash
-> pytest -s
+> python3 -m pytest -s
 ```
 Add the flag `--plot` to see plots of the methods against test functions. Add the flag `--bounds` to print $\log$ error bounds (useful when changing method behavior).
 

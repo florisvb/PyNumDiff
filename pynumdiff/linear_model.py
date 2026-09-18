@@ -80,7 +80,7 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
             B_p = cvxpy.Parameter((order, N)) # parameterized because variable sample locations or missing values
                 # make the problem's sampling of B vary, so baking in could make cached (order, N) carry the wrong thing.
             _PROBLEM_CACHE[(order, N)] = (cvxpy.Problem(cvxpy.Minimize(
-                cvxpy.sum_squares(y_p - (a_v @ iY_p + c_v @ B_p)) + # Outliers effect iY, not just y, so Huberizing wouldn't fix
+                cvxpy.sum_squares(y_p - (a_v @ iY_p + c_v @ B_p)) + # Outliers affect iY, not just y, so Huberizing wouldn't fix
                 g_p*cvxpy.sum(cvxpy.abs(c_v)) + 1e-6*cvxpy.sum(cvxpy.abs(a_v)))), a_v, c_v, iY_p, y_p, g_p, B_p)
                 # Smooth x has near-polynomial integrals, and B is polynomials, so a and c become interchangeable. 1e-6 on
                 # a's norm enforces uniqueness while not significantly biasing. See #223

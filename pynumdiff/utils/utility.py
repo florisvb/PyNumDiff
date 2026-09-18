@@ -36,7 +36,7 @@ def robust_data_scale(x, axis=0, center=True, keepdims=False):
     """
     # These 3 lines are `scipy.stats.median_abs_deviation(x, scale='normal', nan_policy='omit')`, but faster on inputs < ~10^5 long
     med = np.median if not np.any(np.isnan(x)) else np.nanmedian # pay for skipping NaNs only when there are any to skip
-    c = med(x, axis=axis, keepdims=True) if center else 0
+    c = med(x, axis=axis, keepdims=True) if center else 0 # keepdims because it has to be same dimension as x for subtraction
     return med(np.abs(x - c), axis=axis, keepdims=keepdims)/0.6744897501960817 # divide by Φ⁻¹(3/4), i.e. scale='normal'
 
 def robust_noise_scale(x, axis=0):

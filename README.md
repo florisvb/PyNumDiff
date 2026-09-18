@@ -91,7 +91,7 @@ params, val = optimize(somethingdiff, x, dt, bandlimit=bandlimit, # smoothness h
 print('Optimal parameters: ', params)
 x_hat, dxdt_hat = somethingdiff(x, dt, **params)
 ```
-`bandlimit` governs the frequency cutoff targeted by the optimization procedure, with smaller values yielding smoother derivatives. Its value is dependent upon frequency content of the underlying signal, and it is universal across methods, making it possible to compare results post optimization. A default search space is used to initialize and limit optimization, defined at the top of `optimize.py`, with overwrites passable via `search_space_updates`. Be aware optimization can be a fairly heavy process for some methods.
+`bandlimit` governs the smoothness targeted by the optimization procedure, with smaller values yielding smoother derivatives. Its value is dependent upon frequency content of the underlying signal, and it is universal across methods, making it possible to compare results post optimization. A default search space is used to initialize and limit optimization, defined at the top of `optimize.py`, with overwrites passable via `search_space_updates`. Be aware optimization can be a fairly heavy process for some methods.
 
 ### Notebook examples
 

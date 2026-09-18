@@ -1,7 +1,9 @@
 """Methods based on fitting basis functions to data"""
 import numpy as np
-from scipy import sparse
 import pywt
+from scipy import sparse
+from scipy.linalg import convolution_matrix
+from warnings import warn
 
 from pynumdiff.utils import utility
 
@@ -44,8 +46,8 @@ def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0)
 
     P = len(x_flat) # P for "potentially padded"
     if extension in ('detrend', 'odd') and cutoff_freq > 0: # frequency guard so at 0 return 0, not the trend
-        slope = (x_flat[-1] - x_flat[0])/((P-1)*dt) 
-        trend = slope * np.arange(P)[:, np.newaxis]*dt # the line through the endpoints
+        slope = (x_flat[-1] - x_flat[0])/(P-1) # technically missing a /dt, but the trend would just *dt it back out 
+        trend = slope * np.arange(P)[:, np.newaxis] # the line through the endpoints, slope * time
         x_flat = x_flat - trend # reassign so not in place if x_flat is still a view on x
     else: slope = 0; trend = 0
 
@@ -62,7 +64,7 @@ def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0)
     # Derivative = 90 deg phase shift
     if M % 2 == 0: k[M//2] = 0 # odd derivatives get the Nyquist element zeroed out, see https://pavelkomarov.com/spectral-derivatives/math.pdf section 3.1
     omega = 2*np.pi/(dt*M) # factor of 2pi/T turns wavenumbers into frequencies in radians/s
-    dxdt_hat = (np.real(np.fft.ifft(1j * k * omega * X, axis=0))[:P] + slope)[pad:pad+N] # add the trend's constant slope
+    dxdt_hat = (np.real(np.fft.ifft(1j * k * omega * X, axis=0))[:P] + slope/dt)[pad:pad+N] # add the trend's constant slope
 
     return np.moveaxis(x_hat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat.reshape(x.shape), 0, axis)
 
@@ -158,111 +160,71 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
         or (not W.orthogonal and W.name not in ('bior4.4', 'bior6.8', 'rbio4.4', 'rbio6.8'))):
         raise ValueError(f"'{wavelet}' can't be used to differentiate. The scaling function must be continuous, have "
             "a spectrum that stays away from zero, and be orthonormal or nearly so to its own integer shifts.")
-    max_level = pywt.dwt_max_level(N, wavelet) # structural ceiling: how many halvings the filter still fits in
-    if max_level < 1: raise ValueError(f"`x` is only {N} long along axis {axis}, too short for '{wavelet}'.")
-
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0)
     x_flat = x.reshape(N, -1)
 
+    max_level = pywt.dwt_max_level(N, wavelet) # structural ceiling: how many halvings the filter still fits in
+    if max_level < 1: raise ValueError(f"`x` is only {N} long along axis {axis}, too short for '{wavelet}'.")
+
     if level is None: # Descending and thresholding an additional (lower frequency) detail band helps if that band
         # is noise and hurts if it is signal. White noise should have the same scale in every band due to isometry
         # of orthonormal transform, so find where a robust scale starts to run into signal (grow).
-        bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode) # all of them
-        # finest scale I ever met in my whole life ♪ ♫ ♬ Details are spiritually centered, like a guru, so feel their raw energy, also like a guru
+        bands = pywt.wavedec(x_flat[:, 0], wavelet, level=max_level, mode=mode) # fully decompose a single vector to probe
         finest_scale = max(utility.robust_data_scale(bands[-1], center=False), 1e-10) # guard with a tiny value in case of super smooth data
-        level = 1; while level < max_level and utility.robust_data_scale(bands[-(1+level)], center=False) <= 2*finest_scale: level += 1
+        level = 1 # finest scale I ever met in my whole life ♪ ♫ ♬ Details are spiritually centered, like a guru, so feel their raw energy, their aura
+        while level < max_level and utility.robust_data_scale(bands[-(1+level)], center=False) <= 2*finest_scale: level += 1
     if num_shifts is None: num_shifts = 2**level # the deepest level's functions span 2^level samples, so alignments repeat here
 
-    if wavelet not in FIR: # then build the three operators for this wavelet
-        h = np.array(W.rec_lo) # pywt zero-pads biorthogonal filters out to a common length, so trim
-        nz = np.nonzero(np.abs(h) > 1e-12)[0]
-        h = h[nz[0]:nz[-1]+1]
-        h = h/h.sum()*np.sqrt(2)        # pins sum(h) = sqrt2, which the eigenvalue ladder rests on
-        L = len(h); p = np.arange(L)    # phi is supported on the integers [0, L-1]
-        # T[n,k] = sqrt2 h_{2n-k}, with h zero outside [0, L-1]. Giving h zero margins wide enough for the whole
-        # index range, -(L-1) to 2(L-1), lets the out-of-range entries land in them and needs no masking.
-        hp = np.zeros(3*L); hp[L:2*L] = h
-        # Sampling phi(t) = sqrt2 sum_k h_k phi(2t-k) at integers makes phi(p) the eigenvalue-1 and phi'(p) the
-        # eigenvalue-1/2 eigenvector of T[p,q] = sqrt2 h_{2p-q}.
-        T = np.sqrt(2) * hp[2*p[:, None] - p[None, :] + L]
-        evals, evecs = np.linalg.eig(T)
-        # The sum rules put 1 and 1/2 in the spectrum exactly, but not as the two largest: db2, sym2, coif1 and
-        # dmey each carry a stray eigenvalue between them. So match on value rather than on rank.
-        phi = np.real(evecs[:, np.argmin(np.abs(evals - 1.0))]); phi /= phi.sum()          # sum_p phi(p) = 1
-        dphi = np.real(evecs[:, np.argmin(np.abs(evals - 0.5))]); dphi /= -np.dot(p, dphi) # sum_p p*phi'(p) = -1
-        # phi and phi' are already finite tap sequences; only A^-1 needs a transform, because inverting the
-        # Toeplitz A means inverting its symbol and coming back, and those taps have no closed form. M must
-        # exceed twice their reach so the inverse transform cannot wrap onto itself; 512 is clean for every
-        # wavelet the guard admits and dwarfs the longest of them (coif17, 102 taps).
-        # Trim at 1e-12. A looser 1e-9 saves a dozen taps but costs real accuracy wherever fft(phi) is nearly
-        # flat and so A^-1 is nearly a delta: it cuts sym8's A^-1 to 7 taps and doubles its error on noisy
-        # data, and holds sym6, coif2 and the biorthogonals short of the degree p-1 exactness the sum rules
-        # buy them. The moments restored in _norm pin constants and ramps at any trim; this buys the rest.
-        M = 512; c = M//2
-        k = np.fft.fftshift(np.real(np.fft.ifft(1/np.fft.fft(phi, M)))) # lag 0 now in the middle
-        r_inv = max(1, int(np.max(np.nonzero(np.abs(k) > 1e-12*np.abs(k).max())[0]) - c))
-        def _center(v): # a causal sequence becomes a kernel centred on lag 0, cut at its last live tap
-            r = max(1, int(np.max(np.nonzero(np.abs(v) > 1e-12*np.abs(v).max())[0])))
-            return np.concatenate([np.zeros(r), v[:r+1]]), r
-        def _norm(k, r, derivative):
-            if not derivative: return k/k.sum()         # reproduces constants
-            k = k - k.mean()                            # kills constants,
-            return k/-np.dot(np.arange(-r, r+1), k)     # returns 1 on a ramp
-        FIR[wavelet] = (_norm(k[c-r_inv:c+r_inv+1], r_inv, False),
-                               _norm(*_center(dphi), True), _norm(*_center(phi), False))
+    # Step 1: Build the three operators for this wavelet
+    if wavelet not in FIR:
+        # Step i: Form T. Use reconstruction filter, because correlation (+k indexer) disassembles and convolution
+        # (-k indexer) reassembles. pywt stores filters as possibly 0-padded lists, so trim. Renormalize so 1 in eig (T).
+        h = np.array(W.rec_lo); h = np.trim_zeros(h * (np.abs(h) > 1e-12)); h = h/h.sum()*np.sqrt(2)
+        T = np.sqrt(2) * convolution_matrix(h, len(h))[::2] # T[n,k] = √2 h_{2n-k}
+        l, V = np.linalg.eig(T) # φ is eigenvector corresponding to eigenvalue 1, and φ' is vec with val 1/2
+        # Step ii: Get φ. Match against λ, because eig doesn't guarantee order; real() because T has other, complex λ
+        phi = np.real(V[:, np.argmin(np.abs(l - 1))]) # normalize so scaling function has ∫ = 1
+        phi = np.trim_zeros(phi * (np.abs(phi) > 1e-12), trim='b'); phi /= np.sum(phi) # 'b' to trim only backside
+        # Step iii: Get φ'. Why dphi normalizer: Σₖ φ'[k]·f[n−k] with f[m] = a·m + b should come out to a. With Σₖ φ'[k] = 0:
+        dphi = np.real(V[:, np.argmin(np.abs(l - 0.5))]) # Σₖ φ'[k]·(a(n−k) + b) = −a·Σₖ k φ'[k] -> −Σₖ k φ'[k] = 1
+        dphi = np.trim_zeros(dphi * (np.abs(dphi) > 1e-12), trim='b')
+        dphi -= dphi.mean(); dphi /= -np.dot(np.arange(len(dphi)), dphi) # subtract mean because Σₖ φ'[k] = 0
+        # Step iv: Solve for truncated φ⁻¹. FFT in 512 buckets, large enough the inverse transform can spread out comfortably
+        phi_inv = np.fft.fftshift(np.real(np.fft.ifft(1/np.fft.fft(phi, 512)))) # fftshift to put 0 in the middle, because non-causal filter
+        r = np.max(np.abs(np.nonzero(np.abs(phi_inv) > 1e-12)[0] - 256)) # radius from center to furthest index carrying >threshold 
+        phi_inv = phi_inv[256-r:256+r+1]; phi_inv /= np.sum(phi_inv) # renormalize post trim
 
-    phi_inv, dphi, phi = FIR[wavelet]
-    reach = (len(phi_inv) - 1)//2
-    if reach + num_shifts - 1 > N - 1: num_shifts = max(1, N - reach) # short signal, so spin fewer alignments
-    margin = reach + num_shifts - 1
-    if margin > N - 1: raise ValueError(f"'{wavelet}' needs a {len(inv_taps)}-tap pre-filter, too wide to fit "
-        f"{N} samples along axis {axis}. Use a shorter wavelet, such as 'sym8' or 'coif1', or supply more data.")
+        FIR[wavelet] = phi_inv, phi, dphi
 
-    # 1. Pre-filter: samples -> the finest scaling coefficients, which is what the cascade is defined on. Feeding
-    # it the samples instead is Strang and Nguyen's "wavelet crime" (1996, eq. 7.29), harmless for denoising but
-    # not here, since the curve through the samples is not the curve the samples' own coefficients describe.
-    # One extension covers this filter's reach and every cycle-spin offset below. The rule is antireflection,
-    # x[-1-k] -> 2*x[0]-x[1+k]: the signal rotated 180 degrees about its endpoint, which is exact for an affine
-    # sequence and so continues value and slope alike. It is not exact for curvature -- a parabola gets reflected
-    # the wrong way -- which is the one place this boundary rule visibly loses. Step 3 uses the same rule for the
-    # reason given there. The alternative, mirroring (x[-1-k] -> x[k]), wins on long noisy records because it
-    # reuses real samples so the margin carries the right noise, and loses on short or clean ones because it
-    # plants a kink; across N from 31 to 401 and noise over two orders it averages out slightly behind, and
-    # switching between them on an estimate of which regime you are in recovers about 2% for a threshold nobody
-    # can defend, so one rule serves both ends of the method.
-    ext = np.concatenate([2*x_flat[0] - x_flat[margin:0:-1], x_flat, 2*x_flat[-1] - x_flat[-2:-margin-2:-1]], axis=0)
-    a = np.stack([np.convolve(col, inv_taps, mode='valid') for col in ext.T], axis=1)
+    phi_inv, phi, dphi = FIR[wavelet] # pull filters from the cache
+    r = (len(phi_inv) - 1)//2 # radius of the prefilter
+    if r >= N - 1: raise ValueError(f"'{wavelet}' uses a {len(phi_inv)}-tap pre-filter, too wide to fit {N} samples along axis {axis}.")
+    if num_shifts > N - 1 - r: num_shifts = N - 1 - r; warn(f"Only {num_shifts} of the requested alignments fit in {N} samples. Spinning fewer.")
 
-    # 2. Denoise in the basis: hard-threshold the detail bands, noise scale estimated robustly per column from
-    # the finest of them. The transform decimates by two per level, so which coefficients pair up depends on
-    # where the grid starts, and thresholding is nonlinear enough that the answer does too -- ringing appears at
-    # one alignment and not the next. Averaging over `num_shifts` offsets removes that (Coifman and Donoho's
-    # translation-invariant denoising, 1995); the offsets are windows slid over margin that already exists, so
-    # nothing is invented per shift. Hard rather than soft, both Donoho-Johnstone at the same universal
-    # threshold: soft shrinks every survivor by lambda, a bias proportional to the signal that shows up directly
-    # as error correlation, where hard leaves survivors alone and measures better on both counts.
-    window = len(a) - (num_shifts - 1)
-    a_hat = 0
+    # Step 2: Pre-filter, samples -> finest scaling coefficients, because feeding the DWT raw samples is the "wavelet crime"
+    # (Strang and Nguyen, 1996), harmless for denoising, but defines a curve in the basis that does not pass through the
+    # samples. Odd extend the ends, reflecting across the average of 2 endpoints, to continue both value and slope.
+    x_ext = np.concatenate([x_flat[0] + x_flat[1] - x_flat[r+num_shifts:1:-1], # Extend so the non-causal filter can fit with its center
+        x_flat, x_flat[-1] + x_flat[-2] - x_flat[-3:-2-(r+num_shifts):-1]], axis=0) # at the data start + room for cycle-spinning
+    c = np.stack([np.convolve(x_i, phi_inv, mode='valid') for x_i in x_ext.T], axis=1) # length N + 2(num_shifts - 1)
+
+    # Step 3: Decompose, denoise by hard-thresholding detail bands (rather than soft because soft shrinks survivors
+    # and biases answers), with noise scale estimated robustly, and reconstruct. Cycle-spin (Coifman and Donoho, 1995)
+    c_hat = 0 # over the margin to average out offset sensitivity.
+    djuth = threshold * np.sqrt(2 * np.log(N)) # Donoho-Johnstone universal threshold
     for shift in range(num_shifts):
-        coeffs = pywt.wavedec(a[shift:shift+window], wavelet, level=level, mode=mode, axis=0)
-        sigma = utility.robust_data_scale(coeffs[-1], center=False, keepdims=True) # uncentered, as in Donoho-Johnstone
-        coeffs = [coeffs[0]] + [pywt.threshold(c, threshold * sigma * np.sqrt(2 * np.log(N)), mode='hard') for c in coeffs[1:]]
-        rec = pywt.waverec(coeffs, wavelet, mode=mode, axis=0)[:window]
-        a_hat = a_hat + rec[(num_shifts-1)-shift : window-shift]
-    a_hat = a_hat/num_shifts # denoised coefficients, back to length N
+        cddd = pywt.wavedec(c[shift:shift+num_shifts-1+N], wavelet, level=level, mode=mode, axis=0) # length N + num_shifts - 1
+        sigma_hat = utility.robust_data_scale(cddd[-1], center=False, keepdims=True) # uncentered, as in Donoho-Johnstone
+        cddd = [cddd[0]] + [pywt.threshold(d, sigma_hat * djuth, mode='hard') for d in cddd[1:]]
+        c_hat += pywt.waverec(cddd, wavelet, mode=mode, axis=0)[num_shifts-1-shift:num_shifts-1+N-shift] # length N slice corresponding
+    c_hat /= num_shifts                                                                         # to middle of c, between extensions
 
-    # 3. Differentiate the basis: convolve the coefficients with phi' for the derivative and phi for the smoothed
-    # signal, both exact for anything the basis represents. This extends *coefficients* rather than samples, and
-    # the same antireflection is right for them because A is Toeplitz: every entry depends only on n-m, so A
-    # commutes with shifts and therefore carries affine sequences to affine sequences. Concretely, a_m = c + b*m
-    # gives x_n = sum_m a_m phi(n-m) = c + b*(n - mu) using sum(phi) = 1 and the centroid mu = sum_p p*phi(p) --
-    # same slope, intercept moved by mu -- and A^-1 carries it back the same way. So "locally affine at the
-    # boundary" means the same thing in both domains, and a rule exact on affine sequences is exact in both.
-    # The limitation transfers too: curvature is reflected wrongly here exactly as it would be on samples.
-    # Mirroring here instead costs 18%. 'valid' crops the margin back off exactly.
-    def _apply(seq, taps):
-        half = len(taps)//2
-        wide = np.concatenate([2*seq[0] - seq[half:0:-1], seq, 2*seq[-1] - seq[-2:-half-2:-1]], axis=0)
-        return np.stack([np.convolve(col, taps, mode='valid') for col in wide.T], axis=1)
-    return np.moveaxis(_apply(a_hat, phi).reshape(shape), 0, axis), np.moveaxis(_apply(a_hat, dphi/dt).reshape(shape), 0, axis)
+    # Step 4: Recover smooth estimate and derivative. Odd extend ĉ, because slopes are preserved in coefficient space too:
+    # x[n] = Σₖ φ[k]·c[n-k] with affine coefficient sequence c[m] = a·m + b -> x[n] = Σₖ φ[k]·(a(n-k) + b) = b·Σₖφ[k] +
+    # a·n·Σₖφ[k] - a·Σₖ k φ[k] = a·n + b − a·μ using Σφ = 1 and μ = Σ k φ(k). Same slope, intercept shifted.
+    c_hat_ext = np.concatenate([2*c_hat[0] - c_hat[len(dphi)-1:0:-1], c_hat], axis=0) # filters are causal, so only extend one-sided; dphi is longer
+    x_hat_flat = np.stack([np.convolve(c_hat_i, phi, mode='valid') for c_hat_i in c_hat_ext[-N-len(phi)+1:].T], axis=1)
+    dxdt_hat_flat = np.stack([np.convolve(c_hat_i, dphi/dt, mode='valid') for c_hat_i in c_hat_ext.T], axis=1)
+
+    return np.moveaxis(x_hat_flat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat_flat.reshape(x.shape), 0, axis)

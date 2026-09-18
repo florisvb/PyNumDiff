@@ -21,6 +21,8 @@ Python methods for numerical differentiation and smoothing of noisy data, includ
         <img src="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg"></a>
     <a href="https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt">
         <img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
+    <a href="https://doi.org/10.5281/zenodo.6366704">
+        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6366704.svg"></a>
 </p>
 
 ## Introduction

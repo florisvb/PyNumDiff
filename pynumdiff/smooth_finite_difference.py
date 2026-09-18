@@ -65,3 +65,5 @@ def butterdiff(x, dt, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0)
 
     return finitediff(x_hat, dt, order=2, axis=axis)
 
+
+# Another possibility: smooth with discrete wavelet transform, simply committing the wavelet crime, then finite difference

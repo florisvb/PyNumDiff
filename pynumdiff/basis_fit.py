@@ -229,3 +229,5 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
     dxdt_hat_flat = np.stack([np.convolve(c_hat_i, dphi/dt, mode='valid') for c_hat_i in c_hat_ext.T], axis=1)
 
     return np.moveaxis(x_hat_flat.reshape(x.shape), 0, axis), np.moveaxis(dxdt_hat_flat.reshape(x.shape), 0, axis)
+
+    # Another possibility: denoise with DWT, simply committing the wavelet crime, then use φ'φ⁻¹ combined operator afterward

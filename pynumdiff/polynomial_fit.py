@@ -32,7 +32,7 @@ def splinediff(x, dt_or_t, degree=3, s=1, axis=0):
             "sample locations make neighbor differences and windows meaningless.")
         t = dt_or_t
 
-    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
+    x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         i = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # use i instead of s, becase s is already used as smoothness param
@@ -62,7 +62,7 @@ def polydiff(x, dt_or_t, degree, window_size=None, stride=1, kernel='friedrichs'
     :param int window_size: number of samples in the sliding window, or number of average step sizes to use as window
         width if irregular sampling; if not given, no sliding
     :param int stride: step size for sliding
-    :param str kernel: name of kernel to use for weighting and smoothing windows ('gaussian' or 'friedrichs')
+    :param str kernel: name of kernel to use for weighting and smoothing windows (:code:`'gaussian'` or :code:`'friedrichs'`)
     :param int axis: data dimension along which differentiation is performed
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
@@ -92,7 +92,7 @@ def polydiff(x, dt_or_t, degree, window_size=None, stride=1, kernel='friedrichs'
 
         return x_hat, dxdt_hat
 
-    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
+    x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]

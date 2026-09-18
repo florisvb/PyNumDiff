@@ -12,8 +12,7 @@ def kerneldiff(x, dt, kernel='friedrichs', window_size=5, num_iterations=1, axis
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
-    :param str kernel: prefilter data, {:code:`'uniform'`, :code:`'median'`, :code:`'gaussian'`,
-        :code:`'friedrichs'`}
+    :param str kernel: prefilter type, one of {:code:`'uniform'`, :code:`'median'`, :code:`'gaussian'`, :code:`'friedrichs'`}
     :param int window_size: filtering kernel size
     :param int num_iterations: how many times to apply mean smoothing
     :param int axis: data dimension along which differentiation is performed
@@ -66,3 +65,5 @@ def butterdiff(x, dt, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0)
 
     return finitediff(x_hat, dt, order=2, axis=axis)
 
+
+# Another possibility: smooth with discrete wavelet transform, simply committing the wavelet crime, then finite difference

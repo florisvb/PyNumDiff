@@ -101,8 +101,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public.
 
-    :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are excluded
-        from fitting and imputed by dynamical model evolution. May be multidimensional; see :code:`axis`.
+    :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are imputed by
+        evolving model dynamics. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model
@@ -150,7 +150,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
 
     innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionally wrap innovation to [-pi, pi], see #178
 
-    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
+    x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
@@ -186,25 +186,24 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     and :math:`V,J` are the :math:`\\ell_1` norm or Huber loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is
     convex, so this method calls :code:`convex_smooth`, which in turn forms a sparse CVXPY problem and invokes CLARABEL.
 
-    Note that for Huber losses, :code:`M` is the radius where the Huber loss function turns from quadratic to linear. Because all loss function
-    inputs are normalized by noise level (scales :math:`q^{1/2}` and :math:`r^{1/2}` from the :math:`Q` and :math:`R` matrices in the
-    constant-derivative model), :code:`M` is in units of inlier standard deviation. In other words, this choice affects which portion of inliers
-    might be treated as outliers. For example, assuming Gaussian inliers, the portion beyond :math:`M\\sigma` is
-    :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))`. The inverse of this is :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`.
-    As :math:`M \\to \\infty`, Huber becomes the 1/2-sum-of-squares case, :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, because the normalization
-    constant of the Huber loss (See :math:`c_2` in `Section 6 of this paper <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_,
-    missing a :math:`\\sqrt{\\cdot}` there, see p2700) approaches 1 as :math:`M` increases. Similarly, as :code:`M` approaches 0, Huber reduces
-    to the :math:`\\ell_1` norm case, because the normalization constant approaches :math:`\\frac{\\sqrt{2}}{M}`, cancelling the :math:`M`
-    multiplying :math:`|\\cdot|` in the Huber function, and leaving behind :math:`\\sqrt{2}`, the proper :math:`\\ell_1` normalization.
+    :code:`M` is the radius where the Huber loss function turns from quadratic to linear, in units of inlier standard deviation, because all
+    loss function inputs are normalized by noise level (scales :math:`q^{1/2}` and :math:`r^{1/2}` from the :math:`Q` and :math:`R` matrices in
+    the model). Choice of :code:`M` affects which portion of inliers might be penalized less intensly, e.g., assuming Gaussian inliers, the
+    portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))` (inverted: :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`).
+    Huber interpolates :math:`\\ell_2` and :math:`\\ell_1` losses, because as :math:`M \\to \\infty` its normalization constant (See :math:`c_2`
+    in `Section 6 of this paper <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_, missing a :math:`\\sqrt{\\cdot}` there, see p2700)
+    approaches 1, leaving :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, and as :code:`M \\to 0`, the normalization constant approaches :math:`\\frac{\\sqrt{2}}{M}`,
+    cancelling the :math:`M` multiplying :math:`|\\cdot|` in the Huber function, and leaving behind :math:`\\sqrt{2}`, the proper scale for :math:`\\ell_1`.
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
-    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{1/2})`, but we cannot collapse the set of parameters for purposes of
-    optimization like we could combine :code:`log_q` and :code:`log_r` into :code:`log_qr_ratio` for RTS smoothing. Even though scaling both
-    :math:`q` and :math:`r` by :math:`c` while scaling both :math:`M` by :math:`\\sqrt{c}` leaves each huber proportional to its original,
-    thereby leaving its argmin in place while collapsing four parameters to three, the *relative balance* betwen the measurement and process
-    sides of the objective shifts unless the two :math:`M` are equal, because :code:`huber_const`, is a nonlinear function of :math:`M`.
+    :math:`\\text{Huber}(q^{-1/2}v, M) = q^{-1}\\text{Huber}(v, Mq^{1/2})`, but we cannot collapse the set of parameters like we could
+    combine :code:`log_q` and :code:`log_r` into :code:`log_qr_ratio` for RTS smoothing. Even though scaling both :math:`q` and :math:`r` by
+    :math:`c` while scaling both :math:`M` by :math:`\\sqrt{c}` leaves each huber proportional to its original, thereby leaving its argmin in
+    place, the *relative balance* betwen the measurement and process sides of the objective shifts unless the two :math:`M` are equal, because
+    :code:`huber_const`, is a nonlinear function of :math:`M`.
 
-    :param np.array[float] x: data series to differentiate. May be multidimensional; see :code:`axis`.
+    :param np.array[float] x: data series to differentiate. May contain NaN values (missing data); NaNs are imputed by
+        evolving model dynamics. May be multidimensional; see :code:`axis`.
     :param float or array[float] dt_or_t: This function supports variable step size. This parameter is either the constant
         :math:`\\Delta t` if given as a single float, or data locations if given as an array of same length as :code:`x`.
     :param int order: which derivative to stabilize in the constant-derivative model (1=velocity, 2=acceleration, 3=jerk)
@@ -247,7 +246,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T # extract discrete time Q matrix
             if np.linalg.cond(Q_d[n]) > 1e12: Q_d[n] += np.eye(order+1)*np.linalg.eigvalsh(Q_d[n])[-1]*1e-12 # end of eigvalsh() is largest eigval
 
-    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
+    x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]): # works properly for 1D case too
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:]
@@ -271,7 +270,9 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
 # memory just to read off a shape, so they warn when it holds garbage. TODO fixed upstream by cvxpy#3512, merged to master 2026-09-06 but not in
 # any release through v1.9.2; when it ships, drop this line and floor cvxpy there.
 def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
-    """Solve the optimization problem for robust smoothing using CVXPY.
+    """Solve the optimization problem for robust smoothing using CVXPY. Runtime and reliability depend strongly on how stiff the model is. I.e.,
+    near-deterministic dynamics (small :code:`log_q` or :code:`dt`) make :math:`Q^{-1/2}` enormous, badly scaling the interior-point problem and
+    driving iteration count up by an order of magnitude or more, often exhausting solver tolerance and resulting in :code:`optimal_inaccurate` status.
 
     :param np.array[float] y: measurements
     :param np.array A: discrete-time state transition matrix. If 2D (:math:`m \\times m`), the same matrix is used for all steps;

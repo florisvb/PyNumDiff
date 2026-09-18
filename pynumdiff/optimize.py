@@ -55,9 +55,9 @@ method_params_and_bounds = {
                 'lmbd': [1e-3, 1e-2, 1e-1]},
               {'sigma': (1e-2, 1e3),
                 'lmbd': (1e-3, 0.5)}),
-    waveletdiff: ({'wavelet': {'db8', 'db12', 'sym8', 'coif1'}, # different data can favor different mother wavelets
-                 'threshold': [0.5, 1, 2]}, # multiplies the Donoho-Johnstone universal threshold, 0 meaning no denoising.
-                 # `level` is left at its adaptive default, min(dwt_max_level(N, wavelet), 5), which tracks both the signal and filter lengths
+    waveletdiff: ({'wavelet': {'db4', 'db8', 'db12', 'sym8', 'coif1', 'coif2', 'bior4.4'},
+                 'mode': {'symmetric', 'reflect', 'antireflect', 'constant'}, # 'zero' and 'periodic' cause jumps, and 'smooth' extrapolates noise
+                 'threshold': [1.0, 2, 4]}, # `level` is left to its adaptive default
                 {'threshold': (0.1, 10)}),
     tvrdiff: ({'gamma': [1e-2, 1e-1, 1, 10, 100, 1000],
                'order': {2, 3}, # warning: order 1 hacks the ground-truth-less loss function, tends to win but is usually suboptimal choice in terms of true RMSE
@@ -105,7 +105,7 @@ ROUND = {float: lambda v: v,
 
 # This function has to be at the top level for multiprocessing but is only used by optimize.
 def _objective_function(point, func, x, dt, singleton_params, categorical_params, roundings,
-    dxdt_truth, metric, tvgamma, padding, cache, huberM):
+    dxdt_truth, tvgamma, padding, cache, huberM):
     """Function minimized by scipy.optimize.minimize, needs to have the form: (point, *args) -> float
     This is mildly complicated, because "point" controls the settings of a differentiation function, but
     the method may have numerical and non-numerical parameters, and all such parameters are now passed by
@@ -133,13 +133,9 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
 
     # Evaluate estimate according to a loss function
     if dxdt_truth is not None:
-        if metric == 'rmse': # minimize ||dxdt_hat - dxdt_truth||_2
-            rmse_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
-            cache[key] = rmse_dxdt; return rmse_dxdt
-        if metric == 'error_correlation':
-            ec = evaluate.error_correlation(dxdt_truth, dxdt_hat, padding=padding)
-            cache[key] = ec; return ec
-    else: # then minimize L(Phi) = (RMSE(trapz(dxdt_hat) + c - x) || sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
+        rmse_dxdt = evaluate.rmse(dxdt_truth, dxdt_hat, padding=padding)
+        cache[key] = rmse_dxdt; return rmse_dxdt
+    else: # then minimize L(Phi) = RMSE(trapz(dxdt_hat) + c - x OR sqrt{2*Mean(Huber((trapz(dxdt_hat) + c - x)/sigma, M))}*sigma) + gamma*TV(dxdt_hat)
         # It seems like we should be able to use x_hat rather than the trapz integral of dxdt_hat + constant, but the latter is more reliable,
         # because it accounts for the accuracy of the derivative directly, not through the generating algorithm's smooth signal estimate.
         rec_x_hat = utility.integrate_dxdt_hat(dxdt_hat, dt)
@@ -150,7 +146,7 @@ def _objective_function(point, func, x, dt, singleton_params, categorical_params
         cache[key] = cost; return cost
 
 
-def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates={}, metric='rmse',
+def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates={},
     padding=0, opt_method='Nelder-Mead', maxiter=10, parallel=True, huberM=6):
     """Find the optimal hyperparameters for a given differentiation method.
 
@@ -167,7 +163,6 @@ def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates=
                     handle discrete search), and values given in lists serve as seeds for search across continuous dimensions.
                     This parameter optionally accepts a `dictionary update <https://docs.python.org/3/library/stdtypes.html#dict.update>`_
                     to override particular or multiple parameter values.
-    :param str metric: either :code:`'rmse'` or :code:`'error_correlation'`, only applies if :code:`dxdt_truth` is given
     :param int padding: number of steps to ignore at the beginning and end of the data series, or :code:`'auto'` to ignore
                     2.5% at each end. Larger value causes the optimization to emphasize the accuracy in the series middle.
     :param str opt_method: Optimization technique used by :code:`scipy.minimize`, the workhorse
@@ -184,7 +179,6 @@ def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates=
              - **opt_value** (float) -- lowest value found for objective function
     """
     if dxdt_truth is None and bandlimit is None: raise ValueError("Either `dxdt_truth` or `bandlimit` must be given.")
-    if metric not in ['rmse','error_correlation']: raise ValueError('`metric` should either be `rmse` or `error_correlation`.')
 
     default_search_space, bounds = method_params_and_bounds[func]
     search_space = {**default_search_space, **search_space_updates} # applies updates without mutating default
@@ -212,7 +206,7 @@ def optimize(func, x, dt, dxdt_truth=None, bandlimit=None, search_space_updates=
     _minimize = partial(scipy.optimize.minimize, method=opt_method, bounds=bounds, options={'maxiter':maxiter})
     tvgamma = None if bandlimit is None else bandlimit**-1.6 * dt**-0.71 * np.exp(-5.1) # See https://ieeexplore.ieee.org/document/9241009
     obj_kwargs = {'func':func, 'x':x, 'dt':dt, 'singleton_params':singleton_params, 'roundings':roundings,
-        'dxdt_truth':dxdt_truth, 'metric':metric, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
+        'dxdt_truth':dxdt_truth, 'tvgamma':tvgamma, 'padding':padding, 'huberM':huberM}
 
     with catch_warnings(action="ignore", category=UserWarning): # some worker work is done in main process; scoped so caller's filters restored after. See #206.
         obj_kwargs['cache'] = Manager().dict() if parallel else {} # a Manager's dict can be shared across processes; avoid repeat queries

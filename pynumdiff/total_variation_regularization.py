@@ -42,8 +42,7 @@ def iterative_velocity(x, dt, num_iterations, gamma, cg_maxiter=1000, scale='sma
 #  memory just to read off a shape, so they warn when it holds garbage. TODO fixed upstream by cvxpy#3512, merged to master 2026-09-06 but not in
 # any release through v1.9.2; when it ships, drop this line and floor cvxpy there.
 def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
-    """Generalized total variation regularized derivatives. Use convex optimization (cvxpy) to solve for a
-    total variation regularized derivative. Other convex-solver-based methods in this module call this function.
+    """Use convex optimization (cvxpy) to solve for a total-variation-regularized derivative.
 
     :param np.array[float] x: data to differentiate. May be multidimensional; see :code:`axis`.
     :param float dt: step size
@@ -61,7 +60,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The convex problem setup integrates with a cumulative "
         "sum and penalizes variation between consecutive samples, both of which assume uniform steps.")
 
-    x_hat = np.empty(x.shape, dtype=float); dxdt_hat = np.empty(x.shape, dtype=float) # float explicitly, so inherited integer input type cannot silently truncate
+    x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
 
     for vec_idx in np.ndindex(x.shape[:axis] + x.shape[axis+1:]):
         s = vec_idx[:axis] + (slice(None),) + vec_idx[axis:] # for indexing this iteration's vector in the overall array

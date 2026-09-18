@@ -142,7 +142,7 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
     :param str mode: signal extension mode for the Discrete Wavelet Transform decomposition, :code:`pywt.wavedec`
     :param float threshold: scale factor in [0, inf) multiplying the Donoho-Johnstone universal hard threshold.
     :param int level: decomposition depth. None detects level automatically from the data, descending until a
-        detail band's energy is quadruple that of the finest-resolution details, per coefficient.
+        detail band's energy per coefficient is quadruple that of the finest-resolution details.
     :param int num_shifts: how many starting offsets to average for cycle-spinning. None uses :code:`2**level`,
         one full period of the cascade's alignment.
     :param int axis: data dimension along which to differentiate

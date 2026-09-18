@@ -39,7 +39,7 @@ All ultimately regularize based on a smoothness prior, but the underlying models
 
 All methods have hyperparameters, described in the [Sphinx documentation](https://pynumdiff.readthedocs.io/master/). We use a principled multi-objective optimization framework for choosing settings that minimize a loss function that balances faithfulness to data with smoothness of the derivative estimate. For more details, refer to [this paper](https://doi.org/10.1109/ACCESS.2020.3034077). Hyperparameter optimization runtime is primarily governed by search space dimension, which varies between 2 and 5 across methods.
 
-![Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by `pynumdiff.optimize`.](paper/methods_comparison.png)
+![Three simulated signals and their derivatives, estimated by six of the seven method families, with hyperparameters chosen by `pynumdiff.optimize`.](https://raw.githubusercontent.com/florisvb/PyNumDiff/master/paper/methods_comparison.png)
 
 ## Installing
 

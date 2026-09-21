@@ -97,7 +97,7 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
                 f"{order}, gamma {gamma}. Try a wider `window_size` or a lower `order`.") from e
 
         x_hat = a_v.value @ Y_integrals[:-1] + c_v.value @ B + mu # use x_hat instead of y in calculation of dxdt_hat
-        dxdt_hat = (a_v.value @ np.vstack([Y_integrals[1:-1], x_hat - mu]) + c_v.value[:order-1] @ B[1:])/T # undo the time scaling
+        dxdt_hat = (a_v.value @ np.vstack([Y_integrals[1:-1], x_hat - mu]) + c_v.value[:-1] @ B[1:])/T # undo the time scaling
 
         return x_hat, dxdt_hat
 

@@ -1,4 +1,7 @@
-on: [push]
+on:
+  push:
+    paths: ['paper/**'] # only rebuild when something the PDF depends on changes
+  workflow_dispatch: # manual rebuild from the Actions tab
 
 jobs:
   paper:

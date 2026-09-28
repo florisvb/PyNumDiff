@@ -38,9 +38,6 @@ def iterative_velocity(x, dt, num_iterations, gamma, cg_maxiter=1000, scale='sma
     return x_hat, dxdt_hat
 
 
-@np.errstate(invalid='ignore', over='ignore') # cvxpy#3503: canonicalizing norm1/huber/tv builds sum atoms, which reduce over uninitialized
-#  memory just to read off a shape, so they warn when it holds garbage. TODO fixed upstream by cvxpy#3512, merged to master 2026-09-06 but not in
-# any release through v1.9.2; when it ships, drop this line and floor cvxpy there.
 def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
     """Use convex optimization (cvxpy) to solve for a total-variation-regularized derivative.
 
@@ -90,7 +87,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
                 else utility.huber_const(huberM)*cvxpy.sum(cvxpy.huber(y - hx, huberM)) # data is already scaled, so M rather than M*sigma
         # Set up and solve the optimization problem
         prob = cvxpy.Problem(cvxpy.Minimize(fidelity_cost + gamma*cvxpy.sum(cvxpy.tv(deriv_values)) ))
-        prob.solve() # let CVXPY choose the solver: it picks OSQP for the QP forms (l2 and huber) and CLARABEL for the l1 one
+        prob.solve(solver='CLARABEL') # interior point method is necessary for the l1 case and faster than OSQP for the l2 and huber cases
 
         # Recursively integrate the final derivative values to get back to the function and derivative values
         v = deriv_values.value

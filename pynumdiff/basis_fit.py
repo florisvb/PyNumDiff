@@ -179,12 +179,12 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
 
     # Step 1: Build the three operators for this wavelet
     if wavelet not in FIR:
-        # Step i: Form T. pywt stores filters as possibly 0-padded lists, so trim. Use the *reconstruction* filter, because
-        # correlation (+k indexer) disassembles and convolution (-k indexer) reassembles. Renormalize so 1 in eig (T).
+        # Step i: Form M. pywt stores filters as possibly 0-padded lists, so trim. Use the *reconstruction* filter, because
+        # correlation (+k indexer) disassembles and convolution (-k indexer) reassembles. Renormalize so 1 in eig(M).
         h = np.array(W.rec_lo); h = np.trim_zeros(h * (np.abs(h) > 1e-12)); h = h/h.sum()*np.sqrt(2)
-        T = np.sqrt(2) * convolution_matrix(h, len(h))[::2] # T[n,k] = √2 h_{2n-k}
-        l, V = np.linalg.eig(T) # φ is eigenvector corresponding to eigenvalue 1, and φ' is vec with val 1/2
-        # Step ii: Get φ. Match against λ, because eig doesn't guarantee order; real() because T has other, complex λ
+        M = np.sqrt(2) * convolution_matrix(h, len(h))[::2] # M[n,k] = √2 h_{2n-k}
+        l, V = np.linalg.eig(M) # φ is eigenvector corresponding to eigenvalue 1, and φ' is vec with val 1/2
+        # Step ii: Get φ. Match against λ, because eig doesn't guarantee order; real() because M has other, complex λ
         phi = np.real(V[:, np.argmin(np.abs(l - 1))]) # normalize so scaling function has ∫ = 1
         phi = np.trim_zeros(phi * (np.abs(phi) > 1e-12), trim='b'); phi /= np.sum(phi) # 'b' to trim only backside
         # Step iii: Get φ'. Why dphi normalizer: Σₖ φ'[k]·f[n−k] with f[m] = a·m + b should come out to a. With Σₖ φ'[k] = 0:

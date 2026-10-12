@@ -8,7 +8,8 @@ from pynumdiff.utils.utility import huber_const, robust_noise_scale
 
 
 def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovation_fn=None):
-    """Run the forward pass of a Kalman filter. Expects discrete-time matrices; use :func:`scipy.linalg.expm`
+    """Run the forward pass of a Kalman filter. This function is exposed publicly so users can create their own
+    differentiator if they know their system model. Expects discrete-time matrices; use :func:`scipy.linalg.expm`
     in the caller to convert from continuous time if needed.
 
     :param np.array y: series of measurements, stacked in the direction of axis 0.
@@ -70,14 +71,15 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
 
 
 def rts_smooth(A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
-    """Perform Rauch-Tung-Striebel smoothing, using information from forward Kalman filtering.
+    """Perform Rauch-Tung-Striebel smoothing, using information from forward Kalman filtering. This function is exposed
+    publicly so users can create their own differentiator if they know their system model.
 
     :param np.array A: discrete-time state transition matrix. If 2D (:math:`m \\times m`), the same matrix is used for all steps;
         if 3D (:math:`N-1 \\times m \\times m`), :code:`A[n-1]` is used for the transition from step :math:`n-1` to :math:`n`.
-    :param np.array xhat_pre: a priori estimates of xhat from a kalman_filter forward pass
-    :param np.array xhat_post: a posteriori estimates of xhat from a kalman_filter forward pass
-    :param np.array P_pre: a priori estimates of P from a kalman_filter forward pass
-    :param np.array P_post: a posteriori estimates of P from a kalman_filter forward pass
+    :param np.array xhat_pre: a priori estimates of xhat from a :code:`kalman_filter` forward pass
+    :param np.array xhat_post: a posteriori estimates of xhat from a :code:`kalman_filter` forward pass
+    :param np.array P_pre: a priori estimates of P from a :code:`kalman_filter` forward pass
+    :param np.array P_post: a posteriori estimates of P from a :code:`kalman_filter` forward pass
     :param bool compute_P_smooth: it's extra work if you don't need it
     
     :return: - **xhat_smooth** (np.array) -- RTS smoothed xhat
@@ -182,9 +184,10 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
 def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, axis=0):
     """Perform outlier-robust differentiation by solving the *maximum a posteriori* optimization problem:
     :math:`\\text{argmin}_{\\{x_n\\}} \\sum_{n=0}^{N-1} V(R^{-1/2}(y_n - C x_n)) + \\sum_{n=1}^{N-1} J(Q_{n-1}^{-1/2}(x_n - A_{n-1} x_{n-1}))`,
-    where :math:`A,Q,C,R` come from an assumed constant-derivative model (see `Section 7.7 of this paper <https://arxiv.org/pdf/2512.09090>`_)
-    and :math:`V,J` are the :math:`\\ell_1` norm or Huber loss rather than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is
-    convex, so this method calls :code:`convex_smooth`, which in turn forms a sparse CVXPY problem and invokes CLARABEL.
+    where :math:`A,Q,C,R` come from an assumed constant-derivative model (see `Section 7.7 of this paper <https://arxiv.org/pdf/2512.09090>`_),
+    subscripts on :math:`A,Q` come from generalizing to irregular step size, and :math:`V,J` are the :math:`\\ell_1` norm or Huber loss rather
+    than the :math:`\\ell_2` norm optimized by RTS smoothing. This problem is convex, so this method calls :code:`convex_smooth`, which in turn
+    forms a sparse CVXPY problem and invokes CLARABEL.
 
     :code:`M` is the radius where the Huber loss function turns from quadratic to linear, in units of inlier standard deviation, because all
     loss function inputs are normalized by noise level (scales :math:`q^{1/2}` and :math:`r^{1/2}` from the :math:`Q` and :math:`R` matrices in
@@ -192,7 +195,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     portion beyond :math:`M\\sigma` is :code:`outlier_portion = 2*(1 - scipy.stats.norm.cdf(M))` (inverted: :code:`M = scipy.stats.norm.ppf(1 - outlier_portion/2)`).
     Huber interpolates :math:`\\ell_2` and :math:`\\ell_1` losses, because as :math:`M \\to \\infty` its normalization constant (See :math:`c_2`
     in `Section 6 of this paper <https://jmlr.org/papers/volume14/aravkin13a/aravkin13a.pdf>`_, missing a :math:`\\sqrt{\\cdot}` there, see p2700)
-    approaches 1, leaving :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, and as :code:`M \\to 0`, the normalization constant approaches :math:`\\frac{\\sqrt{2}}{M}`,
+    approaches 1, leaving :math:`\\frac{1}{2}\\|\\cdot\\|_2^2`, and as :math:`M \\to 0`, the normalization constant approaches :math:`\\frac{\\sqrt{2}}{M}`,
     cancelling the :math:`M` multiplying :math:`|\\cdot|` in the Huber function, and leaving behind :math:`\\sqrt{2}`, the proper scale for :math:`\\ell_1`.
 
     Note that :code:`log_q` and :code:`proc_huberM` are coupled, as are :code:`log_r` and :code:`meas_huberM`, via the relation
@@ -267,9 +270,11 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
 
 
 def convex_smooth(y, A, Q, C, R, B=None, u=None, proc_huberM=6, meas_huberM=0):
-    """Solve the optimization problem for robust smoothing using CVXPY. Runtime and reliability depend strongly on how stiff the model is. I.e.,
-    near-deterministic dynamics (small :code:`log_q` or :code:`dt`) make :math:`Q^{-1/2}` enormous, badly scaling the interior-point problem and
-    driving iteration count up by an order of magnitude or more, often exhausting solver tolerance and resulting in :code:`optimal_inaccurate` status.
+    """Solve the optimization problem for robust smoothing using CVXPY. This function is exposed publicly so users can create their
+    own differentiator if they know their system model. Runtime and reliability depend strongly on numerical stiffness of the model.
+    I.e., near-deterministic dynamics (small :code:`log_q` or :code:`dt`) make :math:`Q^{-1/2}` enormous, badly scaling the
+    interior-point problem and driving iteration count up by an order of magnitude or more, often exhausting solver tolerance and
+    resulting in :code:`optimal_inaccurate` status.
 
     :param np.array[float] y: measurements
     :param np.array A: discrete-time state transition matrix. If 2D (:math:`m \\times m`), the same matrix is used for all steps;

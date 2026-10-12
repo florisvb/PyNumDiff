@@ -86,7 +86,7 @@ def robust_rme(u, v, padding=0, M=6):
     :param np.array[float] u: e.g. noisy data
     :param np.array[float] v: e.g. estimated smoothed signal, reconstructed from derivative
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'`, defaults to 2.5% of the size of inputs
+        the metric. If :code:`'auto'`, :code:`padding` is set to 2.5% of data length.
     :param float M: Huber loss parameter in units of ~1.4*mean absolute deviation of population of residual
         errors, intended to approximate standard deviation robustly.
 
@@ -108,7 +108,7 @@ def rmse(u, v, padding=0):
     :param np.array[float] u: e.g. known true derivative 
     :param np.array[float] v: e.g. estimated derivative 
     :param int padding: number of snapshots on either side of the array to ignore when calculating
-        the metric. If :code:`'auto'`, defaults to 2.5% of the size of inputs
+        the metric. If :code:`'auto'`, :code:`padding` is set to 2.5% of data length.
 
     :return: **true_rmse** (float) -- RMS error between dxdt_hat and dxdt_truth, returns None if dxdt_hat is None
     """

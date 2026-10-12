@@ -49,9 +49,9 @@ def lineardiff(x, dt_or_t, order, gamma, window_size=None, stride=None, kernel='
         obs = ~np.isnan(x) # Missing values drop out of the fit, and the fitted model imputes them back
         if obs.sum() < 2*order: raise ValueError(f"Window encountered with only {obs.sum()} non-NaN samples < {2*order} "
                 f"needed to determine an order {order} fit. Widen `window_size` or lower `order`.")
-        # Uncentered, Y integrals essentially carries a copy of B, so make a distinction. But at order 1 both B (a lone row
-        # of 1s) and Y integrals are orthogonal to the centered signal, so the fit returns a = 0
-        mu = np.nanmean(x) if order > 1 else 0
+        # Integrals of not-mean-subtracted Y essentially carry a copy of B from integrating the mean repeatedly, so use y = x - mu.
+        # However, at order 1 both B (a lone row of 1s) and Y integrals are orthogonal to the mean-subtracted signal, so fitting
+        mu = np.nanmean(x) if order > 1 else 0 # results in a = 0, so leave uncentered.
         y = x - mu # slide_function operates on views, so don't modify the underlying array
 
         # Work in tau = t/T \in [0, 1], because rows of integral_Y and B differ by powers of T in original units,

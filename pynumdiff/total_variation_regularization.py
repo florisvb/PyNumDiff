@@ -53,6 +53,7 @@ def tvrdiff(x, dt, order, gamma, huberM=float('inf'), axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    axis = range(x.ndim)[axis] # normalize negative axes before constructing per-vector slices
     if np.any(np.isnan(x)): raise ValueError("`x` may not contain NaN. CVXPY cannot form a problem with missing data.")
     if not np.isscalar(dt): raise ValueError("`dt` must be a scalar. The convex problem setup integrates with a cumulative "
         "sum and penalizes variation between consecutive samples, both of which assume uniform steps.")

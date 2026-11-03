@@ -34,7 +34,7 @@ def spectraldiff(x, dt, cutoff_freq, extension='odd', pad_to_flat=False, axis=0)
 
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0)
-    x_flat = x.reshape(N, -1) # flat 2D of all the vectors to differentiate
+    x_flat = x.reshape(N, -1).astype(float, copy=False) # flat 2D of all the vectors to differentiate, float so extension can't overflow
 
     pad = 0
     if pad_to_flat: # repeat the end values outward, smooth the joins, then restore the original in the middle
@@ -163,7 +163,7 @@ def waveletdiff(x, dt, wavelet='db8', mode='symmetric', threshold=2.0, level=Non
 
     N = x.shape[axis]
     x = np.moveaxis(x, axis, 0)
-    x_flat = x.reshape(N, -1)
+    x_flat = x.reshape(N, -1).astype(float, copy=False) # float so extension arithmetic can't overflow
 
     # Step 0: Lock down adaptive parameters
     max_level = pywt.dwt_max_level(N, wavelet) # structural ceiling: how many halvings the filter still fits in

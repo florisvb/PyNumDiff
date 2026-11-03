@@ -23,8 +23,7 @@ def finitediff(x, dt, num_iterations=1, order=2, axis=0):
     if order not in [1, 2, 4]: raise ValueError("order must be 1, 2, or 4")
 
     x = np.moveaxis(x, axis, 0) # move the axis of interest to the front to simplify differencing indexing
-    # Promote integer samples before subtraction and weighted stencil sums can overflow.
-    x_hat = x.astype(float) if np.issubdtype(x.dtype, np.integer) else np.asarray(x)
+    x_hat = x.astype(float, copy=False) # Preserve reference to x, for finding the final constant of integration; float so no overflow possible
     dxdt_hat = np.zeros(x.shape) # preallocate reusable memory
 
     # For all but the last iteration, do the differentate->integrate smoothing loop, being careful with endpoints

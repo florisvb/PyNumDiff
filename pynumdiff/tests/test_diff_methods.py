@@ -442,7 +442,8 @@ def test_missing_data(diff_method_and_params):
 
 @mark.parametrize("fwdbwd", [False, True])
 def test_circular_rtsdiff(request, fwdbwd):
-    """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
+    """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians, and that a large
+    one-step change in angle doesn't throw a high-gain filter onto an aliased solution"""
     dthdt = 5 # constant angular velocity in rad/s
     th = dthdt * t # linearly increasing angle, crosses 2*pi boundaries
     th_noisy = np.angle(np.exp(1j * (th + noise))) # add noise and wrap to [-pi, pi]
@@ -456,6 +457,9 @@ def test_circular_rtsdiff(request, fwdbwd):
 
     th_rmse = np.sqrt(np.mean(np.angle(np.exp(1j * (th_hat - th)))**2)) # angular error
     assert th_rmse < 0.1 # the forward and backward estimates must be blended on a common branch, see #208
+
+    step = np.r_[np.zeros(10), np.full(10, 2.0)] # < pi, so no wrap occurs and circular=False is right, see #240
+    assert np.allclose(rtsdiff(step, dt, 2, 12, circular=True, forwardbackward=fwdbwd)[1], rtsdiff(step, dt, 2, 12, forwardbackward=fwdbwd)[1])
 
     if request.config.getoption("--plot"):
         from matplotlib import pyplot
@@ -473,9 +477,3 @@ def test_circular_rtsdiff(request, fwdbwd):
         ax2.legend()
         fig.suptitle(f'rtsdiff with circular domain, forwardbackward={fwdbwd}', fontsize=16)
 
-
-
-def test_circular_large_step():
-    """Ensure a large one-step change in angle, though < pi, doesn't throw a high-gain filter onto an aliased solution, see #240"""
-    th = np.r_[np.zeros(10), np.full(10, 2.0)] # no wrap ever occurs, so circular=False gives the right answer
-    assert np.allclose(rtsdiff(th, 0.01, 2, 12, circular=True)[1], rtsdiff(th, 0.01, 2, 12)[1])

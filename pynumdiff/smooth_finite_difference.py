@@ -58,7 +58,7 @@ def butterdiff(x, dt, filter_order=2, cutoff_freq=0.5, num_iterations=1, axis=0)
     sos = scipy.signal.butter(filter_order, cutoff_freq, output='sos') # second-order sections rather than the (b, a) transfer
         # function, whose coefficients lose all precision when many poles bunch up near z = 1 at high order and low cutoff
 
-    x_hat = x
+    x_hat = x.astype(float, copy=False) # float so sosfiltfilt's odd-extension padding can't overflow
     padlen = min(3*(filter_order + 1), x.shape[axis]-1) # scipy's own default, can overwhelm short data
     for _ in range(num_iterations):
         x_hat = scipy.signal.sosfiltfilt(sos, x_hat, axis=axis, padlen=padlen) # applies forward and backward pass so zero phase

@@ -9,7 +9,7 @@ from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
 from ..total_variation_regularization import iterative_velocity, smooth_acceleration, tvrdiff
 from ..kalman_smooth import rtsdiff, robustdiff
 from ..linear_model import lineardiff
-# Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
+# Function aliases for testing cases where parameters change behavior in a big way, so error limits can be indexed in dict
 def kerneldiff_uniform(*args, **kwargs): return kerneldiff(*args, **kwargs)
 def kerneldiff_median(*args, **kwargs): return kerneldiff(*args, **kwargs)
 def kerneldiff_gaussian(*args, **kwargs): return kerneldiff(*args, **kwargs)
@@ -256,7 +256,6 @@ error_bounds = {
                             [(0, -1), (2, 2), (0, 0), (2, 2)]]
 }
 
-
 # Essentially run the cartesian product of [diff methods] x [test functions] through this one test
 @mark.parametrize("diff_method_and_params", diff_methods_and_params) # things like splinediff, with their parameters
 @mark.parametrize("test_func_and_deriv", test_funcs_and_derivs) # analytic functions, with their true derivatives
@@ -327,7 +326,6 @@ T1, T2 = np.meshgrid(np.linspace(-1, 0.98, 100), np.linspace(-1, 1, 101)) # a 10
 # wrong dimension can't accidentally get an agreeing figure. Shorten the domain rather than point count, so both axes have same dt2 spacing.
 dt2 = 0.02 # distance between samples in the 2D T grids
 x = T1**2 * np.sin(3/2 * np.pi * T2) # 2D function
-
 
 multidim_methods_and_params = [ # single parameterizations, chosen to do well on the noiseless 2D example
     (kerneldiff, {'kernel': 'gaussian', 'window_size': 5}),
@@ -416,6 +414,13 @@ def test_multidimensionality(multidim_method_and_params, request):
         ax3.plot_wireframe(T1, T2, computed_laplacian, label='computed')
         legend = ax3.legend(bbox_to_anchor=(0.7, 0.8)); legend.legend_handles[0].set_facecolor(pyplot.cm.viridis(0.6))
         fig.suptitle(f'{diff_method.__name__}', fontsize=16)
+
+@mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
+def test_integer_inputs(multidim_method_and_params):
+    """Ensure integer samples give the same derivative as floats, rather than overflowing or rounding"""
+    diff_method, params = multidim_method_and_params
+    n = np.arange(60); x_int = np.stack([200 - 3*n, 20 + 3*n], axis=1).astype(np.uint8) # falling and rising, so integer arithmetic wraps
+    assert np.allclose(diff_method(x_int, dt, **params)[1], diff_method(x_int.astype(float), dt, **params)[1])
 
 
 nan_methods_and_params = [ # List of methods that can handle missing values

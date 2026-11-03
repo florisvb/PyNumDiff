@@ -142,8 +142,8 @@ def convolutional_smoother(x, kernel, num_iterations=1, axis=0):
     :return: **x_hat** (np.array[float]) -- smoothed x
     """
     x_hat = x
-    for i in range(num_iterations):
-        x_hat = convolve1d(x_hat, kernel, axis=axis, mode='reflect') # 'reflect' pads the signal with mirrored repeats
+    for i in range(num_iterations): # 'reflect' pads the signal with mirrored repeats, and float output to
+        x_hat = convolve1d(x_hat, kernel, axis=axis, mode='reflect', output=float) # avoid truncation
 
     return x_hat
 

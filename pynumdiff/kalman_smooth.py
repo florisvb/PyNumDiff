@@ -24,9 +24,8 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, circula
     :param np.array u: optional control inputs, stacked in the direction of axis 0
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
-    :param bool circular: whether measurements are angles in radians. If so, each is shifted by whole turns to lie within
-        :math:`\\pi` of the previous a posteriori estimate. Branching from the prediction instead can lock onto an aliased
-        solution when a high-gain filter overshoots, see `#240 <https://github.com/florisvb/PyNumDiff/issues/240>`_.
+    :param bool circular: whether measurements are angles in radians, which have a wrapped domain. If so, shift samples by whole
+        turns to lie within :math:`\\pi` of the previous a posteriori estimate.
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -61,8 +60,8 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, circula
         if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
             innovation = y[n] - C @ xhat_
-            if circular: # shift the measurement by whole turns to within pi of the previous posterior, see #240
-                innovation -= 2*np.pi*np.round((y[n] - C @ (xhat_post[n-1] if n else xhat0))/(2*np.pi))
+            if circular and n: # shift the measurement by whole turns to within pi of the previous posterior, see #240
+                innovation -= 2*np.pi*np.round((y[n] - C @ xhat_post[n-1])/(2*np.pi))
             xhat += K @ innovation
             P -= K @ C @ P_
         # the [n]th index of pre variables holds _{n|n-1} info; the [n]th index of post variables holds _{n|n} info
@@ -116,9 +115,8 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     :param bool forwardbackward: indicates whether to run smoother forwards and backwards
         (usually achieves better estimate at end points)
     :param int axis: data dimension along which differentiation is performed
-    :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians, taking each
-        measurement on the branch nearest the filter's estimate. The input :code:`x` must be in radians; convert degrees
-        with :code:`np.deg2rad`.
+    :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians. The input
+        :code:`x` must be in radians; convert degrees with :code:`np.deg2rad`.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`.
                When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.

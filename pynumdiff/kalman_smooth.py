@@ -7,7 +7,7 @@ except ImportError: pass
 from pynumdiff.utils.utility import huber_const, robust_noise_scale
 
 
-def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovation_fn=None):
+def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovation_fn=None, circular=False):
     """Run the forward pass of a Kalman filter. This function is exposed publicly so users can create their own
     differentiator if they know their system model. Expects discrete-time matrices; use :func:`scipy.linalg.expm`
     in the caller to convert from continuous time if needed.
@@ -25,8 +25,14 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
     :param bool save_P: whether to save history of error covariance and a priori state estimates, used with rts
         smoothing but nonstandard to compute for ordinary filtering
     :param callable innovation_fn: optional function taking measurements and predicted measurements and returning the innovation.
-        When :code:`None`, traditional subtraction is used. This is primarily exposed to handle angles, which have a wrapped domain,
-        so alternative displacement measure :code:`lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi` is more appropriate.
+        When :code:`None`, traditional subtraction is used. For angles, :code:`circular` is usually the better choice; wrapping
+        against the prediction instead, :code:`lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi`, can lock onto an aliased
+        solution when a high-gain filter overshoots by more than :math:`\\pi`, see `#240 <https://github.com/florisvb/PyNumDiff/issues/240>`_.
+        Cannot be combined with :code:`circular`.
+    :param bool circular: if :code:`True`, treat measurements as angles in radians. The innovation is wrapped, but its
+        :math:`2\\pi` branch is chosen relative to the previous a posteriori measurement estimate :math:`r = C\\hat{x}_{n-1|n-1}`
+        rather than the prediction: :math:`r + \\text{wrap}(y_n - r) - C\\hat{x}_{n|n-1}`. Across missing data, :math:`r`
+        follows the model's prediction.
 
     :return: - **xhat_pre** (np.array) -- a priori estimates of xhat, with axis=0 the batch dimension, so xhat[n] gets the nth step
              - **xhat_post** (np.array) -- a posteriori estimates of xhat
@@ -35,6 +41,7 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
              if :code:`save_P` is :code:`True` else only **xhat_post** to save memory
     """
     if A.ndim != Q.ndim: raise ValueError("number of dimensions of A and Q must agree, either single matrix or stacked")
+    if circular and innovation_fn is not None: raise ValueError("`circular` computes its own innovation, so it cannot be combined with `innovation_fn`")
 
     N = y.shape[0]
     m = xhat0.shape[0] # dimension of the state
@@ -47,7 +54,9 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
     control = isinstance(B, np.ndarray) and isinstance(u, np.ndarray) # whether there is a control input
     if A.ndim == 2: An, Qn, Bn = A, Q, B # single matrices, assign once outside the loop
 
+    xhat = xhat0
     for n in range(N):
+        ref = C @ xhat # previous posterior, used to pick the 2pi branch if circular, because a high-gain prediction can overshoot by > pi. See #240
         if n == 0: # first iteration is a special case, involving less work
             xhat_ = xhat0
             P_ = P0
@@ -60,7 +69,8 @@ def kalman_filter(y, xhat0, P0, A, Q, C, R, B=None, u=None, save_P=True, innovat
         P = P_.copy()
         if not np.isnan(y[n]): # handle missing data
             K = P_ @ C.T @ np.linalg.inv(C @ P_ @ C.T + R)
-            innovation = y[n] - C @ xhat_ if innovation_fn is None else innovation_fn(y[n], C @ xhat_)
+            if circular: innovation = ref + (y[n] - ref + np.pi) % (2*np.pi) - np.pi - C @ xhat_
+            else: innovation = y[n] - C @ xhat_ if innovation_fn is None else innovation_fn(y[n], C @ xhat_)
             xhat += K @ innovation
             P -= K @ C @ P_
         # the [n]th index of pre variables holds _{n|n-1} info; the [n]th index of post variables holds _{n|n} info
@@ -99,7 +109,7 @@ def rts_smooth(A, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=True):
     return xhat_smooth if not compute_P_smooth else (xhat_smooth, P_smooth)
 
 
-def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circular=False):
+def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circular=False, circular_branch='posterior'):
     """Perform Rauch-Tung-Striebel smoothing with a naive constant derivative model. Makes use of :code:`kalman_filter`
     and :code:`rts_smooth`, which are made public.
 
@@ -116,12 +126,20 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
     :param int axis: data dimension along which differentiation is performed
     :param bool circular: if :code:`True`, treat the measured quantity as a circular variable in radians, wrapping the
         innovation to :math:`[-\\pi, \\pi]`. The input :code:`x` must be in radians; convert degrees with :code:`np.deg2rad`.
+    :param str circular_branch: only used if :code:`circular=True`. Wrapped data can't distinguish an angle from itself
+        plus whole turns, so each innovation's :math:`2\\pi` branch must be chosen relative to some reference.
+        :code:`'posterior'` (default) uses the previous filtered estimate, which is robust to sudden large swings and
+        to high :code:`log_qr_ratio`. :code:`'prediction'` uses the model's prediction, which tracks fast, steady
+        rotation through noise better at low gain, but can lock onto an aliased solution, with derivative off by
+        multiples of :math:`2\\pi/\\Delta t`, when a high-gain prediction overshoots by more than :math:`\\pi`. See
+        `#240 <https://github.com/florisvb/PyNumDiff/issues/240>`_.
 
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`.
                When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
     N = x.shape[axis]
+    if circular_branch not in ('posterior', 'prediction'): raise ValueError("`circular_branch` must be 'posterior' or 'prediction'.")
     if not np.isscalar(dt_or_t):
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as x along `axis`.")
         if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "
@@ -150,7 +168,9 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
             Q_d[n] = eM[:order+1, order+1:] @ A_d[n].T
         if forwardbackward: A_d_bwd = np.linalg.inv(A_d[::-1]) # properly broadcasts, taking inv of each stacked 2D array
 
-    innovation_fn = (lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi) if circular else None # optionally wrap innovation to [-pi, pi], see #178
+    # optionally wrap innovation to [-pi, pi], see #178, choosing the 2pi branch from the previous posterior or the prediction, see #240
+    wrapping = {'posterior': {'circular': True},
+               'prediction': {'innovation_fn': lambda y, pred: (y - pred + np.pi) % (2*np.pi) - np.pi}}[circular_branch] if circular else {}
 
     x_hat = np.empty(x.shape); dxdt_hat = np.empty(x.shape) # not empty_like, because integer type could be inherited and silently truncate
     if forwardbackward: w = np.linspace(0, 1, N) # weights used to combine forward and backward results
@@ -160,7 +180,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
         xhat0 = np.zeros(order+1)
         if not np.isnan(x[s][0]): xhat0[0] = x[s][0] # The first estimate is the first seen state. See #110
 
-        xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R, innovation_fn=innovation_fn)
+        xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s], xhat0, P0, A_d, Q_d, C, R, **wrapping)
         xhat_smooth = rts_smooth(A_d, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
         x_hat[s] = xhat_smooth[:,0] # first dimension is time, so slice first and second states at all times
         dxdt_hat[s] = xhat_smooth[:,1]
@@ -168,7 +188,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
         if forwardbackward:
             if not np.isnan(x[s][-1]): xhat0[0] = x[s][-1]
             xhat_pre, xhat_post, P_pre, P_post = kalman_filter(x[s][::-1], xhat0, P0, A_d_bwd,
-                Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R, innovation_fn=innovation_fn) # Use same Q matrices as before, because noise should still grow in reverse time
+                Q_d if Q_d.ndim == 2 else Q_d[::-1], C, R, **wrapping) # Use same Q matrices as before, because noise should still grow in reverse time
             xhat_smooth = rts_smooth(A_d_bwd, xhat_pre, xhat_post, P_pre, P_post, compute_P_smooth=False)
 
             if circular: # forward and backward passes track unwrapped angle and can sit whole turns apart, so de-alias, see #208

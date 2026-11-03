@@ -1,13 +1,13 @@
 """Unit tests of core differentiation functionality"""
 import numpy as np
-from pytest import mark
+from pytest import mark, raises
 
 from ..smooth_finite_difference import kerneldiff, butterdiff
 from ..finite_difference import finitediff
 from ..polynomial_fit import polydiff, savgoldiff, splinediff
 from ..basis_fit import spectraldiff, rbfdiff, waveletdiff
 from ..total_variation_regularization import iterative_velocity, smooth_acceleration, tvrdiff
-from ..kalman_smooth import rtsdiff, robustdiff
+from ..kalman_smooth import rtsdiff, robustdiff, kalman_filter
 from ..linear_model import lineardiff
 # Function aliases for testing cases where parameters change the behavior in a big way, so error limits can be indexed in dict
 def kerneldiff_uniform(*args, **kwargs): return kerneldiff(*args, **kwargs)
@@ -440,15 +440,17 @@ def test_missing_data(diff_method_and_params):
     assert np.all(np.isfinite(dxdt_hat))
 
 
+@mark.parametrize("circular_branch", ["posterior", "prediction"])
 @mark.parametrize("fwdbwd", [False, True])
-def test_circular_rtsdiff(request, fwdbwd):
+def test_circular_rtsdiff(request, fwdbwd, circular_branch):
     """Ensure rtsdiff with circular=True correctly differentiates a wrapping angle signal in radians"""
     dthdt = 5 # constant angular velocity in rad/s
     th = dthdt * t # linearly increasing angle, crosses 2*pi boundaries
     th_noisy = np.angle(np.exp(1j * (th + noise))) # add noise and wrap to [-pi, pi]
 
     th_hat_naive, dthdt_hat_naive = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=False, forwardbackward=fwdbwd)
-    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True, forwardbackward=fwdbwd)
+    th_hat, dthdt_hat = rtsdiff(th_noisy, dt, order=1, log_qr_ratio=1, circular=True, forwardbackward=fwdbwd,
+        circular_branch=circular_branch)
     
     naive_rmse = np.sqrt(np.mean((dthdt_hat_naive - dthdt)**2))
     wrapped_rmse = np.sqrt(np.mean((dthdt_hat - dthdt)**2))
@@ -471,4 +473,87 @@ def test_circular_rtsdiff(request, fwdbwd):
         ax2.set_ylabel(r'$\dot{\theta}$ (rad/time)')
         ax2.set_xlabel('t')
         ax2.legend()
-        fig.suptitle(f'rtsdiff with circular domain, forwardbackward={fwdbwd}', fontsize=16)
+        fig.suptitle(f'rtsdiff with circular domain, forwardbackward={fwdbwd}, circular_branch={circular_branch}', fontsize=16)
+
+
+def angular_diff(a, b):
+    """Difference on the circle, so whole turns don't count"""
+    return np.angle(np.exp(1j*(a - b)))
+
+# Course direction (rad) of Drosophila trajectory 20121002_184808_2605 at 100 Hz, from #240. The 4.18 rad jump between
+# samples 7 and 8 is a -2.10 rad swing after wrapping, which threw rtsdiff onto an aliased solution
+fly_course = np.array([-2.265256, -2.269022, -2.284692, -2.315834, -2.362328, -2.422941, -2.503468, -2.691861, 1.486292,
+    0.793781, 0.62091, 0.455346, 0.225893, -0.023637, -0.296044, -0.746268, -1.377319, -1.821492, -2.05377, -2.15313, -2.145599])
+
+@mark.parametrize("fwdbwd", [False, True])
+@mark.parametrize("order, log_qr_ratio, step", [(2, 12, 2.0), (2, 14, 1.3), (1, 8, 3.0), (3, 14, 2.2)])
+def test_circular_step_no_aliasing(order, log_qr_ratio, step, fwdbwd):
+    """Ensure a large one-step change in angle, though < pi, doesn't throw a high-gain circular rtsdiff onto an aliased
+    solution with derivative off by multiples of 2pi/dt, see #240"""
+    th = np.r_[np.zeros(10), np.full(10, step)] # no wrap ever occurs, so circular=False gives the right answer
+    x_hat, dxdt_hat = rtsdiff(th, 0.01, order, log_qr_ratio, forwardbackward=fwdbwd, circular=True)
+    x_hat_plain, dxdt_hat_plain = rtsdiff(th, 0.01, order, log_qr_ratio, forwardbackward=fwdbwd)
+
+    assert np.allclose(dxdt_hat, dxdt_hat_plain)
+    assert np.allclose(angular_diff(x_hat, x_hat_plain), 0)
+
+
+@mark.parametrize("fwdbwd", [False, True])
+def test_circular_fly_trajectory(fwdbwd):
+    """Ensure the real trajectory from #240, at the settings the optimizer chose for it, matches differentiating the unwrapped data"""
+    x_hat, dxdt_hat = rtsdiff(fly_course, 0.01, 2, 12, forwardbackward=fwdbwd, circular=True)
+    x_hat_unw, dxdt_hat_unw = rtsdiff(np.unwrap(fly_course), 0.01, 2, 12, forwardbackward=fwdbwd)
+
+    assert np.allclose(dxdt_hat, dxdt_hat_unw)
+    assert np.allclose(angular_diff(x_hat, x_hat_unw), 0)
+
+
+@mark.parametrize("fwdbwd", [False, True])
+@mark.parametrize("scenario", ["uniform", "irregular", "missing", "multidim"])
+def test_circular_matches_unwrapped(scenario, fwdbwd):
+    """Ensure that when the angle moves less than pi per step, circular=True on wrapped data gives the same answer as
+    circular=False on the unwrapped data, including for variable step size, missing data, and multidimensional input"""
+    _t = t_irreg if scenario == "irregular" else t
+    th = 3*_t + 2*np.sin(2*_t) + noise; axis = 0 # crosses the +-pi boundary several times, moving < pi/2 per step
+    if scenario == "missing": th[[5, 10, 15]] = np.nan; th[22:26] = np.nan # point gaps and a contiguous run, as in test_missing_data
+    if scenario == "multidim": th = np.vstack([th, 0.5*th - 1, 2 - th]); axis = 1
+    dt_or_t = t_irreg if scenario == "irregular" else dt
+
+    x_hat, dxdt_hat = rtsdiff(np.angle(np.exp(1j*th)), dt_or_t, 2, 6, forwardbackward=fwdbwd, axis=axis, circular=True)
+    x_hat_plain, dxdt_hat_plain = rtsdiff(th, dt_or_t, 2, 6, forwardbackward=fwdbwd, axis=axis)
+
+    assert np.allclose(dxdt_hat, dxdt_hat_plain)
+    assert np.allclose(angular_diff(x_hat, x_hat_plain), 0)
+
+
+@mark.parametrize("circular_branch", ["posterior", "prediction"])
+def test_circular_invariant_to_whole_turns(circular_branch):
+    """Ensure adding whole turns to individual samples of circular data doesn't change the result"""
+    th = np.angle(np.exp(1j*(5*t + noise)))
+    turns = 2*np.pi*np.random.default_rng(0).integers(-3, 4, len(t))
+
+    x_hat, dxdt_hat = rtsdiff(th, dt, 2, 4, forwardbackward=True, circular=True, circular_branch=circular_branch)
+    x_hat_turned, dxdt_hat_turned = rtsdiff(th + turns, dt, 2, 4, forwardbackward=True, circular=True, circular_branch=circular_branch)
+
+    assert np.allclose(dxdt_hat, dxdt_hat_turned)
+    assert np.allclose(angular_diff(x_hat, x_hat_turned), 0)
+
+
+def test_circular_noise_robustness():
+    """Ensure the noisy trajectory from #240, at the high gain the optimizer chose there, still gets the same answer as if the
+    wrapping were known, across noise realizations"""
+    course = np.unwrap(fly_course)
+    for seed in range(20):
+        x_noisy = course + 0.2*np.random.default_rng(seed).standard_normal(len(course))
+        dxdt_oracle = rtsdiff(x_noisy, 0.01, 2, 12, forwardbackward=True)[1] # the same filter, if the wrapping were known
+        dxdt_hat = rtsdiff(np.angle(np.exp(1j*x_noisy)), 0.01, 2, 12, forwardbackward=True, circular=True)[1]
+        assert np.allclose(dxdt_hat, dxdt_oracle)
+
+
+def test_circular_argument_errors():
+    """Ensure invalid combinations of the circular options are rejected"""
+    with raises(ValueError):
+        rtsdiff(np.zeros(5), dt, 1, 2, circular=True, circular_branch="bogus")
+    with raises(ValueError):
+        kalman_filter(np.zeros(5), np.zeros(2), np.eye(2), np.eye(2), np.eye(2), np.array([[1., 0]]), np.eye(1),
+            circular=True, innovation_fn=lambda y, pred: y - pred)

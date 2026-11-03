@@ -138,6 +138,7 @@ def rtsdiff(x, dt_or_t, order, log_qr_ratio, forwardbackward=False, axis=0, circ
                When :code:`circular=True`, wrapped to :math:`[-\\pi, \\pi]`.
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
+    axis = range(x.ndim)[axis] # normalize negative axes before constructing per-vector slices
     N = x.shape[axis]
     if circular_branch not in ('posterior', 'prediction'): raise ValueError("`circular_branch` must be 'posterior' or 'prediction'.")
     if not np.isscalar(dt_or_t):
@@ -243,6 +244,7 @@ def robustdiff(x, dt_or_t, order, log_q, log_r, proc_huberM=6, meas_huberM=0, ax
     :return: - **x_hat** (np.array) -- estimated (smoothed) x, same shape as input :code:`x`
              - **dxdt_hat** (np.array) -- estimated derivative of x, same shape as input :code:`x`
     """
+    axis = range(x.ndim)[axis] # normalize negative axes before constructing per-vector slices
     N = x.shape[axis]
     if not np.isscalar(dt_or_t):
         if N != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x` along `axis`.")

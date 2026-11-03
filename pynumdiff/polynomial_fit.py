@@ -24,6 +24,7 @@ def splinediff(x, dt_or_t, degree=3, s=1, axis=0):
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    axis = range(x.ndim)[axis] # normalize negative axes before constructing per-vector slices
     if np.isscalar(dt_or_t):
         t = np.arange(x.shape[axis]) * dt_or_t
     else: # support variable step size for this function
@@ -68,6 +69,7 @@ def polydiff(x, dt_or_t, degree, window_size=None, stride=1, kernel='friedrichs'
     :return: - **x_hat** (np.array) -- estimated (smoothed) x
              - **dxdt_hat** (np.array) -- estimated derivative of x
     """
+    axis = range(x.ndim)[axis] # normalize negative axes before constructing per-vector slices
     if not np.isscalar(dt_or_t): # check once here rather than per window, since `slide_function` hands slices to `_polydiff`
         if x.shape[axis] != len(dt_or_t): raise ValueError("If `dt_or_t` is given as array-like, must have same length as `x`.")
         if np.any(np.diff(dt_or_t) <= 0): raise ValueError("`dt_or_t` must be strictly increasing. Out-of-order or repeated "

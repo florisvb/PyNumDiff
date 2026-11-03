@@ -366,20 +366,20 @@ multidim_error_bounds = {
 
 @mark.parametrize("multidim_method_and_params", multidim_methods_and_params)
 def test_multidimensionality(multidim_method_and_params, request):
-    """Ensure methods with an axis parameter can successfully differentiate in independent directions"""
+    """Ensure methods with an axis parameter can successfully differentiate in independent directions, including with negative indexing."""
     diff_method, params = multidim_method_and_params
 
     # d^2 / dt_1 dt_2
     analytic_d2 = 3 * T1 * np.pi * np.cos(3/2 * np.pi * T2)
     dxdt1 = diff_method(x, dt2, **params, axis=0)[1]
-    computed_d2 = diff_method(dxdt1, dt2, **params, axis=1)[1]
+    computed_d2 = diff_method(dxdt1, dt2, **params, axis=-1)[1]
     l2_error_d2 = np.linalg.norm(analytic_d2 - computed_d2) # Frobenius norm (2 norm of vectorized array)
     linf_error_d2 = np.max(np.abs(analytic_d2 - computed_d2))
 
     # Laplacian
     analytic_laplacian = 2 * np.sin(3/2 * np.pi * T2) - 9/4 * np.pi**2 * T1**2 * np.sin(3/2 * np.pi * T2)
-    dxdt2 = diff_method(x, dt2, **params, axis=1)[1]
-    computed_laplacian = diff_method(dxdt1, dt2, **params, axis=0)[1] + diff_method(dxdt2, dt2, **params, axis=1)[1]
+    dxdt2 = diff_method(x, dt2, **params, axis=-1)[1]
+    computed_laplacian = diff_method(dxdt1, dt2, **params, axis=0)[1] + diff_method(dxdt2, dt2, **params, axis=-1)[1]
     l2_error_lap = np.linalg.norm(analytic_laplacian - computed_laplacian)
     linf_error_lap = np.max(np.abs(analytic_laplacian - computed_laplacian))
 

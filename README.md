@@ -17,8 +17,8 @@ Python methods for numerical differentiation and smoothing of noisy data, includ
         <img src='https://coveralls.io/repos/github/florisvb/PyNumDiff/badge.svg?branch=master' alt='Coverage Status' /></a>
     <a href="https://badge.fury.io/py/pynumdiff">
         <img src="https://badge.fury.io/py/pynumdiff.svg" alt="PyPI"></a>
-    <a href="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b">
-        <img src="https://joss.theoj.org/papers/3b87180224e98705b4312cc35aaa615b/status.svg"></a>
+    <a href="https://doi.org/10.21105/joss.11172">
+        <img src="https://joss.theoj.org/papers/10.21105/joss.11172/status.svg"></a>
     <a href="https://github.com/florisvb/PyNumDiff/blob/master/LICENSE.txt">
         <img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
     <a href="https://doi.org/10.5281/zenodo.6366704">
@@ -132,7 +132,9 @@ The second-generation article, describing the package through the v0.3 release s
       author = {Pavel Komarov and Floris van Breugel and Maria Protogerou and J. Nathan Kutz},
       title = {PyNumDiff: Practical Numerical Differentiation for Noisy Data},
       journal = {Journal of Open Source Software},
-      note = {In review}
+      volume = {11},
+      number = {127},
+      pages = {11172}
     }
 
 The first-generation article, describing the package through v0.1.x:

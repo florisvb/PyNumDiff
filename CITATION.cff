@@ -39,9 +39,12 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0002-6004-2275"
   journal: Journal of Open Source Software
   year: 2026
+  month: 11
+  volume: 11
+  issue: 127
+  start: 11172
   doi: 10.21105/joss.11172
-  status: submitted
-  notes: "Describes the package's second generation, through the v0.3 release series. Under review; the DOI is reserved and resolves on acceptance."
+  notes: "Describes the package's second generation, through the v0.3 release series."
 references:
   - type: article
     title: "PyNumDiff: A Python package for numerical differentiation of noisy time-series data"
@@ -57,8 +60,8 @@ references:
     journal: Journal of Open Source Software
     year: 2022
     volume: 7
-    number: 71
-    pages: 4078
+    issue: 71
+    start: 4078
     doi: 10.21105/joss.04078
     version: 0.1.2.4
     notes: "The first-generation article, describing the package through version 0.1.x."

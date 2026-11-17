@@ -20,7 +20,7 @@ FITTED = {"spectraldiff": dict(cutoff_freq=0.0625, extension='even', pad_to_flat
           "tvrdiff": dict(gamma=10.6015625, huberM=6.0, order=1),
           "butterdiff": dict(cutoff_freq=0.05, num_iterations=1, filter_order=2),
           "rtsdiff": dict(log_qr_ratio=3.81328125, order=1, forwardbackward=False),
-          "lineardiff": dict(gamma=0.00011125, window_size=53, order=2, kernel='friedrichs')}
+          "lineardiff": dict(gamma=0.1321875, window_size=39, order=2, kernel='friedrichs')}
 #FITTED = {}
 
 def main():
